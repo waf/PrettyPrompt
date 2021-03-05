@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 namespace PrettyPrompt
 {
-    static class AnsiEscapeCodes
+    public static class AnsiEscapeCodes
     {
         private const char Escape = '\u001b';
         public static readonly string ClearLine = $"{Escape}[0K";
