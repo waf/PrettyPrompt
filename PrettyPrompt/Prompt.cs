@@ -47,7 +47,7 @@ namespace PrettyPrompt
             {
                 int codeAreaWidth = console.BufferWidth - prompt.Length;
 
-                var character = ReadKey();
+                var character = console.ReadKey(intercept: true);
                 var key = character.Modifiers == 0 ? character.Key as object : (character.Modifiers, character.Key);
                 bool completionWindowIntercepted = completionWindow.Intercept(key, input, ref caret);
                 if (!completionWindowIntercepted)
@@ -170,7 +170,7 @@ namespace PrettyPrompt
                     MoveCursorToPosition(promptTopCoordinate, 1)
                        + ClearToEndOfScreen
                        + string.Concat(lines.Select((line, n) => DrawPrompt(prompt, n) + ApplyHighlighting(highlights, line))).EnvironmentNewlines()
-                       + DrawCompletions(completionWindow, input, caret, prompt.Length, codeAreaWidth, finalCursorRow, finalCursorColumn)
+                       + DrawCompletions(completionWindow, caret, prompt.Length, codeAreaWidth, finalCursorRow, finalCursorColumn)
                        + MoveCursorToPosition(finalCursorRow, finalCursorColumn)
                 );
                 console.ShowCursor();
@@ -249,7 +249,7 @@ namespace PrettyPrompt
             return lines;
         }
 
-        private static string DrawCompletions(CompletionWindow completionWindow, StringBuilder input, int caret, int codeAreaStartColumn, int codeAreaWidth, int cursorRow, int cursorColumn)
+        private static string DrawCompletions(CompletionWindow completionWindow, int caret, int codeAreaStartColumn, int codeAreaWidth, int cursorRow, int cursorColumn)
         {
             //  _  <-- cursor location
             //  ┌──────────────┐
@@ -259,9 +259,6 @@ namespace PrettyPrompt
 
             if(!completionWindow.IsOpen || caret < completionWindow.OpenedIndex)
                 return string.Empty;
-            //string typedCompletion = input.ToString(completionWindow.OpenedIndex, caret - completionWindow.OpenedIndex).ToString();
-            //if (typedCompletion == string.Empty)
-            //    return string.Empty;
 
             if (completionWindow.FilteredView.Count == 0)
                 return string.Empty;
@@ -288,16 +285,6 @@ namespace PrettyPrompt
                 line.Substring(0, Math.Min(line.Length, codeAreaWidth - boxStart - offset));
         }
 
-        private ConsoleKeyInfo ReadKey()
-        {
-            while (true)
-            {
-                if (console.KeyAvailable)
-                {
-                    return console.ReadKey(intercept: true);
-                }
-            }
-        }
     }
     class CompletionWindow
     {
