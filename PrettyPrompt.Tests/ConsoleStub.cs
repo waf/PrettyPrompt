@@ -1,23 +1,33 @@
 ﻿using System;
+using System.Text.RegularExpressions;
+using System.Linq;
+using System.Collections.Generic;
 using PrettyPrompt.Consoles;
 using NSubstitute;
 using NSubstitute.Core;
 using static System.ConsoleModifiers;
-using System.Text.RegularExpressions;
-using System.Linq;
-using System.Collections.Generic;
 
 namespace PrettyPrompt.Tests
 {
-    public static class ConsoleExtensions
+    public static class ConsoleStub
     {
         private static readonly Regex FormatStringSplit = new Regex(@"({\d+}|.)");
 
-        public static IReadOnlyList<string> AllOutput(this IConsole consoleStub) =>
+        public static IConsole NewConsole(int width = 100)
+        {
+            var console = Substitute.For<IConsole>();
+            console.BufferWidth.Returns(width);
+            return console;
+        }
+
+        public static IReadOnlyList<string> GetAllOutput(this IConsole consoleStub) =>
             consoleStub.ReceivedCalls()
                 .Where(call => call.GetMethodInfo().Name == nameof(Console.Write))
                 .Select(call => (string)call.GetArguments().Single())
                 .ToArray();
+
+        public static string GetFinalOutput(this IConsole consoleStub) =>
+            consoleStub.GetAllOutput()[^2]; // second to last. The last is always the newline drawn after the prompt is submitted
 
         /// <summary>
         /// Stub Console.ReadKey to return a series of keystrokes (<see cref="ConsoleKeyInfo" />).

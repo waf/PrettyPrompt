@@ -1,8 +1,5 @@
-using PrettyPrompt.Consoles;
 using Xunit;
-using NSubstitute;
 using System.Threading.Tasks;
-using System.Collections.Generic;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
 using static System.Environment;
@@ -15,7 +12,7 @@ namespace PrettyPrompt.Tests
         [Fact]
         public async Task ReadLine_TypeSimpleString_GetSimpleString()
         {
-            IConsole console = NewConsole();
+            var console = ConsoleStub.NewConsole();
             console.Input($"Hello World{Enter}");
 
             var prompt = new Prompt(console: console);
@@ -28,7 +25,7 @@ namespace PrettyPrompt.Tests
         [Fact]
         public async Task ReadLine_Abort_NoResult()
         {
-            IConsole console = NewConsole();
+            var console = ConsoleStub.NewConsole();
             console.Input($"Hello World{Control}c");
 
             var prompt = new Prompt(console: console);
@@ -42,7 +39,7 @@ namespace PrettyPrompt.Tests
         public async Task ReadLine_WordWrap()
         {
             // window width of 5, with a 2 char prompt.
-            var console = NewConsole(width: 5);
+            var console = ConsoleStub.NewConsole(width: 5);
             console.Input($"111222333{Enter}");
 
             var prompt = new Prompt(console: console);
@@ -51,7 +48,7 @@ namespace PrettyPrompt.Tests
             Assert.True(result.Success);
             Assert.Equal("111222333", result.Text);
 
-            var finalOutput = GetFinalOutput(console.AllOutput());
+            var finalOutput = console.GetFinalOutput();
 
             Assert.Equal(
                 expected: MoveCursorToPosition(1, 1) + ClearToEndOfScreen +
@@ -66,7 +63,7 @@ namespace PrettyPrompt.Tests
         [Fact]
         public async Task ReadLine_HorizontalNavigationKeys()
         {
-            var console = NewConsole();
+            var console = ConsoleStub.NewConsole();
             console.Input(
                 $"pretty{Backspace}{Backspace}{Home}{LeftArrow}{RightArrow}{RightArrow}{Delete}omp{RightArrow}!{RightArrow}{Enter}"
             );
@@ -80,7 +77,7 @@ namespace PrettyPrompt.Tests
         [Fact]
         public async Task ReadLine_VerticalNavigationKeys()
         {
-            var console = NewConsole();
+            var console = ConsoleStub.NewConsole();
             console.Input(
                 $"pretty{Shift}{Enter}",
                 $"unit-tested{Shift}{Enter}",
@@ -94,16 +91,6 @@ namespace PrettyPrompt.Tests
             var result = await prompt.ReadLine("> ");
 
             Assert.Equal($"pretty well{NewLine}unit-tested?{NewLine}prompt!", result.Text);
-        }
-
-        private static string GetFinalOutput(IReadOnlyList<string> output) =>
-            output[^2]; // second to last. The last is always the newline drawn after the prompt is submitted
-
-        private static IConsole NewConsole(int width = 100)
-        {
-            var console = Substitute.For<IConsole>();
-            console.BufferWidth.Returns(width);
-            return console;
         }
     }
 }
