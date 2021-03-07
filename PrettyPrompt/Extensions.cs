@@ -4,14 +4,9 @@ namespace PrettyPrompt
 {
     public static class Extensions
     {
-
-        public static string EnvironmentNewlines(this string text)
-        {
-            string environmentNewline = Environment.NewLine;
-            if (environmentNewline == "\n")
-                return text;
-            else
-                return text.Replace("\n", environmentNewline);
-        }
+        public static string EnvironmentNewlines(this string text) =>
+            Environment.NewLine == "\n"
+                ? text
+                : text.Replace("\n", Environment.NewLine);
     }
 }

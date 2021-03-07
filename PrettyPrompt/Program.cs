@@ -10,9 +10,6 @@ namespace PrettyPrompt
     {
         static async Task Main(string[] args)
         {
-            Console.TreatControlCAsInput = true;
-            AnsiEscapeCodes.InitVirtualTerminalProcessing();
-
             Console.WriteLine("Welcome! Try typing some fruit names.");
             Console.WriteLine();
 

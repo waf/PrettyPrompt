@@ -50,5 +50,33 @@ namespace PrettyPrompt.Tests
             Assert.True(result.Success);
             Assert.Equal($"Aardvark{NewLine}Zebra", result.Text);
         }
+
+        [Fact]
+        public async Task ReadLine_CompletionMenu_AutoOpens()
+        {
+            var console = ConsoleStub.NewConsole();
+            console.Input($"A{Enter}{Shift}{Enter}Z{Enter}{Enter}");
+
+            var prompt = new Prompt(CompletionTestData.CompletionHandlerAsync, console: console);
+
+            var result = await prompt.ReadLine("> ");
+
+            Assert.True(result.Success);
+            Assert.Equal($"Aardvark{NewLine}Zebra", result.Text);
+        }
+
+        [Fact]
+        public async Task ReadLine_CompletionWithNoMatches_DoesNotAutoComplete()
+        {
+            var console = ConsoleStub.NewConsole();
+            console.Input($"A{Enter} Q{Enter}"); // first {Enter} selects an autocompletion, second {Enter} submits because there are no completions.
+
+            var prompt = new Prompt(CompletionTestData.CompletionHandlerAsync, console: console);
+
+            var result = await prompt.ReadLine("> ");
+
+            Assert.True(result.Success);
+            Assert.Equal($"Aardvark Q", result.Text);
+        }
     }
 }

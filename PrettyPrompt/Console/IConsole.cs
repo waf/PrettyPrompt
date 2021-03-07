@@ -17,5 +17,6 @@ namespace PrettyPrompt.Consoles
         void ShowCursor();
         void HideCursor();
         ConsoleKeyInfo ReadKey(bool intercept);
+        void InitVirtualTerminalProcessing();
     }
 }
