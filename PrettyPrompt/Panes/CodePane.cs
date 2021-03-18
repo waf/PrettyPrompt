@@ -129,6 +129,7 @@ namespace PrettyPrompt
             {
                 Cursor.Column = Caret;
                 WordWrappedLines = new[] { new WrappedLine(0, string.Empty) };
+                return;
             }
 
             var lines = new List<WrappedLine>();

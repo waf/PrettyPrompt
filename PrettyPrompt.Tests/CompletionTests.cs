@@ -66,6 +66,20 @@ namespace PrettyPrompt.Tests
         }
 
         [Fact]
+        public async Task ReadLine_EmptyPrompt_AutoOpens()
+        {
+            var console = ConsoleStub.NewConsole();
+            console.Input($"{Control}{Spacebar}{Enter}{Enter}");
+
+            var prompt = new Prompt(CompletionTestData.CompletionHandlerAsync, console: console);
+
+            var result = await prompt.ReadLine("> ");
+
+            Assert.True(result.Success);
+            Assert.Equal($"Aardvark", result.Text);
+        }
+
+        [Fact]
         public async Task ReadLine_CompletionWithNoMatches_DoesNotAutoComplete()
         {
             var console = ConsoleStub.NewConsole();

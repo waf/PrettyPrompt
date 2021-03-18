@@ -23,6 +23,21 @@ namespace PrettyPrompt.Tests
         }
 
         [Fact]
+        public async Task ReadLine_WhitespacePrompt_ReturnsWhitespace()
+        {
+            var console = ConsoleStub.NewConsole();
+            console.Input($"  {Enter}");
+
+            // add completion handler, as it has caused problem when completing all whitespace prompts
+            var prompt = new Prompt(CompletionTestData.CompletionHandlerAsync, console: console);
+
+            var result = await prompt.ReadLine("> ");
+
+            Assert.True(result.Success);
+            Assert.Equal("  ", result.Text);
+        }
+
+        [Fact]
         public async Task ReadLine_Abort_NoResult()
         {
             var console = ConsoleStub.NewConsole();

@@ -91,11 +91,19 @@ namespace PrettyPrompt.Tests
                     return modifiersPressed | modifier;
                 case ConsoleKey consoleKey:
                     var parsed = char.TryParse(key.Value, out char character);
-                    list.Add(ToConsoleKeyInfo(modifiersPressed, consoleKey, parsed ? character : '\0'));
+                    list.Add(ToConsoleKeyInfo(modifiersPressed, consoleKey, parsed ? character : MapSpecialKey(consoleKey)));
                     return 0;
                 default: throw new ArgumentException("Unknown value: " + formatArgument, nameof(formatArgument));
             }
         }
+
+        private static char MapSpecialKey(ConsoleKey consoleKey) =>
+            consoleKey switch
+            {
+                ConsoleKey.Enter => '\0',
+                ConsoleKey.Spacebar => ' ',
+                _ => throw new ArgumentException("Unknown key: " + consoleKey)
+            };
 
         private static ConsoleKeyInfo ToConsoleKeyInfo(ConsoleModifiers modifiersPressed, ConsoleKey consoleKey, char character) =>
             new ConsoleKeyInfo(

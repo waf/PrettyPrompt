@@ -11,7 +11,7 @@ namespace PrettyPrompt
 {
     public class CompletionPane : IKeyPressHandler
     {
-        public static readonly LinkedList<Completion> NeedsCompletions = new LinkedList<Completion>();
+        private static readonly LinkedList<Completion> NeedsCompletions = new LinkedList<Completion>();
         private readonly CodePane codePane;
         private readonly CompletionHandlerAsync complete;
 
@@ -109,6 +109,9 @@ namespace PrettyPrompt
                     return false;
                 case (Control, Spacebar):
                     return false;
+                case LeftArrow:
+                    Close();
+                    return true;
                 case Escape:
                     Close();
                     return false;
@@ -141,10 +144,10 @@ namespace PrettyPrompt
             this.FilteredView = new LinkedList<Completion>();
         }
 
-        public async Task<bool> OnKeyUp(KeyPress character)
+        public async Task<bool> OnKeyUp(KeyPress key)
         {
-            if (!char.IsControl(character.ConsoleKeyInfo.KeyChar)
-                && (character.ConsoleKeyInfo.KeyChar is '.' or '(' || codePane.Input.Length <= 1 || char.IsWhiteSpace(codePane.Input[codePane.Caret - 2])))
+            if (!char.IsControl(key.ConsoleKeyInfo.KeyChar)
+                && ShouldAutomaticallyOpen(codePane.Input, codePane.Caret, key))
             {
                 Close();
                 Open(codePane.Caret - 1);
@@ -154,10 +157,10 @@ namespace PrettyPrompt
             {
                 Close();
             }
-            if(IsOpen)
+            if (IsOpen)
             {
                 var textToComplete = codePane.Input.ToString(OpenedIndex, codePane.Caret - OpenedIndex);
-                if(textToComplete == string.Empty || AllCompletions == NeedsCompletions)
+                if (textToComplete == string.Empty || AllCompletions == NeedsCompletions)
                 {
                     var completions = await this.complete.Invoke(codePane.Input.ToString(), codePane.Caret);
                     SetCompletions(completions);
@@ -168,6 +171,16 @@ namespace PrettyPrompt
                 }
             }
             return true;
+        }
+
+        private static bool ShouldAutomaticallyOpen(StringBuilder input, int caret, KeyPress key)
+        {
+            if (key.ConsoleKeyInfo.KeyChar is '.' or '(') return true; // typical "intellisense behavior", opens for new methods and parameters
+
+            if (input.Length == 1 && !char.IsWhiteSpace(input[0])) return true; // open on brand new typing in a prompt
+
+            // open when we're starting a new "word" in the prompt.
+            return input.Length > 1 && char.IsWhiteSpace(input[caret - 2]) && !char.IsWhiteSpace(input[caret - 1]);
         }
 
         public string RenderCompletionMenu(int codeAreaStartColumn, int cursorRow, int cursorColumn)
