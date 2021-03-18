@@ -1,6 +1,6 @@
 ﻿using System.Threading.Tasks;
 
-namespace PrettyPrompt
+namespace PrettyPrompt.Consoles
 {
     internal interface IKeyPressHandler
     {

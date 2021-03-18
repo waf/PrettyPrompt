@@ -3,7 +3,7 @@ using System.Threading.Tasks;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
 using static System.Environment;
-using static PrettyPrompt.AnsiEscapeCodes;
+using static PrettyPrompt.Consoles.AnsiEscapeCodes;
 
 namespace PrettyPrompt.Tests
 {

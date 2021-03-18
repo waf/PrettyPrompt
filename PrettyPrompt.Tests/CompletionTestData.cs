@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using PrettyPrompt.Completion;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -11,17 +12,17 @@ namespace PrettyPrompt.Tests
             "Aardvark", "Albatross", "Alligator", "Alpaca", "Ant", "Anteater", "Zebra"
         };
 
-        public static Task<IReadOnlyList<Completion>> CompletionHandlerAsync(string text, int caret)
+        public static Task<IReadOnlyList<CompletionItem>> CompletionHandlerAsync(string text, int caret)
         {
             var textUntilCaret = text.Substring(0, caret);
             var previousWordStart = textUntilCaret.LastIndexOfAny(new[] { ' ', '\n', '.', '(', ')' });
             var typedWord = previousWordStart == -1
                 ? textUntilCaret
                 : textUntilCaret.Substring(previousWordStart + 1);
-            return Task.FromResult<IReadOnlyList<Completion>>(
+            return Task.FromResult<IReadOnlyList<CompletionItem>>(
                 completions
                     .Where(c => c.StartsWith(typedWord))
-                    .Select(c => new Completion
+                    .Select(c => new CompletionItem
                     {
                         StartIndex = previousWordStart + 1,
                         ReplacementText = c

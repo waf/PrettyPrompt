@@ -3,17 +3,42 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PrettyPrompt.Completion;
+using PrettyPrompt.Consoles;
 using static System.ConsoleModifiers;
 using static System.ConsoleKey;
-using static PrettyPrompt.AnsiEscapeCodes;
 
-namespace PrettyPrompt
+namespace PrettyPrompt.Panes
 {
     public class CompletionPane : IKeyPressHandler
     {
-        private static readonly LinkedList<Completion> NeedsCompletions = new LinkedList<Completion>();
         private readonly CodePane codePane;
         private readonly CompletionHandlerAsync complete;
+
+        /// <summary>
+        /// The index of the caret when the pane was opened
+        /// </summary>
+        private int openedCaretIndex;
+
+        /// <summary>
+        /// All completions available. Called once when the window is initially opened
+        /// </summary>
+        private IReadOnlyCollection<CompletionItem> allCompletions = Array.Empty<CompletionItem>();
+
+        /// <summary>
+        /// An "ordered view" over <see cref="allCompletions"/> that shows the list filtered by what the user has typed.
+        /// </summary>
+        public LinkedList<CompletionItem> FilteredView { get; set; } = new LinkedList<CompletionItem>();
+
+        /// <summary>
+        /// Currently selected item in the completion menu
+        /// </summary>
+        public LinkedListNode<CompletionItem> SelectedItem { get; set; }
+
+        /// <summary>
+        /// Whether or not the window is currently open / visible.
+        /// </summary>
+        public bool IsOpen { get; set; }
 
         public CompletionPane(CodePane codePane, CompletionHandlerAsync complete)
         {
@@ -21,54 +46,22 @@ namespace PrettyPrompt
             this.complete = complete;
         }
 
-        /// <summary>
-        /// All completions available. Called once when the window is initially opened
-        /// </summary>
-        public IReadOnlyCollection<Completion> AllCompletions { get; set; } = NeedsCompletions;
-
-        /// <summary>
-        /// A "view" over <see cref="AllCompletions"/> that shows the list filtered by what the user has typed.
-        /// </summary>
-        public LinkedList<Completion> FilteredView { get; set; } = new LinkedList<Completion>();
-        public LinkedListNode<Completion> SelectedItem { get; set; }
-        public bool IsOpen { get; set; }
-        public int OpenedIndex { get; set; }
-
-        public void SetCompletions(IReadOnlyCollection<Completion> completions)
+        private void Open(int caret)
         {
-            AllCompletions = completions;
-            if(completions.Any())
-            {
-                var completion = completions.First();
-                var prefix = completion.ReplacementText.Substring(0, Math.Max(0, OpenedIndex - completion.StartIndex));
-                OpenedIndex = completion.StartIndex;
-                FilterCompletions(prefix);
-            }
+            this.IsOpen = true;
+            this.openedCaretIndex = caret;
+            this.allCompletions = Array.Empty<CompletionItem>();
         }
 
-        public void FilterCompletions(string filter)
+        private void Close()
         {
-            FilteredView = new LinkedList<Completion>();
-            foreach (var completion in AllCompletions)
-            {
-                if (!Matches(completion, filter)) continue;
-
-                var node = FilteredView.AddLast(completion);
-                if (completion.ReplacementText == SelectedItem?.Value.ReplacementText)
-                {
-                    SelectedItem = node;
-                }
-            }
-            if (SelectedItem is null || !Matches(SelectedItem.Value, filter))
-            {
-                SelectedItem = FilteredView.First;
-            }
-
-            static bool Matches(Completion completion, string filter) =>
-                completion.ReplacementText.StartsWith(filter, StringComparison.CurrentCultureIgnoreCase);
+            this.IsOpen = false;
+            this.openedCaretIndex = int.MinValue;
+            this.SelectedItem = null;
+            this.FilteredView = new LinkedList<CompletionItem>();
         }
 
-        public async Task OnKeyDown(KeyPress key)
+        async Task IKeyPressHandler.OnKeyDown(KeyPress key)
         {
             if (!IsOpen)
             {
@@ -82,7 +75,7 @@ namespace PrettyPrompt
                 return;
             }
 
-            if (FilteredView is null || FilteredView.Count == 0 || AllCompletions == NeedsCompletions)
+            if (FilteredView is null || FilteredView.Count == 0)
             {
                 key.Handled = false;
                 return;
@@ -106,11 +99,14 @@ namespace PrettyPrompt
                     }
                     key.Handled = true;
                     return;
+                case Spacebar:
+                    codePane.Caret = InsertCompletion(codePane.Input, codePane.Caret, SelectedItem.Value, " ");
+                    key.Handled = true;
+                    return;
                 case Enter:
                 case RightArrow:
                 case Tab:
-                    var completion = SelectedItem.Value;
-                    codePane.Caret = InsertCompletion(codePane.Input, codePane.Caret, completion);
+                    codePane.Caret = InsertCompletion(codePane.Input, codePane.Caret, SelectedItem.Value);
                     key.Handled = true;
                     return;
                 case (Control, Spacebar) when FilteredView.Count == 1:
@@ -135,30 +131,7 @@ namespace PrettyPrompt
             }
         }
 
-        private int InsertCompletion(StringBuilder input, int caret, Completion completion)
-        {
-            input.Remove(completion.StartIndex, caret - completion.StartIndex);
-            input.Insert(completion.StartIndex, completion.ReplacementText);
-            Close();
-            return completion.StartIndex + completion.ReplacementText.Length;
-        }
-
-        internal void Open(int caret)
-        {
-            IsOpen = true;
-            this.OpenedIndex = caret;
-            AllCompletions = NeedsCompletions;
-        }
-
-        internal void Close()
-        {
-            this.IsOpen = false;
-            this.OpenedIndex = int.MinValue;
-            this.SelectedItem = null;
-            this.FilteredView = new LinkedList<Completion>();
-        }
-
-        public async Task OnKeyUp(KeyPress key)
+        async Task IKeyPressHandler.OnKeyUp(KeyPress key)
         {
             if (!char.IsControl(key.ConsoleKeyInfo.KeyChar)
                 && ShouldAutomaticallyOpen(codePane.Input, codePane.Caret, key))
@@ -167,14 +140,14 @@ namespace PrettyPrompt
                 Open(codePane.Caret - 1);
             }
 
-            if (codePane.Caret < OpenedIndex || (IsOpen && key.Pattern is Spacebar))
+            if (codePane.Caret < openedCaretIndex)
             {
                 Close();
             }
-            if (IsOpen)
+            else if (IsOpen)
             {
-                var textToComplete = codePane.Input.ToString(OpenedIndex, codePane.Caret - OpenedIndex);
-                if (textToComplete == string.Empty || AllCompletions == NeedsCompletions)
+                var textToComplete = codePane.Input.ToString(openedCaretIndex, codePane.Caret - openedCaretIndex);
+                if (textToComplete == string.Empty || allCompletions.Count == 0)
                 {
                     var completions = await this.complete.Invoke(codePane.Input.ToString(), codePane.Caret);
                     SetCompletions(completions);
@@ -184,6 +157,40 @@ namespace PrettyPrompt
                     FilterCompletions(textToComplete);
                 }
             }
+        }
+
+        private void SetCompletions(IReadOnlyCollection<CompletionItem> completions)
+        {
+            allCompletions = completions;
+            if(completions.Any())
+            {
+                var completion = completions.First();
+                var prefix = completion.ReplacementText.Substring(0, Math.Max(0, openedCaretIndex - completion.StartIndex));
+                openedCaretIndex = completion.StartIndex;
+                FilterCompletions(prefix);
+            }
+        }
+
+        private void FilterCompletions(string filter)
+        {
+            FilteredView = new LinkedList<CompletionItem>();
+            foreach (var completion in allCompletions)
+            {
+                if (!Matches(completion, filter)) continue;
+
+                var node = FilteredView.AddLast(completion);
+                if (completion.ReplacementText == SelectedItem?.Value.ReplacementText)
+                {
+                    SelectedItem = node;
+                }
+            }
+            if (SelectedItem is null || !Matches(SelectedItem.Value, filter))
+            {
+                SelectedItem = FilteredView.First;
+            }
+
+            static bool Matches(CompletionItem completion, string filter) =>
+                completion.ReplacementText.StartsWith(filter, StringComparison.CurrentCultureIgnoreCase);
         }
 
         private static bool ShouldAutomaticallyOpen(StringBuilder input, int caret, KeyPress key)
@@ -196,41 +203,12 @@ namespace PrettyPrompt
             return input.Length > 1 && char.IsWhiteSpace(input[caret - 2]) && !char.IsWhiteSpace(input[caret - 1]);
         }
 
-        public string RenderCompletionMenu(int codeAreaStartColumn, int cursorRow, int cursorColumn)
+        private int InsertCompletion(StringBuilder input, int caret, CompletionItem completion, string suffix = "")
         {
-            //  _  <-- cursor location
-            //  ┌──────────────┐
-            //  │ completion 1 │
-            //  │ completion 2 │
-            //  └──────────────┘
-
-            if(!this.IsOpen || codePane.Caret < this.OpenedIndex)
-                return string.Empty;
-
-            if (this.FilteredView.Count == 0)
-                return string.Empty;
-
-            int wordWidth = this.FilteredView.Max(w => w.ReplacementText.Length);
-            int boxWidth = wordWidth + 2 + 2; // two border characters, plus two spaces for padding
-            int boxHeight = this.FilteredView.Count + 2; // two border characters
-
-            int boxStart =
-                boxWidth > codePane.CodeAreaWidth ? codeAreaStartColumn // not enough room to show to completion box. We'll position all the way to the left, and truncate the box.
-                : cursorColumn + boxWidth >= codePane.CodeAreaWidth ? codePane.CodeAreaWidth - boxWidth // not enough room to show to completion box offset to the current cursor. We'll position it stuck to the right.
-                : cursorColumn; // enough room, we'll show the completion box offset at the cursor location.
-
-            return Blue
-                + MoveCursorToPosition(cursorRow + 1, boxStart)
-                + "┌" + TruncateToWindow(new string('─', wordWidth + 2), 2) + "┐" + MoveCursorDown(1) + MoveCursorToColumn(boxStart)
-                + string.Concat(this.FilteredView.Select((c,i) =>
-                    "│" + (this.SelectedItem?.Value == c ? "|" : " ") + ResetFormatting + TruncateToWindow(c.ReplacementText.PadRight(wordWidth), 4) + Blue + " │" + MoveCursorDown(1) + MoveCursorToColumn(boxStart)
-                  ))
-                + "└" + TruncateToWindow(new string('─', wordWidth + 2), 2) + "┘" + MoveCursorUp(boxHeight) + MoveCursorToColumn(boxStart)
-                + ResetFormatting;
-
-            string TruncateToWindow(string line, int offset) =>
-                line.Substring(0, Math.Min(line.Length, codePane.CodeAreaWidth - boxStart - offset));
+            input.Remove(completion.StartIndex, caret - completion.StartIndex);
+            input.Insert(completion.StartIndex, completion.ReplacementText + suffix);
+            Close();
+            return completion.StartIndex + completion.ReplacementText.Length + suffix.Length;
         }
-
     }
 }

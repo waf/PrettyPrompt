@@ -1,4 +1,5 @@
-﻿using PrettyPrompt.Highlighting;
+﻿using PrettyPrompt.Completion;
+using PrettyPrompt.Highlighting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -46,17 +47,17 @@ namespace PrettyPrompt
         };
 
         // demo completion algorithm callback
-        private static Task<IReadOnlyList<Completion>> FindCompletions(string typedInput, int caret)
+        private static Task<IReadOnlyList<CompletionItem>> FindCompletions(string typedInput, int caret)
         {
             var textUntilCaret = typedInput.Substring(0, caret);
             var previousWordStart = textUntilCaret.LastIndexOfAny(new[] { ' ', '\n', '.', '(', ')' });
             var typedWord = previousWordStart == -1
                 ? textUntilCaret.ToLower()
                 : textUntilCaret.Substring(previousWordStart + 1).ToLower();
-            return Task.FromResult<IReadOnlyList<Completion>>(
+            return Task.FromResult<IReadOnlyList<CompletionItem>>(
                 Fruits.Keys
                 .Where(fruit => fruit.StartsWith(typedWord))
-                .Select(fruit => new Completion
+                .Select(fruit => new CompletionItem
                 {
                     StartIndex = previousWordStart + 1,
                     ReplacementText = fruit

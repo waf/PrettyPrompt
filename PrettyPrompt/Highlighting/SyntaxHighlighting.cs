@@ -1,14 +1,17 @@
-﻿using System;
+﻿using PrettyPrompt.Panes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using static PrettyPrompt.AnsiEscapeCodes;
+using System.Threading.Tasks;
+using static PrettyPrompt.Consoles.AnsiEscapeCodes;
 
 namespace PrettyPrompt.Highlighting
 {
-    class SyntaxHighlighting
-    {
+    public delegate Task<IReadOnlyCollection<FormatSpan>> HighlightHandlerAsync(string text);
 
+    static class SyntaxHighlighting
+    {
         public static string ApplyHighlighting(IReadOnlyCollection<FormatSpan> highlights, WrappedLine line)
         {
             var text = new StringBuilder(line.Content);

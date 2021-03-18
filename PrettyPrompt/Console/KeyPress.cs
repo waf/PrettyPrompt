@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace PrettyPrompt
+namespace PrettyPrompt.Consoles
 {
     public class KeyPress
     {

@@ -12,10 +12,6 @@ Features:
 - Word wrapping
 - Works "in-line" on the command line; it doesn't take over the entire terminal window.
 
-Anti-features:
-
-- Nowhere close to production ready. Currently poor code quality. Hopefully I'll have some time to write unit tests, and then refactor safely.
-
 Screenshot:
 
 ![Screenshot](Images/screenshot.png)

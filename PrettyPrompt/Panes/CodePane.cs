@@ -1,25 +1,17 @@
-﻿using PrettyPrompt.Consoles;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using static PrettyPrompt.AnsiEscapeCodes;
 using static System.ConsoleModifiers;
 using static System.ConsoleKey;
+using PrettyPrompt.Consoles;
 
-namespace PrettyPrompt
+namespace PrettyPrompt.Panes
 {
     public record WrappedLine(int StartIndex, string Content);
-    public class Coordinate
-    {
-        public int Row { get; set; }
-        public int Column { get; set; }
-    }
 
     public class CodePane : IKeyPressHandler
     {
-        private readonly IConsole console;
-
         // dimensions
         public int TopCoordinate { get; private set; }
         public int CodeAreaWidth { get; set; }
@@ -31,12 +23,11 @@ namespace PrettyPrompt
 
         // word wrapping
         public IReadOnlyList<WrappedLine> WordWrappedLines { get; private set; }
-        public Coordinate Cursor { get; private set; }
+        public ConsoleCoordinate Cursor { get; private set; }
 
-        public CodePane(IConsole console)
+        public CodePane(int topCoordinate)
         {
-            this.console = console;
-            this.TopCoordinate = console.CursorTop + 1; // ansi escape coordinates are 1-indexed.
+            this.TopCoordinate = topCoordinate;
             this.Caret = 0;
             this.Input = new StringBuilder();
         }
@@ -48,21 +39,17 @@ namespace PrettyPrompt
             switch (key.Pattern)
             {
                 case (Control, C):
-                    console.Write("\n" + MoveCursorToColumn(1) + ClearToEndOfScreen);
                     Result = new PromptResult(false, string.Empty);
                     break;
                 case (Control, L):
-                    console.Clear(); // for some reason, using escape codes (ClearEntireScreen and MoveCursorToPosition) leaves
-                                     // CursorTop in an old state. Using Console.Clear() works around this.
-                    TopCoordinate = 1;
+                    TopCoordinate = 0; // actually clearing the screen is handled in the renderer.
                     break;
                 case (Shift, Enter):
                     Input.Insert(Caret, '\n');
                     Caret++;
                     break;
                 case Enter:
-                    console.Write("\n" + MoveCursorToColumn(1) + ClearToEndOfScreen);
-                    Result = new PromptResult(true, Input.ToString().EnvironmentNewlines());
+                    Result = new PromptResult(true,   Input.ToString().EnvironmentNewlines());
                     break;
                 case Home:
                     Caret = 0;
@@ -75,6 +62,12 @@ namespace PrettyPrompt
                     break;
                 case RightArrow:
                     Caret = Math.Min(Input.Length, Caret + 1);
+                    break;
+                case (Control, LeftArrow):
+                    Caret = CalculatePreviousWordBoundary(Input, Caret, -1);
+                    break;
+                case (Control, RightArrow):
+                    Caret = CalculatePreviousWordBoundary(Input, Caret, +1);
                     break;
                 case Backspace:
                     if (Caret >= 1)
@@ -132,7 +125,7 @@ namespace PrettyPrompt
 
         public void WordWrap()
         {
-            Cursor = new Coordinate();
+            Cursor = new ConsoleCoordinate();
             if(Input.Length == 0)
             {
                 Cursor.Column = Caret;
@@ -177,5 +170,23 @@ namespace PrettyPrompt
 
             WordWrappedLines = lines;
         }
+
+        private static int CalculatePreviousWordBoundary(StringBuilder input, int caret, int direction)
+        {
+            int bound = direction > 0 ? input.Length : 0;
+
+            if (input.Length <= 2 || caret == bound)
+                return bound;
+
+            bool initialWordCharacter = char.IsLetterOrDigit(input[caret + direction * 2]);
+            for (var i = caret + direction * 2; bound == 0 ? i > 0 : i < bound; i += direction)
+            {
+                if (char.IsLetterOrDigit(input[i]) != initialWordCharacter)
+                    return i - direction;
+            }
+
+            return bound;
+        }
+
     }
 }

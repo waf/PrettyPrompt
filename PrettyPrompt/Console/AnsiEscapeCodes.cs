@@ -1,9 +1,7 @@
 ﻿using PrettyPrompt.Highlighting;
-using System;
 using System.Linq;
-using System.Runtime.InteropServices;
 
-namespace PrettyPrompt
+namespace PrettyPrompt.Consoles
 {
     public static class AnsiEscapeCodes
     {
@@ -21,6 +19,7 @@ namespace PrettyPrompt
         /// row and column are 1-indexed
         /// </summary>
         public static string MoveCursorToPosition(int row, int column) => $"{Escape}[{row};{column}H";
+        public static string MoveCursorToPosition(ConsoleCoordinate coord) => MoveCursorToPosition(coord.Row, coord.Column);
 
         public static string MoveCursorUp(int count) => count == 0 ? "" : $"{Escape}[{count}A";
         public static string MoveCursorDown(int count) => count == 0 ? "" : $"{Escape}[{count}B";
