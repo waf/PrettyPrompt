@@ -100,9 +100,10 @@ namespace PrettyPrompt.Tests
         private static char MapSpecialKey(ConsoleKey consoleKey) =>
             consoleKey switch
             {
-                ConsoleKey.Enter => '\0',
+                ConsoleKey.Backspace => '\b',
+                ConsoleKey.Tab => '\t',
                 ConsoleKey.Spacebar => ' ',
-                _ => throw new ArgumentException("Unknown key: " + consoleKey)
+                _ => '\0' // home, enter, arrow keys, etc
             };
 
         private static ConsoleKeyInfo ToConsoleKeyInfo(ConsoleModifiers modifiersPressed, ConsoleKey consoleKey, char character) =>

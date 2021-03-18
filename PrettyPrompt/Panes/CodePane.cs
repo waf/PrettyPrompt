@@ -41,8 +41,10 @@ namespace PrettyPrompt
             this.Input = new StringBuilder();
         }
 
-        public Task<bool> OnKeyDown(KeyPress key)
+        public Task OnKeyDown(KeyPress key)
         {
+            if (key.Handled) return Task.CompletedTask;
+
             switch (key.Pattern)
             {
                 case (Control, C):
@@ -99,11 +101,14 @@ namespace PrettyPrompt
                     }
                     break;
             }
-            return Task.FromResult(true);
+
+            return Task.CompletedTask;
         }
 
-        public Task<bool> OnKeyUp(KeyPress key)
+        public Task OnKeyUp(KeyPress key)
         {
+            if (key.Handled) return Task.CompletedTask;
+
             switch (key.Pattern)
             {
                 case UpArrow when Cursor.Row > 0:
@@ -111,15 +116,18 @@ namespace PrettyPrompt
                     var aboveLine = WordWrappedLines[Cursor.Row];
                     Cursor.Column = Math.Min(aboveLine.Content.TrimEnd().Length, Cursor.Column);
                     Caret = aboveLine.StartIndex + Cursor.Column;
+                    key.Handled = true;
                     break;
                 case DownArrow when Cursor.Row < WordWrappedLines.Count - 1:
                     Cursor.Row++;
                     var belowLine = WordWrappedLines[Cursor.Row];
                     Cursor.Column = Math.Min(belowLine.Content.TrimEnd().Length, Cursor.Column);
                     Caret = belowLine.StartIndex + Cursor.Column;
+                    key.Handled = true;
                     break;
             }
-            return Task.FromResult(true);
+
+            return Task.CompletedTask;
         }
 
         public void WordWrap()

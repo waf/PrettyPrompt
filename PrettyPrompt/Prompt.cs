@@ -46,14 +46,12 @@ namespace PrettyPrompt
                 codePane.CodeAreaWidth = console.BufferWidth - prompt.Length;
 
                 foreach (var keyHandler in new IKeyPressHandler[] { completionPane, codePane })
-                    if (!await keyHandler.OnKeyDown(key))
-                        break;
+                    await keyHandler.OnKeyDown(key);
 
                 codePane.WordWrap();
 
                 foreach (var keyHandler in new IKeyPressHandler[] { completionPane, codePane })
-                    if (!await keyHandler.OnKeyUp(key))
-                        break;
+                    await keyHandler.OnKeyUp(key);
 
                 if (codePane.Result is not null)
                 {

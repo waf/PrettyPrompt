@@ -45,6 +45,7 @@ namespace PrettyPrompt
             { "strawberry", AnsiColor.BrightRed },
         };
 
+        // demo completion algorithm callback
         private static Task<IReadOnlyList<Completion>> FindCompletions(string typedInput, int caret)
         {
             var textUntilCaret = typedInput.Substring(0, caret);
@@ -64,6 +65,7 @@ namespace PrettyPrompt
             );
         }
 
+        // demo syntax highlighting callback
         private static Task<IReadOnlyCollection<FormatSpan>> Highlight(string text)
         {
             var spans = new List<FormatSpan>();

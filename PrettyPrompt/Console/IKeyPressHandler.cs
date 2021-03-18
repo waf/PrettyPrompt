@@ -4,7 +4,7 @@ namespace PrettyPrompt
 {
     internal interface IKeyPressHandler
     {
-        Task<bool> OnKeyDown(KeyPress key);
-        Task<bool> OnKeyUp(KeyPress key);
+        Task OnKeyDown(KeyPress key);
+        Task OnKeyUp(KeyPress key);
     }
 }

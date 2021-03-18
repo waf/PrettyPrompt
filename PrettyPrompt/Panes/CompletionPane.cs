@@ -40,7 +40,7 @@ namespace PrettyPrompt
             if(completions.Any())
             {
                 var completion = completions.First();
-                var prefix = completion.ReplacementText.Substring(0, OpenedIndex - completion.StartIndex);
+                var prefix = completion.ReplacementText.Substring(0, Math.Max(0, OpenedIndex - completion.StartIndex));
                 OpenedIndex = completion.StartIndex;
                 FilterCompletions(prefix);
             }
@@ -68,19 +68,25 @@ namespace PrettyPrompt
                 completion.ReplacementText.StartsWith(filter, StringComparison.CurrentCultureIgnoreCase);
         }
 
-        public async Task<bool> OnKeyDown(KeyPress key)
+        public async Task OnKeyDown(KeyPress key)
         {
             if (!IsOpen)
             {
                 if(key.Pattern is (Control, Spacebar))
                 {
                     Open(codePane.Caret);
-                    return false;
+                    key.Handled = true;
+                    return;
                 }
-                return true;
+                key.Handled = false;
+                return;
             }
 
-            if (FilteredView is null || FilteredView.Count == 0 || AllCompletions == NeedsCompletions) return true;
+            if (FilteredView is null || FilteredView.Count == 0 || AllCompletions == NeedsCompletions)
+            {
+                key.Handled = false;
+                return;
+            }
 
             switch(key.Pattern)
             {
@@ -90,34 +96,42 @@ namespace PrettyPrompt
                     {
                         SelectedItem = next;
                     }
-                    return false;
+                    key.Handled = true;
+                    return;
                 case UpArrow:
                     var prev = SelectedItem.Previous;
                     if(prev is not null)
                     {
                         SelectedItem = prev;
                     }
-                    return false;
+                    key.Handled = true;
+                    return;
                 case Enter:
                 case RightArrow:
                 case Tab:
                     var completion = SelectedItem.Value;
                     codePane.Caret = InsertCompletion(codePane.Input, codePane.Caret, completion);
-                    return false;
+                    key.Handled = true;
+                    return;
                 case (Control, Spacebar) when FilteredView.Count == 1:
                     codePane.Caret = InsertCompletion(codePane.Input, codePane.Caret, FilteredView.First.Value);
-                    return false;
+                    key.Handled = true;
+                    return;
                 case (Control, Spacebar):
-                    return false;
+                    key.Handled = true;
+                    return;
                 case LeftArrow:
                     Close();
-                    return true;
+                    key.Handled = false;
+                    return;
                 case Escape:
                     Close();
-                    return false;
+                    key.Handled = true;
+                    return;
                 default:
                     this.SelectedItem = FilteredView.First;
-                    return true;
+                    key.Handled = false;
+                    return;
             }
         }
 
@@ -144,7 +158,7 @@ namespace PrettyPrompt
             this.FilteredView = new LinkedList<Completion>();
         }
 
-        public async Task<bool> OnKeyUp(KeyPress key)
+        public async Task OnKeyUp(KeyPress key)
         {
             if (!char.IsControl(key.ConsoleKeyInfo.KeyChar)
                 && ShouldAutomaticallyOpen(codePane.Input, codePane.Caret, key))
@@ -153,7 +167,7 @@ namespace PrettyPrompt
                 Open(codePane.Caret - 1);
             }
 
-            if (codePane.Caret < OpenedIndex)
+            if (codePane.Caret < OpenedIndex || (IsOpen && key.Pattern is Spacebar))
             {
                 Close();
             }
@@ -170,7 +184,6 @@ namespace PrettyPrompt
                     FilterCompletions(textToComplete);
                 }
             }
-            return true;
         }
 
         private static bool ShouldAutomaticallyOpen(StringBuilder input, int caret, KeyPress key)

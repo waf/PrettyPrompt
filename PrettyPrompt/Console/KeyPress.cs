@@ -14,5 +14,7 @@ namespace PrettyPrompt
                 ? consoleKeyInfo.Key
                 : (consoleKeyInfo.Modifiers, consoleKeyInfo.Key);
         }
+
+        public bool Handled { get; internal set; }
     }
 }
