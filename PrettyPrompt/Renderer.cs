@@ -1,13 +1,13 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using PrettyPrompt.Completion;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Highlighting;
-using PrettyPrompt.Completion;
 using PrettyPrompt.Panes;
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using static PrettyPrompt.Consoles.AnsiEscapeCodes;
-using static System.ConsoleModifiers;
 using static System.ConsoleKey;
+using static System.ConsoleModifiers;
 
 namespace PrettyPrompt
 {
@@ -77,7 +77,7 @@ namespace PrettyPrompt
         private static string DrawPrompt(string prompt, int n) =>
             n == 0 ? prompt : new string(' ', prompt.Length);
 
-        private string RenderCompletionMenuAtCursor(CompletionPane completionPane, ConsoleCoordinate cursor, int codeAreaStartColumn, int codeAreaWidth)
+        private static string RenderCompletionMenuAtCursor(CompletionPane completionPane, ConsoleCoordinate cursor, int codeAreaStartColumn, int codeAreaWidth)
         {
             //  _  <-- cursor location
             //  ┌──────────────┐

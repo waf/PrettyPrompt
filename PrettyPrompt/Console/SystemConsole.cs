@@ -49,7 +49,7 @@ namespace PrettyPrompt.Consoles
             if (!SetConsoleMode(iStdOut, outConsoleMode))
             {
                 throw new InvalidOperationException($"failed to set output console mode, error code: {GetLastError()}");
-            }           
+            }
         }
 
         [DllImport("kernel32.dll")] private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);

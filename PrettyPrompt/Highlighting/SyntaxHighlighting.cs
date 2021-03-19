@@ -21,11 +21,11 @@ namespace PrettyPrompt.Highlighting
                 var lineEnd = line.StartIndex + text.Length;
                 var formattingStart = formatting.Start;
                 var formattingEnd = formatting.Start + formatting.Length;
-                if(lineStart < formattingEnd && formattingEnd <= lineEnd)
+                if (lineStart < formattingEnd && formattingEnd <= lineEnd)
                 {
                     text.Insert(formattingEnd - lineStart, ResetFormatting);
                 }
-                if(lineStart <= formattingStart && formattingStart <= lineEnd)
+                if (lineStart <= formattingStart && formattingStart <= lineEnd)
                 {
                     text.Insert(formattingStart - lineStart, ToAnsiEscapeSequence(formatting.Formatting));
                 }

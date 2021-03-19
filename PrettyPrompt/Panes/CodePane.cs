@@ -1,10 +1,10 @@
-﻿using System;
+﻿using PrettyPrompt.Consoles;
+using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
-using static System.ConsoleModifiers;
 using static System.ConsoleKey;
-using PrettyPrompt.Consoles;
+using static System.ConsoleModifiers;
 
 namespace PrettyPrompt.Panes
 {
@@ -49,7 +49,7 @@ namespace PrettyPrompt.Panes
                     Caret++;
                     break;
                 case Enter:
-                    Result = new PromptResult(true,   Input.ToString().EnvironmentNewlines());
+                    Result = new PromptResult(true, Input.ToString().EnvironmentNewlines());
                     break;
                 case Home:
                     Caret = 0;
@@ -126,7 +126,7 @@ namespace PrettyPrompt.Panes
         public void WordWrap()
         {
             Cursor = new ConsoleCoordinate();
-            if(Input.Length == 0)
+            if (Input.Length == 0)
             {
                 Cursor.Column = Caret;
                 WordWrappedLines = new[] { new WrappedLine(0, string.Empty) };
@@ -137,9 +137,9 @@ namespace PrettyPrompt.Panes
             int currentLineLength = 0;
             var line = new StringBuilder(CodeAreaWidth);
             int textIndex = 0;
-            foreach(ReadOnlyMemory<char> chunk in Input.GetChunks())
+            foreach (ReadOnlyMemory<char> chunk in Input.GetChunks())
             {
-                foreach(char character in chunk.Span)
+                foreach (char character in chunk.Span)
                 {
                     line.Append(character);
                     bool isCursorPastCharacter = Caret > textIndex;
@@ -151,9 +151,9 @@ namespace PrettyPrompt.Panes
                     {
                         Cursor.Column++;
                     }
-                    if(character == '\n' || currentLineLength == CodeAreaWidth)
+                    if (character == '\n' || currentLineLength == CodeAreaWidth)
                     {
-                        if(isCursorPastCharacter)
+                        if (isCursorPastCharacter)
                         {
                             Cursor.Row++;
                             Cursor.Column = 0;
@@ -165,7 +165,7 @@ namespace PrettyPrompt.Panes
                 }
             }
 
-            if(currentLineLength > 0)
+            if (currentLineLength > 0)
                 lines.Add(new WrappedLine(textIndex - currentLineLength, line.ToString()));
 
             WordWrappedLines = lines;

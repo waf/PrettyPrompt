@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace PrettyPrompt
 {
-    class Program
+    public static class Program
     {
         static async Task Main(string[] args)
         {
@@ -18,7 +18,7 @@ namespace PrettyPrompt
             while (true)
             {
                 var response = await prompt.ReadLine("> ");
-                if(response.Success)
+                if (response.Success)
                 {
                     if (response.Text == "exit") break;
 
@@ -75,7 +75,7 @@ namespace PrettyPrompt
             {
                 foreach (var fruit in Fruits)
                 {
-                    if(text.Length >= i + fruit.Key.Length && text.Substring(i, fruit.Key.Length).ToLower() == fruit.Key)
+                    if (text.Length >= i + fruit.Key.Length && text.Substring(i, fruit.Key.Length).ToLower() == fruit.Key)
                     {
                         spans.Add(new FormatSpan(i, fruit.Key.Length, new ConsoleFormat(foreground: fruit.Value)));
                         i += fruit.Key.Length;

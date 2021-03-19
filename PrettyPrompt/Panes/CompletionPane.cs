@@ -1,12 +1,12 @@
-﻿using System;
+﻿using PrettyPrompt.Completion;
+using PrettyPrompt.Consoles;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using PrettyPrompt.Completion;
-using PrettyPrompt.Consoles;
-using static System.ConsoleModifiers;
 using static System.ConsoleKey;
+using static System.ConsoleModifiers;
 
 namespace PrettyPrompt.Panes
 {
@@ -65,7 +65,7 @@ namespace PrettyPrompt.Panes
         {
             if (!IsOpen)
             {
-                if(key.Pattern is (Control, Spacebar))
+                if (key.Pattern is (Control, Spacebar))
                 {
                     Open(codePane.Caret);
                     key.Handled = true;
@@ -81,11 +81,11 @@ namespace PrettyPrompt.Panes
                 return;
             }
 
-            switch(key.Pattern)
+            switch (key.Pattern)
             {
                 case DownArrow:
                     var next = SelectedItem.Next;
-                    if(next is not null)
+                    if (next is not null)
                     {
                         SelectedItem = next;
                     }
@@ -93,7 +93,7 @@ namespace PrettyPrompt.Panes
                     return;
                 case UpArrow:
                     var prev = SelectedItem.Previous;
-                    if(prev is not null)
+                    if (prev is not null)
                     {
                         SelectedItem = prev;
                     }
@@ -162,7 +162,7 @@ namespace PrettyPrompt.Panes
         private void SetCompletions(IReadOnlyCollection<CompletionItem> completions)
         {
             allCompletions = completions;
-            if(completions.Any())
+            if (completions.Any())
             {
                 var completion = completions.First();
                 var prefix = completion.ReplacementText.Substring(0, Math.Max(0, openedCaretIndex - completion.StartIndex));

@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using PrettyPrompt.Completion;
+﻿using PrettyPrompt.Completion;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Highlighting;
 using PrettyPrompt.History;
 using PrettyPrompt.Panes;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace PrettyPrompt
 {
@@ -38,9 +38,10 @@ namespace PrettyPrompt
 
             // code pane contains the code the user is typing. It does not include the prompt (i.e. "> ")
             var codePane = new CodePane(topCoordinate: console.CursorTop);
-            history.Track(codePane);
             // completion pane is the pop-up window that shows potential autocompletions.
             var completionPane = new CompletionPane(codePane, completionCallback);
+
+            history.Track(codePane);
 
             while (true)
             {

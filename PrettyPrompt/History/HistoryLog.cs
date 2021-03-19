@@ -1,21 +1,30 @@
 ﻿using PrettyPrompt.Consoles;
+using PrettyPrompt.Panes;
 using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
 using static System.ConsoleKey;
-using PrettyPrompt.Panes;
-using System.Text;
 
 namespace PrettyPrompt.History
 {
     class HistoryLog : IKeyPressHandler
     {
+        /// <summary>
+        /// The actual history, stored as a linked list so we can efficiently go next/prev
+        /// </summary>
         private readonly LinkedList<CodePane> history = new LinkedList<CodePane>();
-        private LinkedListNode<CodePane> current;
-        private StringBuilder unsubmittedBuffer;
 
-        public HistoryLog()
-        {
-        }
+        /// <summary>
+        /// The currently active history item. Usually, it's the last element of <see cref="history"/>, unless
+        /// the user is navigating next/prev in history.
+        /// </summary>
+        private LinkedListNode<CodePane> current;
+
+        /// <summary>
+        /// In the case the user leaves some text on their prompt, we capture it so we can restore it
+        /// when the user stops navigating through history (e.g. by pressing Down Arrow until they're back to their current prompt).
+        /// </summary>
+        private StringBuilder unsubmittedBuffer;
 
         public Task OnKeyDown(KeyPress key) => Task.CompletedTask;
 
@@ -26,7 +35,7 @@ namespace PrettyPrompt.History
             switch (key.Pattern)
             {
                 case UpArrow when current.Previous is not null:
-                    if(current == history.Last)
+                    if (current == history.Last)
                     {
                         unsubmittedBuffer = new StringBuilder(history.Last.Value?.Input.ToString());
                     }
