@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using PrettyPrompt.Completion;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Highlighting;
+using PrettyPrompt.History;
 using PrettyPrompt.Panes;
 
 namespace PrettyPrompt
@@ -13,8 +14,9 @@ namespace PrettyPrompt
     public class Prompt
     {
         private readonly IConsole console;
-        private readonly CompletionHandlerAsync complete;
-        private readonly HighlightHandlerAsync highlight;
+        private readonly HistoryLog history;
+        private readonly CompletionHandlerAsync completionCallback;
+        private readonly HighlightHandlerAsync highlightCallback;
 
         public Prompt(
             CompletionHandlerAsync completionHandler = null,
@@ -24,8 +26,9 @@ namespace PrettyPrompt
             this.console = console ?? new SystemConsole();
             this.console.InitVirtualTerminalProcessing();
 
-            this.complete = completionHandler ?? ((_, _) => Task.FromResult<IReadOnlyList<CompletionItem>>(Array.Empty<CompletionItem>()));
-            this.highlight = highlightHandler ?? ((_) => Task.FromResult<IReadOnlyCollection<FormatSpan>>(Array.Empty<FormatSpan>()));
+            this.history = new HistoryLog();
+            this.completionCallback = completionHandler ?? ((_, _) => Task.FromResult<IReadOnlyList<CompletionItem>>(Array.Empty<CompletionItem>()));
+            this.highlightCallback = highlightHandler ?? ((_) => Task.FromResult<IReadOnlyCollection<FormatSpan>>(Array.Empty<FormatSpan>()));
         }
 
         public async Task<PromptResult> ReadLine(string prompt)
@@ -35,8 +38,9 @@ namespace PrettyPrompt
 
             // code pane contains the code the user is typing. It does not include the prompt (i.e. "> ")
             var codePane = new CodePane(topCoordinate: console.CursorTop);
+            history.Track(codePane);
             // completion pane is the pop-up window that shows potential autocompletions.
-            var completionPane = new CompletionPane(codePane, complete);
+            var completionPane = new CompletionPane(codePane, completionCallback);
 
             while (true)
             {
@@ -45,15 +49,15 @@ namespace PrettyPrompt
                 // grab the code area width every key press, so we rerender appropriately when the console is resized.
                 codePane.CodeAreaWidth = console.BufferWidth - prompt.Length;
 
-                foreach (var panes in new IKeyPressHandler[] { completionPane, codePane })
+                foreach (var panes in new IKeyPressHandler[] { completionPane, codePane, history })
                     await panes.OnKeyDown(key);
 
                 codePane.WordWrap();
 
-                foreach (var panes in new IKeyPressHandler[] { completionPane, codePane })
+                foreach (var panes in new IKeyPressHandler[] { completionPane, codePane, history })
                     await panes.OnKeyUp(key);
 
-                var highlights = await highlight.Invoke(codePane.Input.ToString());
+                var highlights = await highlightCallback.Invoke(codePane.Input.ToString());
                 renderer.RenderOutput(codePane, completionPane, highlights, key);
 
                 if (codePane.Result is not null)

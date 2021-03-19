@@ -13,7 +13,7 @@ namespace PrettyPrompt.Tests
         public async Task ReadLine_TypeSimpleString_GetSimpleString()
         {
             var console = ConsoleStub.NewConsole();
-            console.Input($"Hello World{Enter}");
+            console.StubInput($"Hello World{Enter}");
 
             var prompt = new Prompt(console: console);
             var result = await prompt.ReadLine("> ");
@@ -26,7 +26,7 @@ namespace PrettyPrompt.Tests
         public async Task ReadLine_WhitespacePrompt_ReturnsWhitespace()
         {
             var console = ConsoleStub.NewConsole();
-            console.Input($"  {Enter}");
+            console.StubInput($"  {Enter}");
 
             // add completion handler, as it has caused problem when completing all whitespace prompts
             var prompt = new Prompt(CompletionTestData.CompletionHandlerAsync, console: console);
@@ -41,7 +41,7 @@ namespace PrettyPrompt.Tests
         public async Task ReadLine_Abort_NoResult()
         {
             var console = ConsoleStub.NewConsole();
-            console.Input($"Hello World{Control}c");
+            console.StubInput($"Hello World{Control}c");
 
             var prompt = new Prompt(console: console);
             var result = await prompt.ReadLine("> ");
@@ -55,7 +55,7 @@ namespace PrettyPrompt.Tests
         {
             // window width of 5, with a 2 char prompt.
             var console = ConsoleStub.NewConsole(width: 5);
-            console.Input($"111222333{Enter}");
+            console.StubInput($"111222333{Enter}");
 
             var prompt = new Prompt(console: console);
             var result = await prompt.ReadLine("> ");
@@ -79,7 +79,7 @@ namespace PrettyPrompt.Tests
         public async Task ReadLine_HorizontalNavigationKeys()
         {
             var console = ConsoleStub.NewConsole();
-            console.Input(
+            console.StubInput(
                 $"pretty{Backspace}{Backspace}{Home}{LeftArrow}{RightArrow}{RightArrow}{Delete}omp{RightArrow}!{RightArrow}{Enter}"
             );
 
@@ -93,7 +93,7 @@ namespace PrettyPrompt.Tests
         public async Task ReadLine_VerticalNavigationKeys()
         {
             var console = ConsoleStub.NewConsole();
-            console.Input(
+            console.StubInput(
                 $"pretty{Shift}{Enter}",
                 $"unit-tested{Shift}{Enter}",
                 $"prompt",

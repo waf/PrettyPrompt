@@ -7,6 +7,7 @@ Features:
 
 - Syntax highlighting support via ANSI escape sequences.
 - Autocompletion ("intellisense") menu
+- History
 - Familiar keybindings (Home, End, arrow keys, Ctrl-L to clear screen, Ctrl-C to cancel current line)
 - Soft newlines (shift-enter)
 - Word wrapping

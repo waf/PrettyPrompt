@@ -36,7 +36,7 @@ namespace PrettyPrompt.Tests
         /// <see cref="ConsoleModifiers"/> or <see cref="ConsoleKey"/>).
         /// </summary>
         /// <example>$"{Control}LHello{Enter}" is turned into Ctrl-L, H, e, l, l, o, Enter key</example>
-        public static ConfiguredCall Input(this IConsole consoleStub, params FormattableString[] inputs)
+        public static ConfiguredCall StubInput(this IConsole consoleStub, params FormattableString[] inputs)
         {
             List<ConsoleKeyInfo> keys = inputs
                 .SelectMany(line => MapToConsoleKeyPresses(line))

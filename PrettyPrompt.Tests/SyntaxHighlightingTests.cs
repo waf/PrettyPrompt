@@ -11,7 +11,7 @@ namespace PrettyPrompt.Tests
         public async Task ReadLine_SyntaxHighlight()
         {
             var console = ConsoleStub.NewConsole();
-            console.Input($"red green nocolor blue{Enter}");
+            console.StubInput($"red green nocolor blue{Enter}");
 
             var prompt = new Prompt(highlightHandler: SyntaxHighlighterTestData.HighlightHandlerAsync, console: console);
 
