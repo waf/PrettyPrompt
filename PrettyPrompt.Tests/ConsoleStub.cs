@@ -1,10 +1,10 @@
-﻿using System;
-using System.Text.RegularExpressions;
-using System.Linq;
-using System.Collections.Generic;
-using PrettyPrompt.Consoles;
-using NSubstitute;
+﻿using NSubstitute;
 using NSubstitute.Core;
+using PrettyPrompt.Consoles;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using static System.ConsoleModifiers;
 
 namespace PrettyPrompt.Tests
@@ -79,9 +79,30 @@ namespace PrettyPrompt.Tests
 
         private static ConsoleModifiers AppendLiteralKey(List<ConsoleKeyInfo> list, char keyChar, ConsoleModifiers modifiersPressed)
         {
-            list.Add(ToConsoleKeyInfo(modifiersPressed, (ConsoleKey)char.ToUpper(keyChar), keyChar));
+            list.Add(ToConsoleKeyInfo(modifiersPressed, CharToConsoleKey(keyChar), keyChar));
             return 0;
         }
+
+        private static ConsoleKey CharToConsoleKey(char keyChar) =>
+            keyChar switch
+            {
+                '.' => ConsoleKey.OemPeriod,
+                ',' => ConsoleKey.OemComma,
+                '-' => ConsoleKey.OemMinus,
+                '+' => ConsoleKey.OemPlus,
+                '/' => ConsoleKey.Divide,
+                '!' => ConsoleKey.D1,
+                '@' => ConsoleKey.D2,
+                '#' => ConsoleKey.D3,
+                '$' => ConsoleKey.D4,
+                '%' => ConsoleKey.D5,
+                '^' => ConsoleKey.D6,
+                '&' => ConsoleKey.D7,
+                '*' => ConsoleKey.D8,
+                '(' => ConsoleKey.D9,
+                ')' => ConsoleKey.D0,
+                _ => (ConsoleKey)char.ToUpper(keyChar)
+            };
 
         private static ConsoleModifiers AppendFormatStringArgument(List<ConsoleKeyInfo> list, Match key, ConsoleModifiers modifiersPressed, object formatArgument)
         {

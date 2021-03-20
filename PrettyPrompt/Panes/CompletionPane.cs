@@ -197,10 +197,16 @@ namespace PrettyPrompt.Panes
         {
             if (key.ConsoleKeyInfo.KeyChar is '.' or '(') return true; // typical "intellisense behavior", opens for new methods and parameters
 
-            if (input.Length == 1 && !char.IsWhiteSpace(input[0])) return true; // open on brand new typing in a prompt
+            if (caret == 1 && !char.IsWhiteSpace(input[0]) // 1 word character typed in brand new prompt
+                && (input.Length == 1 || !char.IsLetterOrDigit(input[1]))) // if there's more than one character on the prompt, but we're typing a new word at the beginning (e.g. "a| bar")
+            {
+                return true;
+            }
 
             // open when we're starting a new "word" in the prompt.
-            return input.Length > 1 && char.IsWhiteSpace(input[caret - 2]) && !char.IsWhiteSpace(input[caret - 1]);
+            return caret - 2 >= 0
+                && char.IsWhiteSpace(input[caret - 2])
+                && !char.IsWhiteSpace(input[caret - 1]);
         }
 
         private int InsertCompletion(StringBuilder input, int caret, CompletionItem completion, string suffix = "")

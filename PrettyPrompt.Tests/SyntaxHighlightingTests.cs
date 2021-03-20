@@ -1,7 +1,7 @@
 ﻿using System.Threading.Tasks;
 using Xunit;
-using static System.ConsoleKey;
 using static PrettyPrompt.Consoles.AnsiEscapeCodes;
+using static System.ConsoleKey;
 
 namespace PrettyPrompt.Tests
 {

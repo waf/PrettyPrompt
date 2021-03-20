@@ -1,4 +1,5 @@
 ﻿using PrettyPrompt.Completion;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,7 +22,7 @@ namespace PrettyPrompt.Tests
                 : textUntilCaret.Substring(previousWordStart + 1);
             return Task.FromResult<IReadOnlyList<CompletionItem>>(
                 completions
-                    .Where(c => c.StartsWith(typedWord))
+                    .Where(c => c.StartsWith(typedWord, StringComparison.CurrentCultureIgnoreCase))
                     .Select(c => new CompletionItem
                     {
                         StartIndex = previousWordStart + 1,

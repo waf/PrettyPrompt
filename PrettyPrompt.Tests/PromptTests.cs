@@ -1,9 +1,9 @@
-using Xunit;
 using System.Threading.Tasks;
+using Xunit;
+using static PrettyPrompt.Consoles.AnsiEscapeCodes;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
 using static System.Environment;
-using static PrettyPrompt.Consoles.AnsiEscapeCodes;
 
 namespace PrettyPrompt.Tests
 {
@@ -68,8 +68,8 @@ namespace PrettyPrompt.Tests
             Assert.Equal(
                 expected: MoveCursorToPosition(1, 1) + ClearToEndOfScreen +
                           "> 111" +
-                          "  222" + 
-                          "  333" + 
+                          "  222" +
+                          "  333" +
                           MoveCursorToPosition(row: 4, column: 3),
                 actual: finalOutput
             );
@@ -106,6 +106,24 @@ namespace PrettyPrompt.Tests
             var result = await prompt.ReadLine("> ");
 
             Assert.Equal($"pretty well{NewLine}unit-tested?{NewLine}prompt!", result.Text);
+        }
+
+        [Fact]
+        public async Task ReadLine_NextWordPrevWordKeys()
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput(
+                $"aaaa bbbb 5555{Shift}{Enter}",
+                $"dddd x5x5 foo.bar{Shift}{Enter}",
+                $"{UpArrow}{Control}{RightArrow}{Control}{RightArrow}{Control}{RightArrow}{LeftArrow}bershop",
+                $"{Enter}"
+            );
+
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLine("> ");
+
+            Assert.Equal($"aaaa bbbb 5555{NewLine}dddd x5x5 foo.barbershop{NewLine}", result.Text);
+
         }
     }
 }

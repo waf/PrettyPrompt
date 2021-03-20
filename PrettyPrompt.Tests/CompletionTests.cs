@@ -94,6 +94,20 @@ namespace PrettyPrompt.Tests
         }
 
         [Fact]
+        public async Task ReadLine_OpenWindowAtBeginningOfPrompt_Opens()
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput($"a{LeftArrow} {LeftArrow}a{Enter}{Enter}");
+
+            var prompt = new Prompt(CompletionTestData.CompletionHandlerAsync, console: console);
+
+            var result = await prompt.ReadLine("> ");
+
+            Assert.True(result.Success);
+            Assert.Equal($"Aardvark a", result.Text);
+        }
+
+        [Fact]
         public async Task ReadLine_CompletionWithNoMatches_DoesNotAutoComplete()
         {
             var console = ConsoleStub.NewConsole();

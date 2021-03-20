@@ -64,10 +64,10 @@ namespace PrettyPrompt.Panes
                     Caret = Math.Min(Input.Length, Caret + 1);
                     break;
                 case (Control, LeftArrow):
-                    Caret = CalculatePreviousWordBoundary(Input, Caret, -1);
+                    Caret = CalculateWordBoundaryIndex(Input, Caret, -1);
                     break;
                 case (Control, RightArrow):
-                    Caret = CalculatePreviousWordBoundary(Input, Caret, +1);
+                    Caret = CalculateWordBoundaryIndex(Input, Caret, +1);
                     break;
                 case Backspace:
                     if (Caret >= 1)
@@ -171,19 +171,22 @@ namespace PrettyPrompt.Panes
             WordWrappedLines = lines;
         }
 
-        private static int CalculatePreviousWordBoundary(StringBuilder input, int caret, int direction)
+        private static int CalculateWordBoundaryIndex(StringBuilder input, int caret, int direction)
         {
             int bound = direction > 0 ? input.Length : 0;
 
-            if (input.Length <= 2 || caret == bound)
+            if (Math.Abs(caret - bound) <= 2)
                 return bound;
 
-            bool initialWordCharacter = char.IsLetterOrDigit(input[caret + direction * 2]);
-            for (var i = caret + direction * 2; bound == 0 ? i > 0 : i < bound; i += direction)
+            for (var i = caret + direction; bound == 0 ? i > 0 : i < bound - 1; i += direction)
             {
-                if (char.IsLetterOrDigit(input[i]) != initialWordCharacter)
-                    return i - direction;
+                int c1Index = i + (direction > 0 ? 0 : -1);
+                int c2Index = i + (direction > 0 ? 1 : 0);
+                if (IsWordStart(input[c1Index], input[c2Index]))
+                    return c2Index;
             }
+
+            bool IsWordStart(char c1, char c2) => char.IsWhiteSpace(c1) && !char.IsWhiteSpace(c2);
 
             return bound;
         }

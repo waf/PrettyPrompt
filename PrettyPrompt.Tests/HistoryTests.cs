@@ -49,7 +49,7 @@ namespace PrettyPrompt.Tests
             console.StubInput($"Hello World{Enter}");
             await prompt.ReadLine("> ");
 
-            console.StubInput($"this prompt is my persistent storage{UpArrow}{DownArrow}");
+            console.StubInput($"this prompt is my persistent storage{UpArrow}{DownArrow}{Enter}");
             var result = await prompt.ReadLine("> ");
 
             Assert.Equal("this prompt is my persistent storage", result.Text);
@@ -66,7 +66,7 @@ namespace PrettyPrompt.Tests
 
             console.StubInput($"And a two{Enter}");
             await prompt.ReadLine("> ");
-            
+
             console.StubInput($"And a one, two, three...{UpArrow}{Backspace}{Backspace}{Backspace}three{UpArrow}{UpArrow}{DownArrow}{DownArrow}{Enter}");
             var result = await prompt.ReadLine("> ");
 
