@@ -17,10 +17,12 @@ namespace PrettyPrompt
         private readonly HistoryLog history;
         private readonly CompletionHandlerAsync completionCallback;
         private readonly HighlightHandlerAsync highlightCallback;
+        private readonly ForceSoftEnterHandlerAsync detectSoftEnterCallback;
 
         public Prompt(
             CompletionHandlerAsync completionHandler = null,
             HighlightHandlerAsync highlightHandler = null,
+            ForceSoftEnterHandlerAsync forceSoftEnterHandler = null,
             IConsole console = null)
         {
             this.console = console ?? new SystemConsole();
@@ -29,6 +31,7 @@ namespace PrettyPrompt
             this.history = new HistoryLog();
             this.completionCallback = completionHandler ?? ((_, _) => Task.FromResult<IReadOnlyList<CompletionItem>>(Array.Empty<CompletionItem>()));
             this.highlightCallback = highlightHandler ?? ((_) => Task.FromResult<IReadOnlyCollection<FormatSpan>>(Array.Empty<FormatSpan>()));
+            this.detectSoftEnterCallback = forceSoftEnterHandler ?? ((_) => Task.FromResult(false));
         }
 
         public async Task<PromptResult> ReadLine(string prompt)
@@ -37,7 +40,7 @@ namespace PrettyPrompt
             renderer.RenderPrompt();
 
             // code pane contains the code the user is typing. It does not include the prompt (i.e. "> ")
-            var codePane = new CodePane(topCoordinate: console.CursorTop);
+            var codePane = new CodePane(topCoordinate: console.CursorTop, detectSoftEnterCallback);
             // completion pane is the pop-up window that shows potential autocompletions.
             var completionPane = new CompletionPane(codePane, completionCallback);
 

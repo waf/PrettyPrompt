@@ -115,15 +115,31 @@ namespace PrettyPrompt.Tests
             console.StubInput(
                 $"aaaa bbbb 5555{Shift}{Enter}",
                 $"dddd x5x5 foo.bar{Shift}{Enter}",
-                $"{UpArrow}{Control}{RightArrow}{Control}{RightArrow}{Control}{RightArrow}{LeftArrow}bershop",
+                $"{UpArrow}{Control}{RightArrow}{Control}{RightArrow}{Control}{RightArrow}lum",
                 $"{Enter}"
             );
 
             var prompt = new Prompt(console: console);
             var result = await prompt.ReadLine("> ");
 
-            Assert.Equal($"aaaa bbbb 5555{NewLine}dddd x5x5 foo.barbershop{NewLine}", result.Text);
+            Assert.Equal($"aaaa bbbb 5555{NewLine}dddd x5x5 foo.lumbar{NewLine}", result.Text);
+        }
 
+        [Fact]
+        public async Task ReadLine_DeleteWordPrevWordKeys()
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput(
+                $"aaaa bbbb cccc{Shift}{Enter}",
+                $"dddd eeee ffff{Shift}{Enter}",
+                $"{UpArrow}{Control}{Delete}{Control}{Backspace}",
+                $"{Enter}"
+            );
+
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLine("> ");
+
+            Assert.Equal($"aaaa bbbb eeee ffff{NewLine}", result.Text);
         }
     }
 }

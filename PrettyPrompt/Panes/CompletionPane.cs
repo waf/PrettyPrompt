@@ -134,10 +134,10 @@ namespace PrettyPrompt.Panes
         async Task IKeyPressHandler.OnKeyUp(KeyPress key)
         {
             if (!char.IsControl(key.ConsoleKeyInfo.KeyChar)
-                && ShouldAutomaticallyOpen(codePane.Input, codePane.Caret, key))
+                && ShouldAutomaticallyOpen(codePane.Input, codePane.Caret, key) is int offset and >= 0)
             {
                 Close();
-                Open(codePane.Caret - 1);
+                Open(codePane.Caret - offset);
             }
 
             if (codePane.Caret < openedCaretIndex)
@@ -150,7 +150,7 @@ namespace PrettyPrompt.Panes
                 if (textToComplete == string.Empty || allCompletions.Count == 0)
                 {
                     var completions = await this.complete.Invoke(codePane.Input.ToString(), codePane.Caret);
-                    SetCompletions(completions);
+                    SetCompletions(completions, textToComplete);
                 }
                 else
                 {
@@ -159,15 +159,14 @@ namespace PrettyPrompt.Panes
             }
         }
 
-        private void SetCompletions(IReadOnlyCollection<CompletionItem> completions)
+        private void SetCompletions(IReadOnlyCollection<CompletionItem> completions, string textToComplete)
         {
             allCompletions = completions;
             if (completions.Any())
             {
                 var completion = completions.First();
-                var prefix = completion.ReplacementText.Substring(0, Math.Max(0, openedCaretIndex - completion.StartIndex));
                 openedCaretIndex = completion.StartIndex;
-                FilterCompletions(prefix);
+                FilterCompletions(textToComplete);
             }
         }
 
@@ -193,20 +192,23 @@ namespace PrettyPrompt.Panes
                 completion.ReplacementText.StartsWith(filter, StringComparison.CurrentCultureIgnoreCase);
         }
 
-        private static bool ShouldAutomaticallyOpen(StringBuilder input, int caret, KeyPress key)
+        private static int ShouldAutomaticallyOpen(StringBuilder input, int caret, KeyPress key)
         {
-            if (key.ConsoleKeyInfo.KeyChar is '.' or '(') return true; // typical "intellisense behavior", opens for new methods and parameters
+            if (caret > 0 && input[caret - 1] is '.' or '(') return 0; // typical "intellisense behavior", opens for new methods and parameters
 
             if (caret == 1 && !char.IsWhiteSpace(input[0]) // 1 word character typed in brand new prompt
                 && (input.Length == 1 || !char.IsLetterOrDigit(input[1]))) // if there's more than one character on the prompt, but we're typing a new word at the beginning (e.g. "a| bar")
             {
-                return true;
+                return 1;
             }
 
+            //return false;
             // open when we're starting a new "word" in the prompt.
             return caret - 2 >= 0
                 && char.IsWhiteSpace(input[caret - 2])
-                && !char.IsWhiteSpace(input[caret - 1]);
+                && char.IsLetter(input[caret - 1])
+                ? 1
+                : -1;
         }
 
         private int InsertCompletion(StringBuilder input, int caret, CompletionItem completion, string suffix = "")

@@ -10,8 +10,12 @@ namespace PrettyPrompt.Panes
 {
     public record WrappedLine(int StartIndex, string Content);
 
+    public delegate Task<bool> ForceSoftEnterHandlerAsync(string text);
+
     public class CodePane : IKeyPressHandler
     {
+        private readonly ForceSoftEnterHandlerAsync shouldForceSoftEnterAsync;
+
         // dimensions
         public int TopCoordinate { get; private set; }
         public int CodeAreaWidth { get; set; }
@@ -25,16 +29,17 @@ namespace PrettyPrompt.Panes
         public IReadOnlyList<WrappedLine> WordWrappedLines { get; private set; }
         public ConsoleCoordinate Cursor { get; private set; }
 
-        public CodePane(int topCoordinate)
+        public CodePane(int topCoordinate, ForceSoftEnterHandlerAsync shouldForceSoftEnterAsync)
         {
             this.TopCoordinate = topCoordinate;
+            this.shouldForceSoftEnterAsync = shouldForceSoftEnterAsync;
             this.Caret = 0;
             this.Input = new StringBuilder();
         }
 
-        public Task OnKeyDown(KeyPress key)
+        public async Task OnKeyDown(KeyPress key)
         {
-            if (key.Handled) return Task.CompletedTask;
+            if (key.Handled) return;
 
             switch (key.Pattern)
             {
@@ -44,6 +49,7 @@ namespace PrettyPrompt.Panes
                 case (Control, L):
                     TopCoordinate = 0; // actually clearing the screen is handled in the renderer.
                     break;
+                case Enter when await shouldForceSoftEnterAsync(Input.ToString()):
                 case (Shift, Enter):
                     Input.Insert(Caret, '\n');
                     Caret++;
@@ -68,6 +74,15 @@ namespace PrettyPrompt.Panes
                     break;
                 case (Control, RightArrow):
                     Caret = CalculateWordBoundaryIndex(Input, Caret, +1);
+                    break;
+                case (Control, Backspace):
+                    var startDeleteIndex = CalculateWordBoundaryIndex(Input, Caret, -1);
+                    Input.Remove(startDeleteIndex, Caret - startDeleteIndex);
+                    Caret = startDeleteIndex;
+                    break;
+                case (Control, Delete):
+                    var endDeleteIndex = CalculateWordBoundaryIndex(Input, Caret, +1);
+                    Input.Remove(Caret, endDeleteIndex - Caret);
                     break;
                 case Backspace:
                     if (Caret >= 1)
@@ -94,8 +109,6 @@ namespace PrettyPrompt.Panes
                     }
                     break;
             }
-
-            return Task.CompletedTask;
         }
 
         public Task OnKeyUp(KeyPress key)
@@ -186,7 +199,7 @@ namespace PrettyPrompt.Panes
                     return c2Index;
             }
 
-            bool IsWordStart(char c1, char c2) => char.IsWhiteSpace(c1) && !char.IsWhiteSpace(c2);
+            bool IsWordStart(char c1, char c2) => !char.IsLetterOrDigit(c1) && char.IsLetterOrDigit(c2);
 
             return bound;
         }
