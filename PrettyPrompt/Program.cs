@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace PrettyPrompt
 {
-    public static class Program
+    internal static class Program
     {
         static async Task Main(string[] args)
         {

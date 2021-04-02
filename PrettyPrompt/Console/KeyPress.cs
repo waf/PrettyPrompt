@@ -2,7 +2,7 @@
 
 namespace PrettyPrompt.Consoles
 {
-    public class KeyPress
+    internal class KeyPress
     {
         public ConsoleKeyInfo ConsoleKeyInfo { get; }
         public object Pattern { get; }

@@ -3,7 +3,7 @@ using System.Linq;
 
 namespace PrettyPrompt.Consoles
 {
-    public static class AnsiEscapeCodes
+    internal static class AnsiEscapeCodes
     {
         private const char Escape = '\u001b';
         public static readonly string ClearLine = $"{Escape}[0K";

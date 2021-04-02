@@ -12,7 +12,7 @@ namespace PrettyPrompt.Panes
 
     public delegate Task<bool> ForceSoftEnterHandlerAsync(string text);
 
-    public class CodePane : IKeyPressHandler
+    internal class CodePane : IKeyPressHandler
     {
         private readonly ForceSoftEnterHandlerAsync shouldForceSoftEnterAsync;
 

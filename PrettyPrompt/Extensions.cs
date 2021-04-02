@@ -2,7 +2,7 @@
 
 namespace PrettyPrompt
 {
-    public static class Extensions
+    internal static class Extensions
     {
         public static string EnvironmentNewlines(this string text) =>
             Environment.NewLine == "\n"

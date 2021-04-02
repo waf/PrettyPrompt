@@ -10,7 +10,7 @@ using static System.ConsoleModifiers;
 
 namespace PrettyPrompt.Panes
 {
-    public class CompletionPane : IKeyPressHandler
+    internal class CompletionPane : IKeyPressHandler
     {
         private readonly CodePane codePane;
         private readonly CompletionHandlerAsync complete;
