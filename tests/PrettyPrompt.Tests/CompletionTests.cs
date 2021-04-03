@@ -16,7 +16,7 @@ namespace PrettyPrompt.Tests
 
             var prompt = new Prompt(CompletionTestData.CompletionHandlerAsync, console: console);
 
-            var result = await prompt.ReadLine("> ");
+            var result = await prompt.ReadLineAsync("> ");
 
             Assert.True(result.Success);
             Assert.Equal("Aardvark", result.Text);
@@ -31,7 +31,7 @@ namespace PrettyPrompt.Tests
 
             var prompt = new Prompt(CompletionTestData.CompletionHandlerAsync, console: console);
 
-            var result = await prompt.ReadLine("> ");
+            var result = await prompt.ReadLineAsync("> ");
 
             Assert.True(result.Success);
             Assert.Equal("Aardvark Zebra Alpaca", result.Text);
@@ -45,7 +45,7 @@ namespace PrettyPrompt.Tests
 
             var prompt = new Prompt(CompletionTestData.CompletionHandlerAsync, console: console);
 
-            var result = await prompt.ReadLine("> ");
+            var result = await prompt.ReadLineAsync("> ");
 
             Assert.True(result.Success);
             Assert.Equal($"Aardvark{NewLine}Zebra", result.Text);
@@ -59,7 +59,7 @@ namespace PrettyPrompt.Tests
 
             var prompt = new Prompt(CompletionTestData.CompletionHandlerAsync, console: console);
 
-            var result = await prompt.ReadLine("> ");
+            var result = await prompt.ReadLineAsync("> ");
 
             Assert.True(result.Success);
             Assert.Equal($"Aardvark{NewLine}Zebra", result.Text);
@@ -73,7 +73,7 @@ namespace PrettyPrompt.Tests
 
             var prompt = new Prompt(CompletionTestData.CompletionHandlerAsync, console: console);
 
-            var result = await prompt.ReadLine("> ");
+            var result = await prompt.ReadLineAsync("> ");
 
             Assert.True(result.Success);
             Assert.Equal($"Aardvark Aardvark", result.Text);
@@ -87,7 +87,7 @@ namespace PrettyPrompt.Tests
 
             var prompt = new Prompt(CompletionTestData.CompletionHandlerAsync, console: console);
 
-            var result = await prompt.ReadLine("> ");
+            var result = await prompt.ReadLineAsync("> ");
 
             Assert.True(result.Success);
             Assert.Equal($"Aardvark", result.Text);
@@ -101,7 +101,7 @@ namespace PrettyPrompt.Tests
 
             var prompt = new Prompt(CompletionTestData.CompletionHandlerAsync, console: console);
 
-            var result = await prompt.ReadLine("> ");
+            var result = await prompt.ReadLineAsync("> ");
 
             Assert.True(result.Success);
             Assert.Equal($"Aardvark a", result.Text);
@@ -115,7 +115,7 @@ namespace PrettyPrompt.Tests
 
             var prompt = new Prompt(CompletionTestData.CompletionHandlerAsync, console: console);
 
-            var result = await prompt.ReadLine("> ");
+            var result = await prompt.ReadLineAsync("> ");
 
             Assert.True(result.Success);
             Assert.Equal($"Aardvark Q", result.Text);

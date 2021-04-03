@@ -9,9 +9,12 @@ using System.Threading.Tasks;
 
 namespace PrettyPrompt
 {
-    public record PromptResult(bool Success, string Text);
-
-    public class Prompt
+    /// <summary>
+    /// The main entry point of the prompt functionality.
+    /// This class should be instantiated once with the desired configuration; then <see cref="ReadLineAsync"/> 
+    /// can be called once for each line of input.
+    /// </summary>
+    public class Prompt : IPrompt
     {
         private readonly IConsole console;
         private readonly HistoryLog history;
@@ -19,6 +22,16 @@ namespace PrettyPrompt
         private readonly HighlightHandlerAsync highlightCallback;
         private readonly ForceSoftEnterHandlerAsync detectSoftEnterCallback;
 
+        /// <summary>
+        /// Instantiates a prompt object. This object can be re-used for multiple lines of input.
+        /// </summary>
+        /// <param name="completionHandler">An optional delegate that provides autocompletion results</param>
+        /// <param name="highlightHandler">An optional delegate that controls syntax highlighting</param>
+        /// <param name="forceSoftEnterHandler">
+        /// An optional delegate that allows for intercepting the "Enter" key and causing it to
+        /// insert a "soft enter" (newline) instead of submitting the prompt.
+        /// </param>
+        /// <param name="console">The implementation of the console to use. This is mainly for ease of unit testing</param>
         public Prompt(
             CompletionHandlerAsync completionHandler = null,
             HighlightHandlerAsync highlightHandler = null,
@@ -34,7 +47,12 @@ namespace PrettyPrompt
             this.detectSoftEnterCallback = forceSoftEnterHandler ?? ((_) => Task.FromResult(false));
         }
 
-        public async Task<PromptResult> ReadLine(string prompt)
+        /// <summary>
+        /// Prompts the user for input and returns the result.
+        /// </summary>
+        /// <param name="prompt">The prompt string to draw (e.g. "> ")</param>
+        /// <returns>The input that the user submitted</returns>
+        public async Task<PromptResult> ReadLineAsync(string prompt)
         {
             var renderer = new Renderer(console, prompt);
             renderer.RenderPrompt();
@@ -71,4 +89,16 @@ namespace PrettyPrompt
             }
         }
     }
+
+    public interface IPrompt
+    {
+        Task<PromptResult> ReadLineAsync(string prompt);
+    }
+
+    /// <summary>
+    /// Represents the user's input from the prompt.
+    /// If the user successfully submitted text, Success will be true and Text will be present.
+    /// If the user cancelled (via ctrl-c), Success will be false and Text will be an empty string.
+    /// </summary>
+    public record PromptResult(bool Success, string Text);
 }

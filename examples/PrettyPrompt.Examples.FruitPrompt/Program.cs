@@ -17,7 +17,7 @@ namespace PrettyPrompt
             var prompt = new Prompt(completionHandler: FindCompletions, highlightHandler: Highlight);
             while (true)
             {
-                var response = await prompt.ReadLine("> ");
+                var response = await prompt.ReadLineAsync("> ");
                 if (response.Success)
                 {
                     if (response.Text == "exit") break;

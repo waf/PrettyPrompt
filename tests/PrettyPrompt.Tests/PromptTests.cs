@@ -16,7 +16,7 @@ namespace PrettyPrompt.Tests
             console.StubInput($"Hello World{Enter}");
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLine("> ");
+            var result = await prompt.ReadLineAsync("> ");
 
             Assert.True(result.Success);
             Assert.Equal("Hello World", result.Text);
@@ -31,7 +31,7 @@ namespace PrettyPrompt.Tests
             // add completion handler, as it has caused problem when completing all whitespace prompts
             var prompt = new Prompt(CompletionTestData.CompletionHandlerAsync, console: console);
 
-            var result = await prompt.ReadLine("> ");
+            var result = await prompt.ReadLineAsync("> ");
 
             Assert.True(result.Success);
             Assert.Equal("  ", result.Text);
@@ -44,7 +44,7 @@ namespace PrettyPrompt.Tests
             console.StubInput($"Hello World{Control}c");
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLine("> ");
+            var result = await prompt.ReadLineAsync("> ");
 
             Assert.False(result.Success);
             Assert.Empty(result.Text);
@@ -58,7 +58,7 @@ namespace PrettyPrompt.Tests
             console.StubInput($"111222333{Enter}");
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLine("> ");
+            var result = await prompt.ReadLineAsync("> ");
 
             Assert.True(result.Success);
             Assert.Equal("111222333", result.Text);
@@ -84,7 +84,7 @@ namespace PrettyPrompt.Tests
             );
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLine("> ");
+            var result = await prompt.ReadLineAsync("> ");
 
             Assert.Equal("prompt!", result.Text);
         }
@@ -103,7 +103,7 @@ namespace PrettyPrompt.Tests
             );
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLine("> ");
+            var result = await prompt.ReadLineAsync("> ");
 
             Assert.Equal($"pretty well{NewLine}unit-tested?{NewLine}prompt!", result.Text);
         }
@@ -120,7 +120,7 @@ namespace PrettyPrompt.Tests
             );
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLine("> ");
+            var result = await prompt.ReadLineAsync("> ");
 
             Assert.Equal($"aaaa bbbb 5555{NewLine}dddd x5x5 foo.lumbar{NewLine}", result.Text);
         }
@@ -137,7 +137,7 @@ namespace PrettyPrompt.Tests
             );
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLine("> ");
+            var result = await prompt.ReadLineAsync("> ");
 
             Assert.Equal($"aaaa bbbb eeee ffff{NewLine}", result.Text);
         }

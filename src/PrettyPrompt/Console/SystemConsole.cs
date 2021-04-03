@@ -6,7 +6,7 @@ namespace PrettyPrompt.Consoles
     /// <summary>
     /// Implementation of <see cref="IConsole"/> that uses the normal <see cref="System.Console"/> APIs
     /// </summary>
-    class SystemConsole : IConsole
+    public class SystemConsole : IConsole
     {
         public SystemConsole()
         {

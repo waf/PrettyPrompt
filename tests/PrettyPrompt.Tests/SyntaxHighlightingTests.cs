@@ -15,7 +15,7 @@ namespace PrettyPrompt.Tests
 
             var prompt = new Prompt(highlightHandler: SyntaxHighlighterTestData.HighlightHandlerAsync, console: console);
 
-            var result = await prompt.ReadLine("> ");
+            var result = await prompt.ReadLineAsync("> ");
 
             Assert.True(result.Success);
             Assert.Equal("red green nocolor blue", result.Text);

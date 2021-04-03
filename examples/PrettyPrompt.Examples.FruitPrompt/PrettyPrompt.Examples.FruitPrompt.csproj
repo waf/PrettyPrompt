@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <ExampleTitle>FruitPrompt</ExampleTitle>
+    <ExampleDescription>Demonstrates syntax highlighting and autocompletion with PrettyPrompt</ExampleDescription>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\PrettyPrompt\PrettyPrompt.csproj" />
+  </ItemGroup>
+
+</Project>

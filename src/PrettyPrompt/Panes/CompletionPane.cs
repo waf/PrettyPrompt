@@ -61,7 +61,7 @@ namespace PrettyPrompt.Panes
             this.FilteredView = new LinkedList<CompletionItem>();
         }
 
-        async Task IKeyPressHandler.OnKeyDown(KeyPress key)
+        Task IKeyPressHandler.OnKeyDown(KeyPress key)
         {
             if (!IsOpen)
             {
@@ -69,16 +69,16 @@ namespace PrettyPrompt.Panes
                 {
                     Open(codePane.Caret);
                     key.Handled = true;
-                    return;
+                    return Task.CompletedTask;
                 }
                 key.Handled = false;
-                return;
+                return Task.CompletedTask;
             }
 
             if (FilteredView is null || FilteredView.Count == 0)
             {
                 key.Handled = false;
-                return;
+                return Task.CompletedTask;
             }
 
             switch (key.Pattern)
@@ -90,7 +90,7 @@ namespace PrettyPrompt.Panes
                         SelectedItem = next;
                     }
                     key.Handled = true;
-                    return;
+                    break;
                 case UpArrow:
                     var prev = SelectedItem.Previous;
                     if (prev is not null)
@@ -98,37 +98,39 @@ namespace PrettyPrompt.Panes
                         SelectedItem = prev;
                     }
                     key.Handled = true;
-                    return;
+                    break;
                 case Spacebar:
                     codePane.Caret = InsertCompletion(codePane.Input, codePane.Caret, SelectedItem.Value, " ");
                     key.Handled = true;
-                    return;
+                    break;
                 case Enter:
                 case RightArrow:
                 case Tab:
                     codePane.Caret = InsertCompletion(codePane.Input, codePane.Caret, SelectedItem.Value);
                     key.Handled = true;
-                    return;
+                    break;
                 case (Control, Spacebar) when FilteredView.Count == 1:
                     codePane.Caret = InsertCompletion(codePane.Input, codePane.Caret, FilteredView.First.Value);
                     key.Handled = true;
-                    return;
+                    break;
                 case (Control, Spacebar):
                     key.Handled = true;
-                    return;
+                    break;
                 case LeftArrow:
                     Close();
                     key.Handled = false;
-                    return;
+                    break;
                 case Escape:
                     Close();
                     key.Handled = true;
-                    return;
+                    break;
                 default:
                     this.SelectedItem = FilteredView.First;
                     key.Handled = false;
-                    return;
+                    break;
             }
+
+            return Task.CompletedTask;
         }
 
         async Task IKeyPressHandler.OnKeyUp(KeyPress key)

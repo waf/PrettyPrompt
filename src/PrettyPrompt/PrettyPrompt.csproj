@@ -1,0 +1,37 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Version>0.8.0</Version>
+
+    <PackageId>PrettyPrompt</PackageId>
+    <PackageTags>repl readline console cli</PackageTags>
+    <PackageProjectUrl>https://github.com/waf/PrettyPrompt</PackageProjectUrl>
+    <PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
+
+    <Description>A command line prompt (i.e. a Console.ReadLine replacement) suitable for building read-eval-print-loops (REPLs). Supports syntax highlighting, autocomplete menus, history, and multi-line input.</Description>
+    <RepositoryUrl>https://github.com/waf/PrettyPrompt</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <Authors>Will Fuqua</Authors>
+    <Company />
+
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFramework>net5.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>PrettyPrompt.Tests</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\.editorconfig" Link=".editorconfig" />
+  </ItemGroup>
+</Project>
