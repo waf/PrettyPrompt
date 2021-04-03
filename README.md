@@ -1,8 +1,8 @@
 # PrettyPrompt
 
-![Nuget](https://img.shields.io/nuget/v/PrettyPrompt.svg?style=flat&color=005ca4)
-![Code Coverage](https://codecov.io/gh/waf/PrettyPrompt/branch/main/graph/badge.svg)
-![Build Status](https://github.com/waf/PrettyPrompt/workflows/main%20build/badge.svg)
+[![Nuget](https://img.shields.io/nuget/v/PrettyPrompt.svg?style=flat&color=005ca4)](https://www.nuget.org/packages/PrettyPrompt/)
+[![Code Coverage](https://codecov.io/gh/waf/PrettyPrompt/branch/main/graph/badge.svg)](https://app.codecov.io/gh/waf/PrettyPrompt)
+[![Build Status](https://github.com/waf/PrettyPrompt/workflows/main%20build/badge.svg)](https://github.com/waf/PrettyPrompt/actions/workflows/main.yml)
 
 A cross-platform command line prompt that provides syntax highlighting, autocompletion, history and more! It's `Console.ReadLine()` on steroids.
 
@@ -18,7 +18,7 @@ A cross-platform command line prompt that provides syntax highlighting, autocomp
 - Multi-line input
 - Word wrapping
 - Optionally detects "incomplete" lines and converts <kbd>Enter</kbd> to a "soft newline" (<kbd>Shift-Enter</kbd>) .
-- Familiar keybindings (Home, End, arrow keys, Ctrl-L to clear screen, Ctrl-C to cancel current line, etc.)
+- Unsurprising keybindings: <kbd>Home</kbd>, <kbd>End</kbd>, <kbd>Ctrl-L</kbd> to clear screen, <kbd>Ctrl-C</kbd> to cancel current line, <kbd>Ctrl+Space</kbd> to open autocomplete menu.
 - Works "in-line" on the command line; it doesn't take over the entire terminal window.
 
 ## Installation
