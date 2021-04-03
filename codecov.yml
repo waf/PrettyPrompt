@@ -1,0 +1,8 @@
+coverage:
+  range: 60..85 # test coverage thresholds. 60% and below fails (red), 85% and up passes (green), between is "yellow"
+  round: down
+  precision: 1
+  status:
+    patch:
+      default:
+        enabled: no
