@@ -8,7 +8,7 @@
     <PackageProjectUrl>https://github.com/waf/PrettyPrompt</PackageProjectUrl>
     <PackageLicenseExpression>MPL-2.0</PackageLicenseExpression>
 
-    <Description>A command line prompt (i.e. a Console.ReadLine replacement) suitable for building read-eval-print-loops (REPLs). Supports syntax highlighting, autocomplete menus, history, and multi-line input.</Description>
+    <Description>A command line prompt (i.e. a Console.ReadLine replacement) that provides syntax highlighting, autocomplete menus, history, and multi-line input.</Description>
     <RepositoryUrl>https://github.com/waf/PrettyPrompt</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <Authors>Will Fuqua</Authors>
