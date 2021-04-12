@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.InteropServices;
+using System.Text;
 
 namespace PrettyPrompt.Consoles
 {
@@ -11,10 +12,13 @@ namespace PrettyPrompt.Consoles
         public SystemConsole()
         {
             Console.TreatControlCAsInput = true;
+            Console.OutputEncoding = Encoding.Unicode;
+            Console.InputEncoding = Encoding.Unicode;
         }
 
         public int CursorTop => Console.CursorTop;
         public int BufferWidth => Console.BufferWidth;
+        public int WindowHeight => Console.WindowHeight;
         public bool KeyAvailable => Console.KeyAvailable;
 
         public void Write(string content) => Console.Write(content);
@@ -22,7 +26,6 @@ namespace PrettyPrompt.Consoles
         public void ShowCursor() => Console.CursorVisible = true;
         public void HideCursor() => Console.CursorVisible = false;
         public ConsoleKeyInfo ReadKey(bool intercept) => Console.ReadKey(intercept);
-
 
         /// <summary>
         /// Enables ANSI escape codes for controlling the terminal.

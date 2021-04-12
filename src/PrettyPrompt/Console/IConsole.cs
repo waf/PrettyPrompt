@@ -10,6 +10,7 @@ namespace PrettyPrompt.Consoles
     {
         int CursorTop { get; }
         int BufferWidth { get; }
+        int WindowHeight { get; }
         bool KeyAvailable { get; }
 
         void Write(string content);

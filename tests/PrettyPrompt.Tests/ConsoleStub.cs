@@ -13,10 +13,11 @@ namespace PrettyPrompt.Tests
     {
         private static readonly Regex FormatStringSplit = new Regex(@"({\d+}|.)");
 
-        public static IConsole NewConsole(int width = 100)
+        public static IConsole NewConsole(int width = 100, int height = 100)
         {
             var console = Substitute.For<IConsole>();
             console.BufferWidth.Returns(width);
+            console.WindowHeight.Returns(height);
             return console;
         }
 
@@ -26,8 +27,10 @@ namespace PrettyPrompt.Tests
                 .Select(call => (string)call.GetArguments().Single())
                 .ToArray();
 
-        public static string GetFinalOutput(this IConsole consoleStub) =>
-            consoleStub.GetAllOutput()[^2]; // second to last. The last is always the newline drawn after the prompt is submitted
+        public static string GetFinalOutput(this IConsole consoleStub)
+        {
+            return consoleStub.GetAllOutput()[^2]; // second to last. The last is always the newline drawn after the prompt is submitted
+        }
 
         /// <summary>
         /// Stub Console.ReadKey to return a series of keystrokes (<see cref="ConsoleKeyInfo" />).

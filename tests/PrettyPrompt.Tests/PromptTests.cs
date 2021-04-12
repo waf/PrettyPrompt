@@ -55,7 +55,7 @@ namespace PrettyPrompt.Tests
         {
             // window width of 5, with a 2 char prompt.
             var console = ConsoleStub.NewConsole(width: 5);
-            console.StubInput($"111222333{Enter}");
+            console.StubInput($"111222333{Control}{L}{Enter}");
 
             var prompt = new Prompt(console: console);
             var result = await prompt.ReadLineAsync("> ");
@@ -66,11 +66,10 @@ namespace PrettyPrompt.Tests
             var finalOutput = console.GetFinalOutput();
 
             Assert.Equal(
-                expected: MoveCursorToPosition(1, 1) + ClearToEndOfScreen +
-                          "> 111" +
-                          "  222" +
-                          "  333" +
-                          MoveCursorToPosition(row: 4, column: 3),
+                expected: MoveCursorToPosition(1, 3) + "111"
+                        + MoveCursorToPosition(2, 3) + "222"
+                        + MoveCursorToPosition(3, 3) + "333"
+                        + MoveCursorToPosition(4, 3),
                 actual: finalOutput
             );
         }

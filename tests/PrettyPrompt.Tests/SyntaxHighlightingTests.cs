@@ -19,14 +19,24 @@ namespace PrettyPrompt.Tests
 
             Assert.True(result.Success);
             Assert.Equal("red green nocolor blue", result.Text);
-            var output = console.GetFinalOutput();
-            Assert.Equal(
-                expected: MoveCursorToPosition(1, 1) + ClearToEndOfScreen +
-                          $"> {BrightRed}red{ResetFormatting} {BrightGreen}green{ResetFormatting} nocolor {BrightBlue}blue{ResetFormatting}" +
-                          MoveCursorToPosition(row: 1, column: 25),
-                actual: output
-            );
-        }
+            var output = console.GetAllOutput();
 
+            // although the words are typed character-by-character, we should still "go back" and redraw
+            // it once we know the word should be drawn in a syntax-highlighted color.
+            Assert.Contains(
+                MoveCursorToPosition(1, 3) + BrightRed + "red" + MoveCursorToPosition(1, 6) + ResetFormatting, // prompt is the first two columns
+                output
+            );
+            Assert.Contains(
+                MoveCursorToPosition(1, 7) + BrightGreen + "green" + MoveCursorToPosition(1, 12) + ResetFormatting,
+                output
+            );
+            Assert.Contains(
+                MoveCursorToPosition(1, 21) + BrightBlue + "blue" + MoveCursorToPosition(1, 25) + ResetFormatting,
+                output
+            );
+
+            Assert.DoesNotContain("nocolor", output); // it should output character by character as we type; never the whole string at once.
+        }
     }
 }

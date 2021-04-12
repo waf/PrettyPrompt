@@ -70,6 +70,7 @@ namespace PrettyPrompt
 
                 // grab the code area width every key press, so we rerender appropriately when the console is resized.
                 codePane.CodeAreaWidth = console.BufferWidth - prompt.Length;
+                codePane.CodeAreaHeight = console.WindowHeight - codePane.TopCoordinate;
 
                 foreach (var panes in new IKeyPressHandler[] { completionPane, codePane, history })
                     await panes.OnKeyDown(key);
@@ -80,7 +81,7 @@ namespace PrettyPrompt
                     await panes.OnKeyUp(key);
 
                 var highlights = await highlightCallback.Invoke(codePane.Input.ToString());
-                renderer.RenderOutput(codePane, completionPane, highlights, key);
+                await renderer.RenderOutput(codePane, completionPane, highlights, key);
 
                 if (codePane.Result is not null)
                 {

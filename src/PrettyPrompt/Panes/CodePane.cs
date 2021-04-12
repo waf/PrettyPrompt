@@ -19,6 +19,7 @@ namespace PrettyPrompt.Panes
         // dimensions
         public int TopCoordinate { get; private set; }
         public int CodeAreaWidth { get; set; }
+        public int CodeAreaHeight { get; set; }
 
         // input/output
         public StringBuilder Input { get; }
@@ -136,53 +137,8 @@ namespace PrettyPrompt.Panes
             return Task.CompletedTask;
         }
 
-        public void WordWrap()
-        {
-            Cursor = new ConsoleCoordinate();
-            if (Input.Length == 0)
-            {
-                Cursor.Column = Caret;
-                WordWrappedLines = new[] { new WrappedLine(0, string.Empty) };
-                return;
-            }
-
-            var lines = new List<WrappedLine>();
-            int currentLineLength = 0;
-            var line = new StringBuilder(CodeAreaWidth);
-            int textIndex = 0;
-            foreach (ReadOnlyMemory<char> chunk in Input.GetChunks())
-            {
-                foreach (char character in chunk.Span)
-                {
-                    line.Append(character);
-                    bool isCursorPastCharacter = Caret > textIndex;
-
-                    currentLineLength++;
-                    textIndex++;
-
-                    if (isCursorPastCharacter && !char.IsControl(character))
-                    {
-                        Cursor.Column++;
-                    }
-                    if (character == '\n' || currentLineLength == CodeAreaWidth)
-                    {
-                        if (isCursorPastCharacter)
-                        {
-                            Cursor.Row++;
-                            Cursor.Column = 0;
-                        }
-                        lines.Add(new WrappedLine(textIndex - currentLineLength, line.ToString()));
-                        line = new StringBuilder();
-                        currentLineLength = 0;
-                    }
-                }
-            }
-
-            if (currentLineLength > 0)
-                lines.Add(new WrappedLine(textIndex - currentLineLength, line.ToString()));
-
-            WordWrappedLines = lines;
-        }
+        public void WordWrap() =>
+            (WordWrappedLines, Cursor) = WordWrapping.Wrap(Input, Caret, CodeAreaWidth);
 
         private static int CalculateWordBoundaryIndex(StringBuilder input, int caret, int direction)
         {

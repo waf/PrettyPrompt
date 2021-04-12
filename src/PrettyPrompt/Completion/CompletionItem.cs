@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace PrettyPrompt.Completion
@@ -10,5 +11,6 @@ namespace PrettyPrompt.Completion
     {
         public int StartIndex { get; init; }
         public string ReplacementText { get; init; }
+        public Lazy<Task<string>> ExtendedDescription { get; init; }
     }
 }

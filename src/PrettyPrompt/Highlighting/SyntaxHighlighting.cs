@@ -1,10 +1,8 @@
 ﻿using PrettyPrompt.Panes;
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using static PrettyPrompt.Consoles.AnsiEscapeCodes;
 
 namespace PrettyPrompt.Highlighting
 {
@@ -12,25 +10,20 @@ namespace PrettyPrompt.Highlighting
 
     static class SyntaxHighlighting
     {
-        public static string ApplyHighlighting(IReadOnlyCollection<FormatSpan> highlights, WrappedLine line)
+        public static Cell[] ApplyColorToCharacters(Dictionary<int, FormatSpan> highlightsLookup, WrappedLine line)
         {
-            var text = new StringBuilder(line.Content);
-            foreach (var formatting in highlights.Reverse())
+            var text = Cell.FromText(line.Content).ToArray();
+            for (int i = 0; i < text.Length; i++)
             {
-                var lineStart = line.StartIndex;
-                var lineEnd = line.StartIndex + text.Length;
-                var formattingStart = formatting.Start;
-                var formattingEnd = formatting.Start + formatting.Length;
-                if (lineStart < formattingEnd && formattingEnd <= lineEnd)
+                if (highlightsLookup.TryGetValue(line.StartIndex + i, out var highlight))
                 {
-                    text.Insert(formattingEnd - lineStart, ResetFormatting);
-                }
-                if (lineStart <= formattingStart && formattingStart <= lineEnd)
-                {
-                    text.Insert(formattingStart - lineStart, ToAnsiEscapeSequence(formatting.Formatting));
+                    for(; i < highlight.Start + highlight.Length - line.StartIndex; i++)
+                    {
+                        text[i].Formatting = highlight.Formatting;
+                    }
                 }
             }
-            return text.ToString();
+            return text;
         }
     }
 }

@@ -6,6 +6,8 @@ namespace PrettyPrompt.Consoles
     internal static class AnsiEscapeCodes
     {
         private const char Escape = '\u001b';
+        private const string ResetForegroundColor = "39";
+        private const string ResetBackgroundColor = "49";
         public static readonly string ClearLine = $"{Escape}[0K";
         public static readonly string ClearToEndOfScreen = $"{Escape}[0J";
         public static readonly string ClearEntireScreen = $"{Escape}[2J";
@@ -33,7 +35,7 @@ namespace PrettyPrompt.Consoles
         public static readonly string Red = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.Red));
         public static readonly string Green = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.Green));
         public static readonly string Yellow = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.Yellow));
-        public static readonly string Blue = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.Blue));
+        public static readonly ConsoleFormat Blue = new ConsoleFormat(foreground: AnsiColor.Blue);
         public static readonly string Magenta = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.Magenta));
         public static readonly string Cyan = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.Cyan));
         public static readonly string White = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.White));
@@ -46,6 +48,9 @@ namespace PrettyPrompt.Consoles
         public static readonly string BrightCyan = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.BrightCyan));
         public static readonly string BrightWhite = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.BrightWhite));
 
+        public static string SetColors(AnsiColor fg, AnsiColor bg) =>
+            ToAnsiEscapeSequence(new ConsoleFormat(foreground: fg, background: bg));
+
         public static readonly string ResetFormatting = $"{Escape}[0m";
 
         public static string ToAnsiEscapeSequence(ConsoleFormat formatting) =>
@@ -55,8 +60,8 @@ namespace PrettyPrompt.Consoles
                 separator: ";",
                 values: new[]
                 {
-                    formatting.Foreground?.Foreground,
-                    formatting.Background?.Background,
+                    formatting.Foreground?.Foreground ?? ResetForegroundColor,
+                    formatting.Background?.Background ?? ResetBackgroundColor,
                     formatting.Bold ? "1" : null,
                     formatting.Underline ? "4" : null
                 }.Where(format => format is not null)
