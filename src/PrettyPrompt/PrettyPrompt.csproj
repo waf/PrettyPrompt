@@ -30,8 +30,4 @@
       <_Parameter1>PrettyPrompt.Tests</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
-
-  <ItemGroup>
-    <None Include="..\.editorconfig" Link=".editorconfig" />
-  </ItemGroup>
 </Project>
