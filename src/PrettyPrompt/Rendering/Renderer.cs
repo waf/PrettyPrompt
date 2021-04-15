@@ -136,7 +136,7 @@ namespace PrettyPrompt
             var completionRows = BuildCompletionRows(completionPane, codeAreaWidth, wordWidth, completionStart);
 
             var documentationStart = new ConsoleCoordinate(cursor.Row + 2, completionStart.Column + boxWidth);
-            var selectedItemDescription = await (completionPane.SelectedItem.Value.ExtendedDescription?.Value ?? Task.FromResult(""));
+            var selectedItemDescription = await (completionPane.FilteredView.SelectedItem.ExtendedDescription?.Value ?? Task.FromResult(""));
             var documentationRows = BuildDocumentationRows(
                 documentation: selectedItemDescription,
                 maxWidth: codeAreaWidth - completionStart.Column - boxWidth
@@ -152,11 +152,12 @@ namespace PrettyPrompt
         private Row[] BuildCompletionRows(CompletionPane completionPane, int codeAreaWidth, int wordWidth, ConsoleCoordinate completionBoxStart)
         {
             string horizontalBorder = TruncateToWindow(new string('─', wordWidth + 2), 2);
+            var selectedItem = completionPane.FilteredView.SelectedItem;
 
             return completionPane.FilteredView
                 .Select((completion, index) =>
                 {
-                    string leftBorder = "│" + (completionPane.SelectedItem?.Value == completion ? "|" : " ");
+                    string leftBorder = "│" + (selectedItem == completion ? "|" : " ");
                     string rightBorder = " │";
                     return new Row(Cell
                         .FromText(leftBorder, Blue)

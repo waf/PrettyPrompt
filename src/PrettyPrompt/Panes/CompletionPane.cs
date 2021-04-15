@@ -23,17 +23,12 @@ namespace PrettyPrompt.Panes
         /// <summary>
         /// All completions available. Called once when the window is initially opened
         /// </summary>
-        private IReadOnlyCollection<CompletionItem> allCompletions = Array.Empty<CompletionItem>();
+        private IReadOnlyList<CompletionItem> allCompletions = Array.Empty<CompletionItem>();
 
         /// <summary>
         /// An "ordered view" over <see cref="allCompletions"/> that shows the list filtered by what the user has typed.
         /// </summary>
-        public LinkedList<CompletionItem> FilteredView { get; set; } = new LinkedList<CompletionItem>();
-
-        /// <summary>
-        /// Currently selected item in the completion menu
-        /// </summary>
-        public LinkedListNode<CompletionItem> SelectedItem { get; set; }
+        public SlidingArrayWindow<CompletionItem> FilteredView { get; set; } = new SlidingArrayWindow<CompletionItem>();
 
         /// <summary>
         /// Whether or not the window is currently open / visible.
@@ -57,8 +52,7 @@ namespace PrettyPrompt.Panes
         {
             this.IsOpen = false;
             this.openedCaretIndex = int.MinValue;
-            this.SelectedItem = null;
-            this.FilteredView = new LinkedList<CompletionItem>();
+            this.FilteredView = new SlidingArrayWindow<CompletionItem>();
         }
 
         Task IKeyPressHandler.OnKeyDown(KeyPress key)
@@ -84,29 +78,18 @@ namespace PrettyPrompt.Panes
             switch (key.Pattern)
             {
                 case DownArrow:
-                    var next = SelectedItem.Next;
-                    if (next is not null)
-                    {
-                        SelectedItem = next;
-                    }
+                    this.FilteredView.IncrementSelectedIndex();
                     key.Handled = true;
                     break;
                 case UpArrow:
-                    var prev = SelectedItem.Previous;
-                    if (prev is not null)
-                    {
-                        SelectedItem = prev;
-                    }
+                    this.FilteredView.DecrementSelectedIndex();
                     key.Handled = true;
                     break;
                 case Enter:
                 case RightArrow:
                 case Tab:
-                    codePane.Caret = InsertCompletion(codePane.Input, codePane.Caret, SelectedItem.Value);
-                    key.Handled = true;
-                    break;
                 case (Control, Spacebar) when FilteredView.Count == 1:
-                    codePane.Caret = InsertCompletion(codePane.Input, codePane.Caret, FilteredView.First.Value);
+                    codePane.Caret = InsertCompletion(codePane.Input, codePane.Caret, FilteredView.SelectedItem);
                     key.Handled = true;
                     break;
                 case (Control, Spacebar):
@@ -121,7 +104,7 @@ namespace PrettyPrompt.Panes
                     key.Handled = true;
                     break;
                 default:
-                    this.SelectedItem = FilteredView.First;
+                    this.FilteredView.ResetSelectedIndex();
                     key.Handled = false;
                     break;
             }
@@ -155,7 +138,7 @@ namespace PrettyPrompt.Panes
                         Close();
                     }
                 }
-                else
+                else if(!key.Handled)
                 {
                     FilterCompletions(codePane.Input);
                     if (HasTypedPastCompletion())
@@ -167,9 +150,10 @@ namespace PrettyPrompt.Panes
         }
 
         private bool HasTypedPastCompletion() =>
-            SelectedItem?.Value is not null && SelectedItem.Value.ReplacementText.Length < (codePane.Caret - openedCaretIndex);
+            FilteredView.SelectedItem is not null
+            && FilteredView.SelectedItem.ReplacementText.Length < (codePane.Caret - openedCaretIndex);
 
-        private void SetCompletions(IReadOnlyCollection<CompletionItem> completions, StringBuilder input)
+        private void SetCompletions(IReadOnlyList<CompletionItem> completions, StringBuilder input)
         {
             allCompletions = completions;
             if (completions.Any())
@@ -182,21 +166,29 @@ namespace PrettyPrompt.Panes
 
         private void FilterCompletions(StringBuilder input)
         {
-            FilteredView = new LinkedList<CompletionItem>();
-            foreach (var completion in allCompletions)
+            var filtered = new List<CompletionItem>();
+            var previouslySelectedItem = this.FilteredView.SelectedItem;
+            int selectedIndex = -1;
+            for (var i = 0; i < allCompletions.Count; i++)
             {
+                var completion = allCompletions[i];
                 if (!Matches(completion, input)) continue;
 
-                var node = FilteredView.AddLast(completion);
-                if (completion.ReplacementText == SelectedItem?.Value.ReplacementText)
+                filtered.Add(completion);
+                if (completion.ReplacementText == previouslySelectedItem?.ReplacementText)
                 {
-                    SelectedItem = node;
+                    selectedIndex = filtered.Count - 1;
                 }
             }
-            if (SelectedItem is null || !Matches(SelectedItem.Value, input))
+            if (selectedIndex == -1 || !Matches(previouslySelectedItem, input))
             {
-                SelectedItem = FilteredView.First;
+                selectedIndex = 0;
             }
+            FilteredView = new SlidingArrayWindow<CompletionItem>(
+                filtered.ToArray(),
+                10,
+                selectedIndex
+            );
 
             bool Matches(CompletionItem completion, StringBuilder input) =>
                 completion.ReplacementText.StartsWith(

@@ -21,6 +21,7 @@ namespace PrettyPrompt.Highlighting
                     {
                         text[i].Formatting = highlight.Formatting;
                     }
+                    i--; // outer loop will increment, skipping a string index to check for highlighting.
                 }
             }
             return text;
