@@ -19,6 +19,7 @@ namespace PrettyPrompt.Consoles
         public int CursorTop => Console.CursorTop;
         public int BufferWidth => Console.BufferWidth;
         public int WindowHeight => Console.WindowHeight;
+        public int WindowTop => Console.WindowTop;
         public bool KeyAvailable => Console.KeyAvailable;
 
         public void Write(string content) => Console.Write(content);

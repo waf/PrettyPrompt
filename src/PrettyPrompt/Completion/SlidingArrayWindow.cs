@@ -4,73 +4,75 @@ using System.Collections.Generic;
 
 namespace PrettyPrompt.Completion
 {
-    class SlidingArrayWindow<T> : IEnumerable<T>, IReadOnlyCollection<T>
+    /// <summary>
+    /// Datastructure that provides a window over a segment of an array, similar to <see cref="ArraySegment{T}"/>, but
+    /// also has a concept of the window "sliding" to always keep a selected index in view. This datastructure powers
+    /// the auto-complete menu, and the window slides to provide the scrolling of the menu.
+    /// </summary>
+    sealed class SlidingArrayWindow<T> : IReadOnlyCollection<T>
     {
         private readonly T[] array;
-        private readonly int windowSize;
-        private int offset;
-        private int current;
+        private readonly int windowLength;
+        private readonly int windowBuffer;
+        private int windowStart;
+        private int selectedIndex;
 
         public SlidingArrayWindow() : this(Array.Empty<T>(), 0) { }
 
-        public SlidingArrayWindow(T[] array, int windowSize, int current = 0)
+        public SlidingArrayWindow(T[] array, int windowLength = 10, int selectedIndex = 0, int windowBuffer = 3)
         {
             this.array = array;
-            this.windowSize = windowSize;
-            this.offset = array.Length - windowSize <= 0 
+            this.windowLength = windowLength;
+            this.windowStart = array.Length - windowLength <= 0 
                 ? 0
-                : Math.Min(current, array.Length - windowSize);
-            this.current = current;
+                : Math.Min(selectedIndex, array.Length - windowLength);
+            this.selectedIndex = selectedIndex;
+            this.windowBuffer = windowBuffer;
         }
 
-        public T SelectedItem => array.Length == 0 ? default : array[current];
+        public T SelectedItem =>
+            array.Length == 0 ? default : array[selectedIndex];
 
         public void IncrementSelectedIndex()
         {
-            if (current == array.Length - 1)
+            if (selectedIndex == array.Length - 1)
                 return;
 
-            current++;
+            selectedIndex++;
 
-            if(current >= offset + windowSize && offset + windowSize < array.Length)
+            if(selectedIndex + windowBuffer >= windowStart + windowLength && windowStart + windowLength < array.Length)
             {
-                offset++;
+                windowStart++;
             }
         }
 
         public void DecrementSelectedIndex()
         {
-            if (current == 0)
+            if (selectedIndex == 0)
                 return;
 
-            current--;
+            selectedIndex--;
 
-            if(current < offset && offset > 0)
+            if(selectedIndex - windowBuffer < windowStart && windowStart > 0)
             {
-                offset--;
+                windowStart--;
             }
         }
 
         public void ResetSelectedIndex()
         {
-            current = 0;
-            offset = 0;
+            selectedIndex = 0;
+            windowStart = 0;
         }
 
-        public IEnumerator<T> GetEnumerator()
-        {
-            return AsArraySegment().GetEnumerator();
-        }
+        public IEnumerator<T> GetEnumerator() =>
+            AsArraySegment().GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return AsArraySegment().GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() =>
+            AsArraySegment().GetEnumerator();
 
-        private ArraySegment<T> AsArraySegment()
-        {
-            return new ArraySegment<T>(array, offset, Math.Min(windowSize, array.Length));
-        }
+        private ArraySegment<T> AsArraySegment() =>
+            new ArraySegment<T>(array, windowStart, Math.Min(windowLength, array.Length));
 
         public int Count => array.Length;
     }

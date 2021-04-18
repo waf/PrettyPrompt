@@ -59,6 +59,7 @@ namespace PrettyPrompt
 
             // code pane contains the code the user is typing. It does not include the prompt (i.e. "> ")
             var codePane = new CodePane(topCoordinate: console.CursorTop, detectSoftEnterCallback);
+            codePane.MeasureConsole(console, prompt);
             // completion pane is the pop-up window that shows potential autocompletions.
             var completionPane = new CompletionPane(codePane, completionCallback);
 
@@ -69,8 +70,7 @@ namespace PrettyPrompt
                 var key = new KeyPress(console.ReadKey(intercept: true));
 
                 // grab the code area width every key press, so we rerender appropriately when the console is resized.
-                codePane.CodeAreaWidth = console.BufferWidth - prompt.Length;
-                codePane.CodeAreaHeight = console.WindowHeight - codePane.TopCoordinate;
+                codePane.MeasureConsole(console, prompt);
 
                 foreach (var panes in new IKeyPressHandler[] { completionPane, codePane, history })
                     await panes.OnKeyDown(key);
@@ -82,6 +82,8 @@ namespace PrettyPrompt
 
                 var highlights = await highlightCallback.Invoke(codePane.Input.ToString());
                 await renderer.RenderOutput(codePane, completionPane, highlights, key);
+
+                codePane.MeasureConsole(console, prompt);
 
                 if (codePane.Result is not null)
                 {

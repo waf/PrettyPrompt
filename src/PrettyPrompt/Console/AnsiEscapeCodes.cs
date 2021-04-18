@@ -28,6 +28,9 @@ namespace PrettyPrompt.Consoles
         public static string MoveCursorRight(int count) => count == 0 ? "" : $"{Escape}[{count}C";
         public static string MoveCursorLeft(int count) => count == 0 ? "" : $"{Escape}[{count}D";
 
+        public static string ScrollUp(int count) => count == 0 ? "" : $"{Escape}[{count}S";
+        public static string ScrollDown(int count) => count == 0 ? "" : $"{Escape}[{count}T";
+
         public static string ForegroundColor(byte r, byte g, byte b) => ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.RGB(r, g, b)));
         public static string BackgroundColor(byte r, byte g, byte b) => ToAnsiEscapeSequence(new ConsoleFormat(background: AnsiColor.RGB(r, g, b)));
 

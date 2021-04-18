@@ -57,6 +57,8 @@ namespace PrettyPrompt.Panes
 
         Task IKeyPressHandler.OnKeyDown(KeyPress key)
         {
+            if (!EnoughRoomToDisplay(this.codePane)) return Task.CompletedTask;
+
             if (!IsOpen)
             {
                 if (key.Pattern is (Control, Spacebar))
@@ -112,9 +114,15 @@ namespace PrettyPrompt.Panes
             return Task.CompletedTask;
         }
 
+        private bool EnoughRoomToDisplay(CodePane codePane) =>
+            codePane.CodeAreaHeight - (codePane.Cursor?.Row).GetValueOrDefault(0) >= 4; // offset + top border + 1 completion item + bottom border
+
         async Task IKeyPressHandler.OnKeyUp(KeyPress key)
         {
-            if (!char.IsControl(key.ConsoleKeyInfo.KeyChar) && ShouldAutomaticallyOpen(codePane.Input, codePane.Caret) is int offset and >= 0)
+            if (!EnoughRoomToDisplay(this.codePane)) return;
+
+            if (!char.IsControl(key.ConsoleKeyInfo.KeyChar)
+                && ShouldAutomaticallyOpen(codePane.Input, codePane.Caret) is int offset and >= 0)
             {
                 Close();
                 Open(codePane.Caret - offset);

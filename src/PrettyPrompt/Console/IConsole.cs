@@ -12,6 +12,7 @@ namespace PrettyPrompt.Consoles
         int BufferWidth { get; }
         int WindowHeight { get; }
         bool KeyAvailable { get; }
+        int WindowTop { get; }
 
         void Write(string content);
         void Clear();

@@ -17,9 +17,10 @@ namespace PrettyPrompt.Panes
         private readonly ForceSoftEnterHandlerAsync shouldForceSoftEnterAsync;
 
         // dimensions
-        public int TopCoordinate { get; private set; }
+        public int TopCoordinate { get; set; }
         public int CodeAreaWidth { get; set; }
-        public int CodeAreaHeight { get; set; }
+        public int CodeAreaHeight { get; private set; }
+        public int WindowTop { get; private set; }
 
         // input/output
         public StringBuilder Input { get; }
@@ -110,6 +111,15 @@ namespace PrettyPrompt.Panes
                     }
                     break;
             }
+        }
+
+        internal void MeasureConsole(IConsole console, string prompt)
+        {
+            this.TopCoordinate -= (console.WindowTop - this.WindowTop);
+            this.WindowTop = console.WindowTop;
+
+            this.CodeAreaWidth = console.BufferWidth - prompt.Length;
+            this.CodeAreaHeight = console.WindowHeight - this.TopCoordinate;
         }
 
         public Task OnKeyUp(KeyPress key)

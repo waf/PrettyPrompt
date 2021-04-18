@@ -16,7 +16,7 @@ namespace PrettyPrompt.Rendering
         public static string RenderDiff(Screen currentScreen, Screen previousScreen, ConsoleCoordinate ansiCoordinate, ConsoleCoordinate cursor)
         {
             var diff = new StringBuilder();
-            var max = Math.Max(currentScreen.MaxIndex, previousScreen.MaxIndex);
+            var maxIndex = Math.Max(currentScreen.MaxIndex, previousScreen.MaxIndex);
 
             // if there are multiple characters with the same formatting, don't output formatting
             // instructions per character; instead output one instruction at the beginning for all
@@ -25,14 +25,16 @@ namespace PrettyPrompt.Rendering
             int previousCoordinateRow = ansiCoordinate.Row + previousScreen.Cursor.Row;
             int previousCoordinateColumn = ansiCoordinate.Column + previousScreen.Cursor.Column;
 
-            for(var i = 0; i < max; i++)
+            for(var i = 0; i < maxIndex; i++)
             {
-                Cell currentCell = currentScreen.CharBuffer[i];
-                if(currentCell != previousScreen.CharBuffer[i])
+                Cell currentCell = i < currentScreen.CharBuffer.Length ? currentScreen.CharBuffer[i] : null;
+                Cell previousCell = i < previousScreen.CharBuffer.Length ? previousScreen.CharBuffer[i] : null;
+                var cellCoordinateRow = ansiCoordinate.Row + i / currentScreen.Width;
+                var cellCoordinateColumn = ansiCoordinate.Column + i % currentScreen.Width;
+
+                if(currentCell != previousCell)
                 {
                     // position cursor, if we need to.
-                    var cellCoordinateRow = ansiCoordinate.Row + i / currentScreen.Width;
-                    var cellCoordinateColumn = ansiCoordinate.Column + i % currentScreen.Width;
                     if (cellCoordinateColumn != previousCoordinateColumn || cellCoordinateRow != previousCoordinateRow)
                     {
                         diff.Append(MoveCursorToPosition(cellCoordinateRow, cellCoordinateColumn));
@@ -49,15 +51,15 @@ namespace PrettyPrompt.Rendering
                             currentFormatRun = null;
                         }
 
-                        if(currentCell == null)
+                        if(string.IsNullOrWhiteSpace(currentCell?.Text))
                         {
                             diff.Append(' ');
-                            continue;
+                            if(currentCell is null) continue;
                         }
                     }
 
                     var character = currentCell.Text == "\n"
-                        ? " " // newlines should clear the cell they're written to.
+                        ? "\n" // newlines should clear the cell they're written to.
                         : currentCell.Text;
 
                     // write out current character, with any formatting
@@ -84,6 +86,7 @@ namespace PrettyPrompt.Rendering
                 cursor.Row + ansiCoordinate.Row,
                 cursor.Column + ansiCoordinate.Column
             );
+
             // if the diff is a only a single character, no need to update the cursor position because printing
             // the character moves the cursor position for us. Prevents overly verbose ansi escape sequences.
             if(diff.Length != 1 || pos.Row != previousCoordinateRow || pos.Column != previousCoordinateColumn)
@@ -96,5 +99,8 @@ namespace PrettyPrompt.Rendering
             }
             return diff.ToString();
         }
+
+        private static int RequiredRows(Screen screen) =>
+            screen.MaxIndex / screen.Width;
     }
 }
