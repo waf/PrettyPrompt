@@ -3,6 +3,10 @@ coverage:
   round: down
   precision: 1
   status:
+    project:
+      default:
+        target: 85% # require new commits to have at least 85% coverage
+        threshold: 2% # more than 2% coverage drop, fail.
     patch:
       default:
         enabled: no
