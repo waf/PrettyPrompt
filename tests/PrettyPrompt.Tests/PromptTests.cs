@@ -66,10 +66,9 @@ namespace PrettyPrompt.Tests
             var finalOutput = console.GetFinalOutput();
 
             Assert.Equal(
-                expected: MoveCursorToPosition(1, 3) + "111"
-                        + MoveCursorToPosition(2, 3) + "222"
-                        + MoveCursorToPosition(3, 3) + "333"
-                        + MoveCursorToPosition(4, 3),
+                expected: "111\n" + MoveCursorLeft(2) +
+                          "222\n" + MoveCursorLeft(2) +
+                          "333\n" + MoveCursorLeft(2),
                 actual: finalOutput
             );
         }

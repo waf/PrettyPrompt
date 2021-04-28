@@ -22,85 +22,135 @@ namespace PrettyPrompt.Rendering
             // instructions per character; instead output one instruction at the beginning for all
             // characters that share the same formatting.
             ConsoleFormat currentFormatRun = null;
-            int previousCoordinateRow = ansiCoordinate.Row + previousScreen.Cursor.Row;
-            int previousCoordinateColumn = ansiCoordinate.Column + previousScreen.Cursor.Column;
+            var previousCoordinate = new ConsoleCoordinate(
+                row: ansiCoordinate.Row + previousScreen.Cursor.Row,
+                column: ansiCoordinate.Column + previousScreen.Cursor.Column
+            );
 
-            for(var i = 0; i < maxIndex; i++)
+            for (var i = 0; i < maxIndex; i++)
             {
                 Cell currentCell = i < currentScreen.CharBuffer.Length ? currentScreen.CharBuffer[i] : null;
                 Cell previousCell = i < previousScreen.CharBuffer.Length ? previousScreen.CharBuffer[i] : null;
-                var cellCoordinateRow = ansiCoordinate.Row + i / currentScreen.Width;
-                var cellCoordinateColumn = ansiCoordinate.Column + i % currentScreen.Width;
+                var cellCoordinate = new ConsoleCoordinate(
+                    row: ansiCoordinate.Row + i / currentScreen.Width,
+                    column: ansiCoordinate.Column + i % currentScreen.Width
+                );
 
-                if(currentCell != previousCell)
+                if (currentCell != previousCell)
                 {
-                    // position cursor, if we need to.
-                    if (cellCoordinateColumn != previousCoordinateColumn || cellCoordinateRow != previousCoordinateRow)
-                    {
-                        diff.Append(MoveCursorToPosition(cellCoordinateRow, cellCoordinateColumn));
-                    }
-                    previousCoordinateColumn = cellCoordinateColumn;
-                    previousCoordinateRow = cellCoordinateRow;
+                    MoveCursorIfRequired(diff, previousCoordinate, cellCoordinate);
+                    previousCoordinate.Row = cellCoordinate.Row;
+                    previousCoordinate.Column = cellCoordinate.Column;
 
-                    // handle when we're erasing previous characters/formatting
-                    if(currentCell?.Formatting == null)
+                    // handle when we're erasing characters/formatting from the previously rendered screen.
+                    if (currentCell?.Formatting == null)
                     {
-                        if(currentFormatRun is not null)
+                        if (currentFormatRun is not null)
                         {
                             diff.Append(ResetFormatting);
                             currentFormatRun = null;
                         }
 
-                        if(string.IsNullOrWhiteSpace(currentCell?.Text))
+                        if (currentCell?.Text is null || currentCell.Text == "\n")
                         {
                             diff.Append(' ');
-                            if(currentCell is null) continue;
+                            UpdateCoordinateFromCursorMove(currentScreen, ansiCoordinate, diff, previousCoordinate);
+
+                            if (currentCell is null)
+                            {
+                                continue;
+                            }
                         }
                     }
 
-                    var character = currentCell.Text == "\n"
-                        ? "\n" // newlines should clear the cell they're written to.
-                        : currentCell.Text;
-
                     // write out current character, with any formatting
-                    if(currentCell.Formatting != currentFormatRun)
+                    if (currentCell.Formatting != currentFormatRun)
                     {
                         diff.Append(
                             ToAnsiEscapeSequence(currentCell.Formatting)
-                            + character
+                            + currentCell.Text
                         );
                         currentFormatRun = currentCell.Formatting;
                     }
                     else
                     {
-                        diff.Append(character);
+                        diff.Append(currentCell.Text);
                     }
-                    if(!string.IsNullOrWhiteSpace(currentCell.Text))
+
+                    // writing to the console will automatically move the cursor.
+                    // update our internal tracking so we calculate the least
+                    // amount of movement required for the next character.
+                    if (currentCell.Text == "\n")
                     {
-                        previousCoordinateColumn++;
+                        UpdateCoordinateFromNewLine(previousCoordinate);
+                    }
+                    else
+                    {
+                        UpdateCoordinateFromCursorMove(currentScreen, ansiCoordinate, diff, previousCoordinate);
                     }
                 }
             }
 
-            var pos = new ConsoleCoordinate(
+            var finalCursorPosition = new ConsoleCoordinate(
                 cursor.Row + ansiCoordinate.Row,
                 cursor.Column + ansiCoordinate.Column
             );
 
-            // if the diff is a only a single character, no need to update the cursor position because printing
-            // the character moves the cursor position for us. Prevents overly verbose ansi escape sequences.
-            if(diff.Length != 1 || pos.Row != previousCoordinateRow || pos.Column != previousCoordinateColumn)
-            {
-                diff.Append(MoveCursorToPosition(pos));
-            }
-            if(currentFormatRun is not null)
+            MoveCursorIfRequired(diff, previousCoordinate, finalCursorPosition);
+
+            if (currentFormatRun is not null)
             {
                 diff.Append(ResetFormatting);
             }
             return diff.ToString();
         }
 
-        private static int RequiredRows(Screen screen) =>
-            screen.MaxIndex / screen.Width;
+        private static void UpdateCoordinateFromCursorMove(Screen currentScreen, ConsoleCoordinate ansiCoordinate, StringBuilder diff, ConsoleCoordinate previousCoordinate)
+        {
+            // if we hit the edge of the screen, wrap
+            if (previousCoordinate.Column + 1 == currentScreen.Width + ansiCoordinate.Column)
+            {
+                diff.Append('\n');
+                UpdateCoordinateFromNewLine(previousCoordinate);
+            }
+            else
+            {
+                previousCoordinate.Column++;
+            }
+        }
+
+        private static void UpdateCoordinateFromNewLine(ConsoleCoordinate previousCoordinate)
+        {
+            // for simplicity, we standardize all newlines to "\n" regardless of platform. However, that complicates
+            // our diff, because "\n" on windows _only_ moves one line down, it does not change the column.
+            previousCoordinate.Row++;
+            if (!OperatingSystem.IsWindows())
+            {
+                previousCoordinate.Column = 1;
+            }
+        }
+
+        private static void MoveCursorIfRequired(StringBuilder diff, ConsoleCoordinate fromCoordinate, ConsoleCoordinate toCoordinate)
+        {
+            // we only ever move the cursor relative to its current position.
+            // this is because ansi escape sequences know nothing about the current scroll in the window,
+            // they only operate on the current viewport. If we move to absolute positions, the display
+            // is garbled if the user scrolls the window and then types.
+
+            if (fromCoordinate.Row != toCoordinate.Row)
+            {
+                diff.Append(fromCoordinate.Row < toCoordinate.Row
+                    ? MoveCursorDown(toCoordinate.Row - fromCoordinate.Row)
+                    : MoveCursorUp(fromCoordinate.Row - toCoordinate.Row)
+                );
+            }
+            if (fromCoordinate.Column != toCoordinate.Column)
+            {
+                diff.Append(fromCoordinate.Column < toCoordinate.Column
+                    ? MoveCursorRight(toCoordinate.Column - fromCoordinate.Column)
+                    : MoveCursorLeft(fromCoordinate.Column - toCoordinate.Column)
+                );
+            }
+        }
     }
 }

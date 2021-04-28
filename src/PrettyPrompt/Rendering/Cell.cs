@@ -11,7 +11,9 @@ namespace PrettyPrompt
     /// An area of the screen that's being rendered at a coordinate.
     /// This is conceptually a UI pane, rasterized into characters.
     /// </summary>
-    internal sealed record ScreenArea(ConsoleCoordinate Start, Row[] Rows);
+    internal sealed record ScreenArea(ConsoleCoordinate Start, Row[] Rows, bool TruncateToScreenHeight = true)
+    {
+    }
 
     /// <summary>
     /// A row of cells. Just here for the readability of method signatures.

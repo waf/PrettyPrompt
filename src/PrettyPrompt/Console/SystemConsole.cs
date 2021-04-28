@@ -12,8 +12,6 @@ namespace PrettyPrompt.Consoles
         public SystemConsole()
         {
             Console.TreatControlCAsInput = true;
-            Console.OutputEncoding = Encoding.Unicode;
-            Console.InputEncoding = Encoding.Unicode;
         }
 
         public int CursorTop => Console.CursorTop;

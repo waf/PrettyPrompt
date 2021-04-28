@@ -24,16 +24,12 @@ namespace PrettyPrompt
         {
             this.console = console;
             this.prompt = prompt;
-            this.previouslyRenderedScreen = null;
+            this.previouslyRenderedScreen = new Screen(0, 0, new ConsoleCoordinate(0, 0));
         }
 
         public void RenderPrompt()
         {
-            var oldTop = Console.WindowTop;
             console.Write(MoveCursorToColumn(1) + ResetFormatting + prompt);
-            var newTop = Console.WindowTop;
-            //var delta = newTop - oldTop;
-            //console.Write(MoveCursorUp(2 + delta - 1) + prompt);
         }
 
         public async Task RenderOutput(CodePane codePane, CompletionPane completionPane, IReadOnlyCollection<FormatSpan> highlights, KeyPress key)
@@ -51,7 +47,7 @@ namespace PrettyPrompt
             }
             if (key.Pattern is (Control, L))
             {
-                previouslyRenderedScreen = null;
+                previouslyRenderedScreen = new Screen(0, 0, new ConsoleCoordinate(0, 0));
                 console.Clear(); // for some reason, using escape codes (ClearEntireScreen and MoveCursorToPosition) leaves
                                  // CursorTop in an old (cached?) state. Using Console.Clear() works around this.
                 RenderPrompt();
@@ -76,22 +72,20 @@ namespace PrettyPrompt
             // draw screen areas to screen representation.
             // later screen areas can overlap earlier screen areas.
             var screen = new Screen(
-                codePane.CodeAreaWidth, codePane.Cursor, screenAreas: new[] { codeWidget }.Concat(completionWidgets).ToArray()
+                codePane.CodeAreaWidth, codePane.CodeAreaHeight, codePane.Cursor, screenAreas: new[] { codeWidget }.Concat(completionWidgets).ToArray()
             );
 
             if (DidCodeAreaResize(previouslyRenderedScreen, screen))
             {
-                console.Write(ClearToEndOfScreen);
-                previouslyRenderedScreen = null;
+                previouslyRenderedScreen = previouslyRenderedScreen.Resize(screen.Width, screen.Height);
             }
 
             // calculate the diff between the previous screen and the
             // screen to be drawn, and output that diff.
-            previouslyRenderedScreen ??= new Screen(screen.Width, codePane.Cursor);
-            string output = IncrementalRendering.RenderDiff(screen, previouslyRenderedScreen, ansiCoordinate, codePane.Cursor);
+            string outputDiff = IncrementalRendering.RenderDiff(screen, previouslyRenderedScreen, ansiCoordinate, codePane.Cursor);
             previouslyRenderedScreen = screen;
 
-            Write(output, output.Length > 64);
+            Write(outputDiff, outputDiff.Length > 64);
         }
 
         private void Write(string output, bool hideCursor = false)
@@ -104,16 +98,12 @@ namespace PrettyPrompt
         }
 
         private static bool DidCodeAreaResize(Screen previousScreen, Screen currentScreen) =>
-            previousScreen?.Width != currentScreen.Width;
+            previousScreen != null && previousScreen?.Width != currentScreen.Width;
 
         private static ScreenArea BuildCodeScreenArea(CodePane codePane, IReadOnlyCollection<FormatSpan> highlights)
         {
-            var highlightsByIndex = highlights.ToDictionary(h => h.Start);
-            var code = codePane
-                .WordWrappedLines
-                .Select(line => new Row(SyntaxHighlighting.ApplyColorToCharacters(highlightsByIndex, line)))
-                .ToArray();
-            var codeWidget = new ScreenArea(new ConsoleCoordinate(0, 0), code);
+            var highlightedLines = SyntaxHighlighting.ApplyColorToCharacters(highlights, codePane.WordWrappedLines);
+            var codeWidget = new ScreenArea(new ConsoleCoordinate(0, 0), highlightedLines, TruncateToScreenHeight: false);
             return codeWidget;
         }
 

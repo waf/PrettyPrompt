@@ -1,4 +1,5 @@
 ﻿using PrettyPrompt.Panes;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,21 +11,49 @@ namespace PrettyPrompt.Highlighting
 
     static class SyntaxHighlighting
     {
-        public static Cell[] ApplyColorToCharacters(Dictionary<int, FormatSpan> highlightsLookup, WrappedLine line)
+        public static Row[] ApplyColorToCharacters(IReadOnlyCollection<FormatSpan> highlights, IReadOnlyList<WrappedLine> lines)
         {
-            var text = Cell.FromText(line.Content).ToArray();
-            for (int i = 0; i < text.Length; i++)
+            var highlightsLookup = highlights.ToDictionary(h => h.Start);
+            Row[] highlightedRows = new Row[lines.Count];
+            FormatSpan wrappingHighlight = null;
+
+            for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
             {
-                if (highlightsLookup.TryGetValue(line.StartIndex + i, out var highlight))
+                WrappedLine line = lines[lineIndex];
+                var cells = Cell.FromText(line.Content).ToArray();
+                for (int charIndex = 0; charIndex < cells.Length; charIndex++)
                 {
-                    for(; i < highlight.Start + highlight.Length - line.StartIndex; i++)
+                    if (highlightsLookup.TryGetValue(line.StartIndex + charIndex, out FormatSpan highlight))
                     {
-                        text[i].Formatting = highlight.Formatting;
+                        charIndex = ApplyHighlight(highlight, line.StartIndex, charIndex, cells);
+                        // we've hit the end of the line, we need to continue the highlight on the next row.
+                        if (charIndex == cells.Length)
+                        {
+                            wrappingHighlight = highlight;
+                        }
+                        charIndex--; // outer loop will increment, skipping a string index to check for highlighting.
                     }
-                    i--; // outer loop will increment, skipping a string index to check for highlighting.
+                    else if (wrappingHighlight is not null && ShouldApplyWrappedHighlighting(wrappingHighlight, line, charIndex))
+                    {
+                        cells[charIndex].Formatting = wrappingHighlight.Formatting;
+                    }
                 }
+                highlightedRows[lineIndex] = new Row(cells);
             }
-            return text;
+            return highlightedRows;
         }
+
+        private static int ApplyHighlight(FormatSpan highlight, int lineStartIndex, int charNumber, Cell[] cells)
+        {
+            var highlightEnd = Math.Min(highlight.Start + highlight.Length - lineStartIndex, cells.Length);
+            for (; charNumber < highlightEnd; charNumber++)
+            {
+                cells[charNumber].Formatting = highlight.Formatting;
+            }
+            return charNumber;
+        }
+
+        private static bool ShouldApplyWrappedHighlighting(FormatSpan wrappingHighlight, WrappedLine line, int charNumber) =>
+            line.StartIndex + charNumber < wrappingHighlight.Start + wrappingHighlight.Length;
     }
 }

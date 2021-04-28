@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace PrettyPrompt.Highlighting
 {
-    public class ConsoleFormat : IEquatable<ConsoleFormat>
+    public sealed class ConsoleFormat : IEquatable<ConsoleFormat>
     {
         public ConsoleFormat(AnsiColor foreground = null, AnsiColor background = null, bool bold = false, bool underline = false)
         {
