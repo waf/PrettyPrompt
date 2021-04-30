@@ -27,8 +27,8 @@ namespace PrettyPrompt.Tests
         public async Task ReadLine_MultipleCompletion()
         {
             var console = ConsoleStub.NewConsole();
-            // complete 3 animals. For the third animal, start completing Alligator, but then backspace and complete as Alpaca instead.
-            console.StubInput($"Aa{Enter} Z{Tab} Alli{Backspace}{Backspace}{DownArrow}{DownArrow}{RightArrow}{Enter}");
+            // complete 3 animals. For the third animal, start completing Alligator, but then backspace, navigate the completion menu and complete as Alpaca instead.
+            console.StubInput($"Aa{Enter} Z{Tab} Alli{Backspace}{Backspace}{DownArrow}{UpArrow}{DownArrow}{DownArrow}{RightArrow}{Enter}");
 
             var prompt = new Prompt(CompletionTestData.CompletionHandlerAsync, console: console);
 

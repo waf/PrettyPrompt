@@ -45,10 +45,6 @@ namespace PrettyPrompt.Tests
                 .SelectMany(line => MapToConsoleKeyPresses(line))
                 .ToList();
 
-            consoleStub
-                .KeyAvailable
-                .Returns(true);
-
             return consoleStub
                 .ReadKey(intercept: true)
                 .Returns(keys.First(), keys.Skip(1).ToArray());
