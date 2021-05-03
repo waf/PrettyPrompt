@@ -47,7 +47,7 @@ namespace PrettyPrompt.Rendering
                     {
                         if (currentFormatRun is not null)
                         {
-                            diff.Append(ResetFormatting);
+                            diff.Append(Reset);
                             currentFormatRun = null;
                         }
 
@@ -100,7 +100,7 @@ namespace PrettyPrompt.Rendering
 
             if (currentFormatRun is not null)
             {
-                diff.Append(ResetFormatting);
+                diff.Append(Reset);
             }
             return diff.ToString();
         }

@@ -24,15 +24,15 @@ namespace PrettyPrompt.Tests
             // although the words are typed character-by-character, we should still "go back" and redraw
             // it once we know the word should be drawn in a syntax-highlighted color.
             Assert.Contains(
-                MoveCursorLeft("red".Length - 1) + BrightRed + "red" + ResetFormatting, // when we press 'd' go back two chars and to rewrite the word "red"
+                MoveCursorLeft("red".Length - 1) + BrightRed + "red" + Reset, // when we press 'd' go back two chars and to rewrite the word "red"
                 output
             );
             Assert.Contains(
-                MoveCursorLeft("green".Length - 1) + BrightGreen + "green" + ResetFormatting,
+                MoveCursorLeft("green".Length - 1) + BrightGreen + "green" + Reset,
                 output
             );
             Assert.Contains(
-                MoveCursorLeft("blue".Length - 1) + BrightBlue + "blue" + ResetFormatting,
+                MoveCursorLeft("blue".Length - 1) + BrightBlue + "blue" + Reset,
                 output
             );
 

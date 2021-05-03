@@ -29,7 +29,7 @@ namespace PrettyPrompt
 
         public void RenderPrompt()
         {
-            console.Write(MoveCursorToColumn(1) + ResetFormatting + prompt);
+            console.Write(MoveCursorToColumn(1) + Reset + prompt);
         }
 
         public async Task RenderOutput(CodePane codePane, CompletionPane completionPane, IReadOnlyCollection<FormatSpan> highlights, KeyPress key)
@@ -147,6 +147,8 @@ namespace PrettyPrompt
             };
         }
 
+        private static ConsoleFormat BorderColor = new ConsoleFormat(foreground: AnsiColor.Blue);
+
         private Row[] BuildCompletionRows(CompletionPane completionPane, int codeAreaWidth, int wordWidth, ConsoleCoordinate completionBoxStart)
         {
             string horizontalBorder = TruncateToWindow(new string('─', wordWidth + 2), 2);
@@ -158,14 +160,14 @@ namespace PrettyPrompt
                     string leftBorder = "│" + (selectedItem == completion ? "|" : " ");
                     string rightBorder = " │";
                     return new Row(Cell
-                        .FromText(leftBorder, Blue)
+                        .FromText(leftBorder, BorderColor)
                         .Concat(Cell.FromText(TruncateToWindow(completion.ReplacementText.PadRight(wordWidth), 4)))
-                        .Concat(Cell.FromText(rightBorder, Blue))
+                        .Concat(Cell.FromText(rightBorder, BorderColor))
                         .ToArray()
                     );
                 })
-                .Prepend(new Row(Cell.FromText("┌" + horizontalBorder + "┐", Blue)))
-                .Append (new Row(Cell.FromText("└" + horizontalBorder + "┘", Blue)))
+                .Prepend(new Row(Cell.FromText("┌" + horizontalBorder + "┐", BorderColor)))
+                .Append (new Row(Cell.FromText("└" + horizontalBorder + "┘", BorderColor)))
                 .ToArray();
 
             string TruncateToWindow(string line, int offset) =>
