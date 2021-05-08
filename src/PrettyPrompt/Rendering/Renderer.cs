@@ -29,7 +29,8 @@ namespace PrettyPrompt
 
         public void RenderPrompt()
         {
-            console.Write(MoveCursorToColumn(1) + Reset + prompt);
+            // write some newlines to ensure we have enough room to render the completion pane.
+            console.Write("\n\n\n" + MoveCursorUp(3) + MoveCursorToColumn(1) + Reset + prompt);
         }
 
         public async Task RenderOutput(CodePane codePane, CompletionPane completionPane, IReadOnlyCollection<FormatSpan> highlights, KeyPress key)
