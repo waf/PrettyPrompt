@@ -13,7 +13,9 @@ namespace PrettyPrompt.Highlighting
     {
         public static Row[] ApplyColorToCharacters(IReadOnlyCollection<FormatSpan> highlights, IReadOnlyList<WrappedLine> lines)
         {
-            var highlightsLookup = highlights.ToDictionary(h => h.Start);
+            var highlightsLookup = highlights
+                .ToLookup(h => h.Start)
+                .ToDictionary(h => h.Key, conflictingHighlights => conflictingHighlights.OrderByDescending(h => h.Length).First());
             Row[] highlightedRows = new Row[lines.Count];
             FormatSpan wrappingHighlight = null;
 
