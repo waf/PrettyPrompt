@@ -39,7 +39,7 @@ namespace PrettyPrompt.Rendering
             int maxIndex = 0;
             foreach (var area in screenAreas)
             {
-                int rowCountToRender = Math.Min(area.Rows.Length, Height);
+                int rowCountToRender = Math.Min(area.Rows.Length, Height - area.Start.Row);
                 for (var i = 0; i < rowCountToRender; i++)
                 {
                     var row = area.Start.Row + i;
@@ -48,6 +48,10 @@ namespace PrettyPrompt.Rendering
                     var length = Math.Min(line.Length, CharBuffer.Length - position);
                     if (length > 0)
                     {
+                        foreach (var cell in line)
+                        {
+                            cell.TruncateToScreenHeight = area.TruncateToScreenHeight;
+                        }
                         Array.Copy(line, 0, CharBuffer, position, length);
                         maxIndex = Math.Max(maxIndex, position + length);
                     }

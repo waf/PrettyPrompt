@@ -162,7 +162,7 @@ namespace PrettyPrompt
                     string rightBorder = " │";
                     return new Row(Cell
                         .FromText(leftBorder, BorderColor)
-                        .Concat(Cell.FromText(TruncateToWindow(completion.ReplacementText.PadRight(wordWidth), 4)))
+                        .Concat(Cell.FromText(TruncateToWindow((completion.DisplayText ?? completion.ReplacementText).PadRight(wordWidth), 4)))
                         .Concat(Cell.FromText(rightBorder, BorderColor))
                         .ToArray()
                     );

@@ -28,7 +28,8 @@ namespace PrettyPrompt
     internal sealed record Cell
     {
         public string Text { get; }
-        public ConsoleFormat Formatting { set; get; }
+        public ConsoleFormat Formatting { get; set;  }
+        public bool TruncateToScreenHeight { get; set; }
 
         private Cell(string text, ConsoleFormat Formatting)
         {

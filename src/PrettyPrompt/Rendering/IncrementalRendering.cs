@@ -31,13 +31,14 @@ namespace PrettyPrompt.Rendering
             {
                 Cell currentCell = i < currentScreen.CharBuffer.Length ? currentScreen.CharBuffer[i] : null;
                 Cell previousCell = i < previousScreen.CharBuffer.Length ? previousScreen.CharBuffer[i] : null;
-                var cellCoordinate = new ConsoleCoordinate(
-                    row: ansiCoordinate.Row + i / currentScreen.Width,
-                    column: ansiCoordinate.Column + i % currentScreen.Width
-                );
 
                 if (currentCell != previousCell)
                 {
+                    var cellCoordinate = new ConsoleCoordinate(
+                        row: ansiCoordinate.Row + i / currentScreen.Width,
+                        column: ansiCoordinate.Column + i % currentScreen.Width
+                    );
+
                     MoveCursorIfRequired(diff, previousCoordinate, cellCoordinate);
                     previousCoordinate.Row = cellCoordinate.Row;
                     previousCoordinate.Column = cellCoordinate.Column;
@@ -54,7 +55,7 @@ namespace PrettyPrompt.Rendering
                         if (currentCell?.Text is null || currentCell.Text == "\n")
                         {
                             diff.Append(' ');
-                            UpdateCoordinateFromCursorMove(currentScreen, ansiCoordinate, diff, previousCoordinate);
+                            UpdateCoordinateFromCursorMove(previousScreen, ansiCoordinate, diff, previousCoordinate, currentCell);
 
                             if (currentCell is null)
                             {
@@ -86,7 +87,7 @@ namespace PrettyPrompt.Rendering
                     }
                     else
                     {
-                        UpdateCoordinateFromCursorMove(currentScreen, ansiCoordinate, diff, previousCoordinate);
+                        UpdateCoordinateFromCursorMove(currentScreen, ansiCoordinate, diff, previousCoordinate, currentCell);
                     }
                 }
             }
@@ -105,13 +106,17 @@ namespace PrettyPrompt.Rendering
             return diff.ToString();
         }
 
-        private static void UpdateCoordinateFromCursorMove(Screen currentScreen, ConsoleCoordinate ansiCoordinate, StringBuilder diff, ConsoleCoordinate previousCoordinate)
+        private static void UpdateCoordinateFromCursorMove(Screen currentScreen, ConsoleCoordinate ansiCoordinate, StringBuilder diff, ConsoleCoordinate previousCoordinate, Cell currentCell)
         {
             // if we hit the edge of the screen, wrap
-            if (previousCoordinate.Column + 1 == currentScreen.Width + ansiCoordinate.Column)
+            bool hitRightEdgeOfScreen = previousCoordinate.Column + 1 == currentScreen.Width + ansiCoordinate.Column;
+            if (hitRightEdgeOfScreen)
             {
-                diff.Append('\n');
-                UpdateCoordinateFromNewLine(previousCoordinate);
+                if(currentCell is not null && !currentCell.TruncateToScreenHeight)
+                {
+                    diff.Append('\n');
+                    UpdateCoordinateFromNewLine(previousCoordinate);
+                }
             }
             else
             {
@@ -121,8 +126,8 @@ namespace PrettyPrompt.Rendering
 
         private static void UpdateCoordinateFromNewLine(ConsoleCoordinate previousCoordinate)
         {
-            // for simplicity, we standardize all newlines to "\n" regardless of platform. However, that complicates
-            // our diff, because "\n" on windows _only_ moves one line down, it does not change the column.
+            // for simplicity, we standardize all newlines to "\n" regardless of platform. However, that complicates our diff,
+            // because "\n" on windows _only_ moves one line down, it does not change the column. Handle that here.
             previousCoordinate.Row++;
             if (!OperatingSystem.IsWindows())
             {
