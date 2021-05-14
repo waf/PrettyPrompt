@@ -26,7 +26,9 @@ namespace PrettyPrompt.Tests
                     .Select(c => new CompletionItem
                     {
                         StartIndex = previousWordStart + 1,
-                        ReplacementText = c
+                        ReplacementText = c,
+                        DisplayText = c,
+                        ExtendedDescription = new Lazy<Task<string>>(() => Task.FromResult("a vivid description of " + c))
                     })
                     .ToArray()
             );

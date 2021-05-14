@@ -5,7 +5,6 @@ using PrettyPrompt.Rendering;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using static PrettyPrompt.Consoles.AnsiEscapeCodes;
 using static System.ConsoleKey;
@@ -134,7 +133,7 @@ namespace PrettyPrompt
             );
             var completionRows = BuildCompletionRows(completionPane, codeAreaWidth, wordWidth, completionStart);
 
-            var documentationStart = new ConsoleCoordinate(cursor.Row + 2, completionStart.Column + boxWidth);
+            var documentationStart = new ConsoleCoordinate(cursor.Row + 1, completionStart.Column + boxWidth);
             var selectedItemDescription = await (completionPane.FilteredView.SelectedItem.ExtendedDescription?.Value ?? Task.FromResult(""));
             var documentationRows = BuildDocumentationRows(
                 documentation: selectedItemDescription,
@@ -148,27 +147,29 @@ namespace PrettyPrompt
             };
         }
 
-        private static ConsoleFormat BorderColor = new ConsoleFormat(foreground: AnsiColor.Blue);
+        private static ConsoleFormat CompletionBorderColor = new ConsoleFormat(foreground: AnsiColor.Blue);
+        private static ConsoleFormat DocumentationBorderColor = new ConsoleFormat(foreground: AnsiColor.Cyan);
 
         private Row[] BuildCompletionRows(CompletionPane completionPane, int codeAreaWidth, int wordWidth, ConsoleCoordinate completionBoxStart)
         {
-            string horizontalBorder = TruncateToWindow(new string('─', wordWidth + 2), 2);
+            string horizontalBorder = TruncateToWindow(new string(Box.EdgeHorizontal, wordWidth + 2), 2);
+
             var selectedItem = completionPane.FilteredView.SelectedItem;
 
             return completionPane.FilteredView
                 .Select((completion, index) =>
                 {
-                    string leftBorder = "│" + (selectedItem == completion ? "|" : " ");
-                    string rightBorder = " │";
+                    string leftBorder = Box.EdgeVertical + (selectedItem == completion ? "|" : " ");
+                    string rightBorder = " " + Box.EdgeVertical;
                     return new Row(Cell
-                        .FromText(leftBorder, BorderColor)
+                        .FromText(leftBorder, CompletionBorderColor)
                         .Concat(Cell.FromText(TruncateToWindow((completion.DisplayText ?? completion.ReplacementText).PadRight(wordWidth), 4)))
-                        .Concat(Cell.FromText(rightBorder, BorderColor))
+                        .Concat(Cell.FromText(rightBorder, CompletionBorderColor))
                         .ToArray()
                     );
                 })
-                .Prepend(new Row(Cell.FromText("┌" + horizontalBorder + "┐", BorderColor)))
-                .Append (new Row(Cell.FromText("└" + horizontalBorder + "┘", BorderColor)))
+                .Prepend(new Row(Cell.FromText(Box.CornerUpperLeft + horizontalBorder + Box.CornerUpperRight, CompletionBorderColor)))
+                .Append(new Row(Cell.FromText(Box.CornerLowerLeft + horizontalBorder + Box.CornerLowerRight, CompletionBorderColor)))
                 .ToArray();
 
             string TruncateToWindow(string line, int offset) =>
@@ -180,16 +181,25 @@ namespace PrettyPrompt
             if (string.IsNullOrEmpty(documentation) || maxWidth < 12)
                 return Array.Empty<Row>();
 
-            var width = Math.Min(maxWidth, 52);
-            var wrapped = WordWrapping.Wrap(new StringBuilder(documentation).Replace("\r\n", "\n"), 0, width);
+            // request word wrapping. actual line lengths won't be exactly the requested width due to wrapping.
+            var requestedBoxWidth = Math.Min(maxWidth, 55);
+            var requestedTextWidth = requestedBoxWidth - 3; // 3 because of left padding, right padding, right border
+            var wrapped = WordWrapping.WrapWords(documentation.Replace("\r\n", "\n"), requestedTextWidth);
+            var actualTextWidth = wrapped.Select(w => w.Length).Max();
+            var actualBoxWidth = actualTextWidth + 3;
 
-            return wrapped.WrappedLines
+            var (boxTop, boxBottom) = Box.HorizontalBorders(actualBoxWidth - 1, leftCorner: false);
+
+            return wrapped
                 .Select(line =>
-                    new Row(Cell.FromText(
-                        line.Content.Trim().PadRight(width),
-                        new ConsoleFormat(foreground: AnsiColor.White, background: AnsiColor.Cyan)
-                    ))
+                    new Row(Cell
+                        .FromText(" " + line.Trim().PadRight(actualTextWidth))
+                        .Concat(Cell.FromText(" " + Box.EdgeVertical, DocumentationBorderColor))
+                        .ToArray()
+                    )
                 )
+                .Prepend(new Row(Cell.FromText(boxTop, DocumentationBorderColor)))
+                .Append(new Row(Cell.FromText(boxBottom, DocumentationBorderColor)))
                 .ToArray();
         }
     }

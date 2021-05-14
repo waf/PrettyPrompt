@@ -9,7 +9,12 @@ namespace PrettyPrompt.Panes
 
     static class WordWrapping
     {
-        public static WordWrappedText Wrap(StringBuilder input, int initialCaretPosition, int width)
+        /// <summary>
+        /// Wraps editable input, contained in the string builder, to the supplied width.
+        /// The caret index (as the input is a 1 dimensional string of text) is converted
+        /// to a 2 dimensional coordinate in the wrapped text.
+        /// </summary>
+        public static WordWrappedText WrapEditableCharacters(StringBuilder input, int initialCaretPosition, int width)
         {
             var cursor = new ConsoleCoordinate(0, 0);
             if (input.Length == 0)
@@ -54,6 +59,41 @@ namespace PrettyPrompt.Panes
                 lines.Add(new WrappedLine(textIndex - currentLineLength, line.ToString()));
 
             return new WordWrappedText(lines, cursor);
+        }
+
+
+        public static List<string> WrapWords(string text, int maxLength)
+        {
+            if (text.Length == 0)
+            {
+                return new List<string>();
+            }
+
+            var lines = new List<string>();
+            foreach (var line in text.Split('\n'))
+            {
+                var currentLine = new StringBuilder();
+                foreach (var currentWord in line.Split(' '))
+                {
+                    var wordWithSpace = currentLine.Length == 0 ? currentWord : " " + currentWord;
+
+                    if (currentLine.Length > maxLength
+                        || currentLine.Length + wordWithSpace.Length > maxLength)
+                    {
+                        lines.Add(currentLine.ToString());
+                        currentLine.Clear();
+                    }
+
+                    currentLine.Append(currentLine.Length == 0 ? currentWord : " " + currentWord);
+                }
+
+                if (currentLine.Length > 0)
+                {
+                    lines.Add(currentLine.ToString());
+                }
+            }
+
+            return lines;
         }
     }
 }

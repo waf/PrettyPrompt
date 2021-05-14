@@ -148,7 +148,7 @@ namespace PrettyPrompt.Panes
         }
 
         public void WordWrap() =>
-            (WordWrappedLines, Cursor) = WordWrapping.Wrap(Input, Caret, CodeAreaWidth);
+            (WordWrappedLines, Cursor) = WordWrapping.WrapEditableCharacters(Input, Caret, CodeAreaWidth);
 
         private static int CalculateWordBoundaryIndex(StringBuilder input, int caret, int direction)
         {
