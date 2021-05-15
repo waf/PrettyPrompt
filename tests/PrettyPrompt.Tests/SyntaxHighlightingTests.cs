@@ -13,11 +13,17 @@ namespace PrettyPrompt.Tests
             var console = ConsoleStub.NewConsole();
             console.StubInput($"red green nocolor blue{Enter}");
 
-            var prompt = new Prompt(highlightHandler: SyntaxHighlighterTestData.HighlightHandlerAsync, console: console);
+            var prompt = new Prompt(
+                callbacks: new PromptCallbacks
+                {
+                    HighlightCallback = SyntaxHighlighterTestData.HighlightHandlerAsync
+                },
+                console: console
+            );
 
             var result = await prompt.ReadLineAsync("> ");
 
-            Assert.True(result.Success);
+            Assert.True(result.IsSuccess);
             Assert.Equal("red green nocolor blue", result.Text);
             var output = console.GetAllOutput();
 

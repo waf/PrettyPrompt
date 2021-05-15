@@ -10,11 +10,11 @@ namespace PrettyPrompt.Panes
 {
     public record WrappedLine(int StartIndex, string Content);
 
-    public delegate Task<bool> ForceSoftEnterHandlerAsync(string text);
+    public delegate Task<bool> ForceSoftEnterCallbackAsync(string text);
 
     internal class CodePane : IKeyPressHandler
     {
-        private readonly ForceSoftEnterHandlerAsync shouldForceSoftEnterAsync;
+        private readonly ForceSoftEnterCallbackAsync shouldForceSoftEnterAsync;
 
         // dimensions
         public int TopCoordinate { get; set; }
@@ -31,7 +31,7 @@ namespace PrettyPrompt.Panes
         public IReadOnlyList<WrappedLine> WordWrappedLines { get; private set; }
         public ConsoleCoordinate Cursor { get; private set; }
 
-        public CodePane(int topCoordinate, ForceSoftEnterHandlerAsync shouldForceSoftEnterAsync)
+        public CodePane(int topCoordinate, ForceSoftEnterCallbackAsync shouldForceSoftEnterAsync)
         {
             this.TopCoordinate = topCoordinate;
             this.shouldForceSoftEnterAsync = shouldForceSoftEnterAsync;
@@ -46,7 +46,7 @@ namespace PrettyPrompt.Panes
             switch (key.Pattern)
             {
                 case (Control, C):
-                    Result = new PromptResult(false, string.Empty);
+                    Result = new PromptResult(IsSuccess: false, string.Empty, IsHardEnter: false);
                     break;
                 case (Control, L):
                     TopCoordinate = 0; // actually clearing the screen is handled in the renderer.
@@ -56,8 +56,12 @@ namespace PrettyPrompt.Panes
                     Input.Insert(Caret, '\n');
                     Caret++;
                     break;
+                case (Control, Enter):
+                case (Control | Alt, Enter):
+                    Result = new PromptResult(IsSuccess: true, Input.ToString().EnvironmentNewlines(), IsHardEnter: true);
+                    break;
                 case Enter:
-                    Result = new PromptResult(true, Input.ToString().EnvironmentNewlines());
+                    Result = new PromptResult(IsSuccess: true, Input.ToString().EnvironmentNewlines(), IsHardEnter: false);
                     break;
                 case Home:
                     Caret = 0;

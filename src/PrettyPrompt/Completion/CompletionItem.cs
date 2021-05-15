@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace PrettyPrompt.Completion
 {
-    public delegate Task<IReadOnlyList<CompletionItem>> CompletionHandlerAsync(string text, int caret);
+    public delegate Task<IReadOnlyList<CompletionItem>> CompletionCallbackAsync(string text, int caret);
 
     /// <summary>
     /// A menu item in the Completion Menu Pane.

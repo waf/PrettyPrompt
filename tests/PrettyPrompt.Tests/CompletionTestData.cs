@@ -23,11 +23,11 @@ namespace PrettyPrompt.Tests
             return Task.FromResult<IReadOnlyList<CompletionItem>>(
                 completions
                     .Where(c => c.StartsWith(typedWord, StringComparison.CurrentCultureIgnoreCase))
-                    .Select(c => new CompletionItem
+                    .Select((c, i) => new CompletionItem
                     {
                         StartIndex = previousWordStart + 1,
                         ReplacementText = c,
-                        DisplayText = c,
+                        DisplayText = i % 2 == 0 ? c : null, // display text is optional, ReplacementText should be used when this is null.
                         ExtendedDescription = new Lazy<Task<string>>(() => Task.FromResult("a vivid description of " + c))
                     })
                     .ToArray()

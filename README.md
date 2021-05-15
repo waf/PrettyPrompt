@@ -41,7 +41,7 @@ var prompt = new Prompt();
 while (true)
 {
     var response = await prompt.ReadLineAsync("> ");
-    if (response.Success) // false if user cancels, i.e. ctrl-c
+    if (response.IsSuccess) // false if user cancels, i.e. ctrl-c
     {
         if (response.Text == "exit") break;
 

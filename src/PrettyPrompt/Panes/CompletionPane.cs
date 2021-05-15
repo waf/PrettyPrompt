@@ -13,7 +13,7 @@ namespace PrettyPrompt.Panes
     internal class CompletionPane : IKeyPressHandler
     {
         private readonly CodePane codePane;
-        private readonly CompletionHandlerAsync complete;
+        private readonly CompletionCallbackAsync complete;
 
         /// <summary>
         /// The index of the caret when the pane was opened
@@ -35,7 +35,7 @@ namespace PrettyPrompt.Panes
         /// </summary>
         public bool IsOpen { get; set; }
 
-        public CompletionPane(CodePane codePane, CompletionHandlerAsync complete)
+        public CompletionPane(CodePane codePane, CompletionCallbackAsync complete)
         {
             this.codePane = codePane;
             this.complete = complete;

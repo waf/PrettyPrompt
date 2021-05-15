@@ -22,26 +22,19 @@ namespace PrettyPrompt
         private readonly HistoryLog history;
         private readonly CancellationManager cancellationManager;
 
-        private readonly CompletionHandlerAsync completionCallback;
-        private readonly HighlightHandlerAsync highlightCallback;
-        private readonly ForceSoftEnterHandlerAsync detectSoftEnterCallback;
+        private readonly CompletionCallbackAsync completionCallback;
+        private readonly HighlightCallbackAsync highlightCallback;
+        private readonly ForceSoftEnterCallbackAsync detectSoftEnterCallback;
 
         /// <summary>
         /// Instantiates a prompt object. This object can be re-used for multiple lines of input.
         /// </summary>
-        /// <param name="completionHandler">An optional delegate that provides autocompletion results</param>
-        /// <param name="highlightHandler">An optional delegate that controls syntax highlighting</param>
-        /// <param name="forceSoftEnterHandler">
-        /// An optional delegate that allows for intercepting the "Enter" key and causing it to
-        /// insert a "soft enter" (newline) instead of submitting the prompt.
-        /// </param>
         /// <param name="persistentHistoryFilepath">The filepath of where to store history entries. If null, persistent history is disabled.</param>
+        /// <param name="callbacks">A collection of callbacks for modifying and intercepting the prompt's behavior</param>
         /// <param name="console">The implementation of the console to use. This is mainly for ease of unit testing</param>
         public Prompt(
-            CompletionHandlerAsync completionHandler = null,
-            HighlightHandlerAsync highlightHandler = null,
-            ForceSoftEnterHandlerAsync forceSoftEnterHandler = null,
             string persistentHistoryFilepath = null,
+            PromptCallbacks callbacks = null,
             IConsole console = null)
         {
             this.console = console ?? new SystemConsole();
@@ -50,9 +43,9 @@ namespace PrettyPrompt
             this.history = new HistoryLog(persistentHistoryFilepath);
             this.cancellationManager = new CancellationManager(this.console);
 
-            this.completionCallback = completionHandler ?? ((_, _) => Task.FromResult<IReadOnlyList<CompletionItem>>(Array.Empty<CompletionItem>()));
-            this.highlightCallback = highlightHandler ?? ((_) => Task.FromResult<IReadOnlyCollection<FormatSpan>>(Array.Empty<FormatSpan>()));
-            this.detectSoftEnterCallback = forceSoftEnterHandler ?? ((_) => Task.FromResult(false));
+            this.completionCallback = callbacks?.CompletionCallback ?? ((_, _) => Task.FromResult<IReadOnlyList<CompletionItem>>(Array.Empty<CompletionItem>()));
+            this.highlightCallback = callbacks?.HighlightCallback ?? ((_) => Task.FromResult<IReadOnlyCollection<FormatSpan>>(Array.Empty<FormatSpan>()));
+            this.detectSoftEnterCallback = callbacks?.ForceSoftEnterCallback ?? ((_) => Task.FromResult(false));
         }
 
         /// <summary>
@@ -114,9 +107,28 @@ namespace PrettyPrompt
     /// If the user successfully submitted text, Success will be true and Text will be present.
     /// If the user cancelled (via ctrl-c), Success will be false and Text will be an empty string.
     /// </summary>
-    public record PromptResult(bool Success, string Text)
+    public record PromptResult(bool IsSuccess, string Text, bool IsHardEnter)
     {
         internal CancellationTokenSource CancellationTokenSource { get; set; }
         public CancellationToken CancellationToken => CancellationTokenSource.Token;
+    }
+
+    public class PromptCallbacks
+    {
+        /// <summary>
+        /// An optional delegate that provides autocompletion results
+        /// </summary>
+        public CompletionCallbackAsync CompletionCallback { get; init; }
+
+        /// <summary>
+        /// An optional delegate that controls syntax highlighting
+        /// </summary>
+        public HighlightCallbackAsync HighlightCallback { get; init; }
+
+        /// <summary>
+        /// An optional delegate that allows for intercepting the "Enter" key and causing it to
+        /// insert a "soft enter" (newline) instead of submitting the prompt.
+        /// </summary>
+        public ForceSoftEnterCallbackAsync ForceSoftEnterCallback { get; init; }
     }
 }

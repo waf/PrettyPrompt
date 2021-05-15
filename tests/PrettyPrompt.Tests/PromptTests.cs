@@ -18,7 +18,7 @@ namespace PrettyPrompt.Tests
             var prompt = new Prompt(console: console);
             var result = await prompt.ReadLineAsync("> ");
 
-            Assert.True(result.Success);
+            Assert.True(result.IsSuccess);
             Assert.Equal("Hello World", result.Text);
         }
 
@@ -29,11 +29,17 @@ namespace PrettyPrompt.Tests
             console.StubInput($"  {Enter}");
 
             // add completion handler, as it has caused problem when completing all whitespace prompts
-            var prompt = new Prompt(CompletionTestData.CompletionHandlerAsync, console: console);
+            var prompt = new Prompt(
+                callbacks: new PromptCallbacks
+                {
+                    CompletionCallback = CompletionTestData.CompletionHandlerAsync
+                },
+                console: console
+            );
 
             var result = await prompt.ReadLineAsync("> ");
 
-            Assert.True(result.Success);
+            Assert.True(result.IsSuccess);
             Assert.Equal("  ", result.Text);
         }
 
@@ -46,7 +52,7 @@ namespace PrettyPrompt.Tests
             var prompt = new Prompt(console: console);
             var result = await prompt.ReadLineAsync("> ");
 
-            Assert.False(result.Success);
+            Assert.False(result.IsSuccess);
             Assert.Empty(result.Text);
         }
 
@@ -60,7 +66,7 @@ namespace PrettyPrompt.Tests
             var prompt = new Prompt(console: console);
             var result = await prompt.ReadLineAsync("> ");
 
-            Assert.True(result.Success);
+            Assert.True(result.IsSuccess);
             Assert.Equal("111222333", result.Text);
 
             var finalOutput = console.GetFinalOutput();

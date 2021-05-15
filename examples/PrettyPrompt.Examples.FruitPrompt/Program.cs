@@ -14,16 +14,21 @@ namespace PrettyPrompt
             Console.WriteLine("Welcome! Try typing some fruit names.");
             Console.WriteLine();
 
-            var prompt = new Prompt(completionHandler: FindCompletions, highlightHandler: Highlight, persistentHistoryFilepath: "./history-file");
+            var prompt = new Prompt(persistentHistoryFilepath: "./history-file", new PromptCallbacks
+            {
+                CompletionCallback = FindCompletions,
+                HighlightCallback = Highlight,
+            });
+
             while (true)
             {
                 var response = await prompt.ReadLineAsync("> ").ConfigureAwait(false);
-                if (response.Success)
+                if (response.IsSuccess)
                 {
                     if (response.Text == "exit") break;
                     // optionally, use response.CancellationToken so the user can
                     // cancel long-running processing of their response via ctrl-c
-                    Console.WriteLine("You wrote " + response.Text);
+                    Console.WriteLine("You wrote " + (response.IsHardEnter ? response.Text.ToUpper() : response.Text));
                 }
             }
         }
