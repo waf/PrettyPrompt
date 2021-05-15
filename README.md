@@ -13,13 +13,14 @@ A cross-platform command line prompt that provides syntax highlighting, autocomp
 ## Features
 
 - Syntax highlighting support via ANSI escape sequences. Supports both the terminal color palette and full RGB colors.
-- Autocompletion ("intellisense") menu
-- History
+- Autocompletion menu, with expanded documentation tooltips
 - Multi-line input
 - Word wrapping
-- Optionally detects "incomplete" lines and converts <kbd>Enter</kbd> to a "soft newline" (<kbd>Shift-Enter</kbd>) .
-- Unsurprising keybindings: <kbd>Home</kbd>, <kbd>End</kbd>, <kbd>Ctrl-L</kbd> to clear screen, <kbd>Ctrl-C</kbd> to cancel current line, <kbd>Ctrl+Space</kbd> to open autocomplete menu.
+- History navigation, optionally persistent across sessions
+- Optionally detects incomplete lines and converts <kbd>Enter</kbd> to a "soft newline" (<kbd>Shift-Enter</kbd>).
+- Unsurprising keybindings: <kbd>Home</kbd>, <kbd>End</kbd>, <kbd>Ctrl-L</kbd> to clear screen, <kbd>Ctrl-C</kbd> to cancel current line, <kbd>Ctrl+Space</kbd> to open autocomplete menu, and more.
 - Works "in-line" on the command line; it doesn't take over the entire terminal window.
+- Provides a `CancellationToken` for each prompt result, so the end-user of your application can cancel long running tasks via <kbd>Ctrl-C</kbd>.
 
 ## Installation
 

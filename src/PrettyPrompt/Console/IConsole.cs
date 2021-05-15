@@ -19,5 +19,8 @@ namespace PrettyPrompt.Consoles
         void HideCursor();
         ConsoleKeyInfo ReadKey(bool intercept);
         void InitVirtualTerminalProcessing();
+
+        bool CaptureControlC { get; set; }
+        event ConsoleCancelEventHandler CancelKeyPress;
     }
 }

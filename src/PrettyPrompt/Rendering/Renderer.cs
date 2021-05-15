@@ -60,7 +60,7 @@ namespace PrettyPrompt
                 cursor: codePane.Cursor,
                 codeAreaStartColumn: prompt.Length,
                 codeAreaWidth: codePane.CodeAreaWidth
-            );
+            ).ConfigureAwait(false);
 
             // ansi escape sequence row/column values are 1-indexed.
             var ansiCoordinate = new ConsoleCoordinate
@@ -134,7 +134,9 @@ namespace PrettyPrompt
             var completionRows = BuildCompletionRows(completionPane, codeAreaWidth, wordWidth, completionStart);
 
             var documentationStart = new ConsoleCoordinate(cursor.Row + 1, completionStart.Column + boxWidth);
-            var selectedItemDescription = await (completionPane.FilteredView.SelectedItem.ExtendedDescription?.Value ?? Task.FromResult(""));
+            var selectedItemDescription = await (
+                completionPane.FilteredView.SelectedItem.ExtendedDescription?.Value ?? Task.FromResult("")
+            ).ConfigureAwait(false);
             var documentationRows = BuildDocumentationRows(
                 documentation: selectedItemDescription,
                 maxWidth: codeAreaWidth - completionStart.Column - boxWidth

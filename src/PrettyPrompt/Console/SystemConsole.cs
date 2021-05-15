@@ -8,21 +8,29 @@ namespace PrettyPrompt.Consoles
     /// </summary>
     public class SystemConsole : IConsole
     {
-        public SystemConsole()
-        {
-            Console.TreatControlCAsInput = true;
-        }
-
         public int CursorTop => Console.CursorTop;
         public int BufferWidth => Console.BufferWidth;
         public int WindowHeight => Console.WindowHeight;
         public int WindowTop => Console.WindowTop;
+
 
         public void Write(string content) => Console.Write(content);
         public void Clear() => Console.Clear();
         public void ShowCursor() => Console.CursorVisible = true;
         public void HideCursor() => Console.CursorVisible = false;
         public ConsoleKeyInfo ReadKey(bool intercept) => Console.ReadKey(intercept);
+
+        public bool CaptureControlC
+        {
+            get => Console.TreatControlCAsInput;
+            set => Console.TreatControlCAsInput = value;
+        }
+
+        public event ConsoleCancelEventHandler CancelKeyPress
+        {
+            add => Console.CancelKeyPress += value;
+            remove => Console.CancelKeyPress -= value;
+        }
 
         /// <summary>
         /// Enables ANSI escape codes for controlling the terminal.

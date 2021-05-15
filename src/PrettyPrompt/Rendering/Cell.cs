@@ -1,9 +1,7 @@
 ﻿using PrettyPrompt.Consoles;
 using PrettyPrompt.Highlighting;
 using System.Diagnostics;
-using System.Globalization;
 using System.Linq;
-using System.Text;
 
 namespace PrettyPrompt
 {

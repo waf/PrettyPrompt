@@ -1,12 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace PrettyPrompt.Rendering
+﻿namespace PrettyPrompt.Rendering
 {
-    class Box
+    static class Box
     {
         public const char CornerUpperRight = '┐';
         public const char CornerLowerRight = '┘';

@@ -136,7 +136,7 @@ namespace PrettyPrompt.Panes
             {
                 if (allCompletions.Count == 0)
                 {
-                    var completions = await this.complete.Invoke(codePane.Input.ToString(), codePane.Caret);
+                    var completions = await this.complete.Invoke(codePane.Input.ToString(), codePane.Caret).ConfigureAwait(false);
                     if(completions.Any())
                     {
                         SetCompletions(completions, codePane.Input);

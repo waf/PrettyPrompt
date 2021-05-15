@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System.IO;
+using System.Threading.Tasks;
 using Xunit;
 using static System.ConsoleKey;
 
@@ -71,6 +72,41 @@ namespace PrettyPrompt.Tests
             var result = await prompt.ReadLineAsync("> ");
 
             Assert.Equal("And a three", result.Text);
+        }
+
+        [Fact]
+        public async Task ReadLine_NoPersistentHistory_DoesNotPersistAcrossPrompts()
+        {
+            var console = ConsoleStub.NewConsole();
+            var prompt = new Prompt(console: console);
+            console.StubInput($"Entry One{Enter}");
+            var result = await prompt.ReadLineAsync("> ");
+            Assert.Equal("Entry One", result.Text);
+
+            // second prompt, should not get history from first prompt
+            console = ConsoleStub.NewConsole();
+            prompt = new Prompt(console: console);
+            console.StubInput($"{UpArrow}{Enter}");
+            result = await prompt.ReadLineAsync("> ");
+            Assert.Equal("", result.Text); // did not navigate to "Entry One" above
+        }
+
+        [Fact]
+        public async Task ReadLine_PersistentHistory_PersistsAcrossPrompts()
+        {
+            var historyFile = Path.GetTempFileName();
+
+            var console = ConsoleStub.NewConsole();
+            var prompt = new Prompt(console: console, persistentHistoryFilepath: historyFile);
+            console.StubInput($"Entry One{Enter}");
+            var result = await prompt.ReadLineAsync("> ");
+            Assert.Equal("Entry One", result.Text);
+
+            console = ConsoleStub.NewConsole();
+            prompt = new Prompt(console: console, persistentHistoryFilepath: historyFile);
+            console.StubInput($"{UpArrow}{Enter}");
+            result = await prompt.ReadLineAsync("> ");
+            Assert.Equal("Entry One", result.Text); // did not navigate to "Entry One" above
         }
     }
 }
