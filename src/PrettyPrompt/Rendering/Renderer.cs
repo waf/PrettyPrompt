@@ -12,6 +12,11 @@ using static System.ConsoleModifiers;
 
 namespace PrettyPrompt
 {
+    /// <summary>
+    /// Given our panes, actually draw them to the screen.
+    /// This class mostly deals with generating Cells, which the <see cref="IncrementalRendering"/> class then processes
+    /// to generate the minimal set of ANSI escape sequences to write to the screen.
+    /// </summary>
     class Renderer
     {
         private readonly IConsole console;
@@ -122,7 +127,7 @@ namespace PrettyPrompt
             if (completionPane.FilteredView.Count == 0)
                 return Array.Empty<ScreenArea>();
 
-            int wordWidth = completionPane.FilteredView.Max(w => w.ReplacementText.Length);
+            int wordWidth = completionPane.FilteredView.Max(w => (w.DisplayText ?? w.ReplacementText).Length);
             int boxWidth = wordWidth + 2 + 2; // two border characters, plus two spaces for padding
 
             var completionStart = new ConsoleCoordinate(

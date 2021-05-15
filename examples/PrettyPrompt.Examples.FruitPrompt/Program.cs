@@ -62,6 +62,7 @@ namespace PrettyPrompt
                 {
                     StartIndex = previousWordStart + 1,
                     ReplacementText = fruit.name,
+                    DisplayText = fruit.name,
                     ExtendedDescription = new Lazy<Task<string>>(() => Task.FromResult(fruit.description))
                 })
                 .ToArray()
