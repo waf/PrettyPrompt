@@ -23,6 +23,20 @@ namespace PrettyPrompt.Tests
         }
 
         [Fact]
+        public async Task ReadLine_ControlEnter_IsHardEnter()
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput($"Hello World{Control}{Enter}");
+
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLineAsync("> ");
+
+            Assert.True(result.IsSuccess);
+            Assert.True(result.IsHardEnter);
+            Assert.Equal("Hello World", result.Text);
+        }
+
+        [Fact]
         public async Task ReadLine_WhitespacePrompt_ReturnsWhitespace()
         {
             var console = ConsoleStub.NewConsole();
