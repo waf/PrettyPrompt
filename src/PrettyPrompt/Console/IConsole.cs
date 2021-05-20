@@ -17,10 +17,11 @@ namespace PrettyPrompt.Consoles
         void Clear();
         void ShowCursor();
         void HideCursor();
+        bool KeyAvailable { get; }
         ConsoleKeyInfo ReadKey(bool intercept);
         void InitVirtualTerminalProcessing();
 
-        bool CaptureControlC { get; set; }
         event ConsoleCancelEventHandler CancelKeyPress;
+        bool CaptureControlC { get; set; }
     }
 }

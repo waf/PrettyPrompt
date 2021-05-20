@@ -6,6 +6,8 @@ using PrettyPrompt.History;
 using PrettyPrompt.Panes;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -23,8 +25,8 @@ namespace PrettyPrompt
         private readonly CancellationManager cancellationManager;
 
         private readonly CompletionCallbackAsync completionCallback;
-        private readonly HighlightCallbackAsync highlightCallback;
         private readonly ForceSoftEnterCallbackAsync detectSoftEnterCallback;
+        private readonly SyntaxHighlighter highlighter;
 
         /// <summary>
         /// Instantiates a prompt object. This object can be re-used for multiple lines of input.
@@ -44,8 +46,10 @@ namespace PrettyPrompt
             this.cancellationManager = new CancellationManager(this.console);
 
             this.completionCallback = callbacks?.CompletionCallback ?? ((_, _) => Task.FromResult<IReadOnlyList<CompletionItem>>(Array.Empty<CompletionItem>()));
-            this.highlightCallback = callbacks?.HighlightCallback ?? ((_) => Task.FromResult<IReadOnlyCollection<FormatSpan>>(Array.Empty<FormatSpan>()));
             this.detectSoftEnterCallback = callbacks?.ForceSoftEnterCallback ?? ((_) => Task.FromResult(false));
+
+            var highlightCallback = callbacks?.HighlightCallback ?? ((_) => Task.FromResult<IReadOnlyCollection<FormatSpan>>(Array.Empty<FormatSpan>()));
+            this.highlighter = new SyntaxHighlighter(highlightCallback);
         }
 
         /// <summary>
@@ -67,10 +71,8 @@ namespace PrettyPrompt
             history.Track(codePane);
             cancellationManager.CaptureControlC();
 
-            while (true)
+            foreach(var key in KeyPress.ReadForever(console))
             {
-                var key = new KeyPress(console.ReadKey(intercept: true));
-
                 // grab the code area width every key press, so we rerender appropriately when the console is resized.
                 codePane.MeasureConsole(console, prompt);
 
@@ -82,18 +84,21 @@ namespace PrettyPrompt
                 foreach (var panes in new IKeyPressHandler[] { completionPane, codePane, history })
                     await panes.OnKeyUp(key).ConfigureAwait(false);
 
-                var highlights = await highlightCallback.Invoke(codePane.Input.ToString()).ConfigureAwait(false);
+                var highlights = await highlighter.HighlightAsync(codePane.Input).ConfigureAwait(false);
                 await renderer.RenderOutput(codePane, completionPane, highlights, key).ConfigureAwait(false);
 
                 codePane.MeasureConsole(console, prompt);
 
                 if (codePane.Result is not null)
                 {
+                    _ = history.SavePersistentHistoryAsync(codePane.Input).ConfigureAwait(false);
                     cancellationManager.AllowControlCToCancelResult(codePane.Result);
-                    await history.SavePersistentHistoryAsync(codePane.Input).ConfigureAwait(false);
                     return codePane.Result;
                 }
             }
+
+            Debug.Assert(false, "Should never reach here due to infinite " + nameof(KeyPress.ReadForever));
+            return null;
         }
     }
 

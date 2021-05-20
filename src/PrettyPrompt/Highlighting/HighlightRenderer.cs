@@ -2,13 +2,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 
 namespace PrettyPrompt.Highlighting
 {
-    public delegate Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text);
-
-    static class SyntaxHighlighting
+    static class HighlightRenderer
     {
         public static Row[] ApplyColorToCharacters(IReadOnlyCollection<FormatSpan> highlights, IReadOnlyList<WrappedLine> lines)
         {

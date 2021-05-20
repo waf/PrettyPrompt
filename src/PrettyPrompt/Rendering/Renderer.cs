@@ -107,7 +107,7 @@ namespace PrettyPrompt
 
         private static ScreenArea BuildCodeScreenArea(CodePane codePane, IReadOnlyCollection<FormatSpan> highlights)
         {
-            var highlightedLines = SyntaxHighlighting.ApplyColorToCharacters(highlights, codePane.WordWrappedLines);
+            var highlightedLines = HighlightRenderer.ApplyColorToCharacters(highlights, codePane.WordWrappedLines);
             var codeWidget = new ScreenArea(new ConsoleCoordinate(0, 0), highlightedLines, TruncateToScreenHeight: false);
             return codeWidget;
         }

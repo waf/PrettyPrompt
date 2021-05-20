@@ -1,6 +1,7 @@
 ﻿using PrettyPrompt.Consoles;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using static System.ConsoleKey;
@@ -107,6 +108,11 @@ namespace PrettyPrompt.Panes
                     Input.Insert(Caret, "    ");
                     Caret += 4;
                     break;
+                case (Shift, Insert) when key.PastedText is not null:
+                    string pastedText = DedentMultipleLines(key.PastedText);
+                    Input.Insert(Caret, pastedText);
+                    Caret += pastedText.Length;
+                    break;
                 default:
                     if (!char.IsControl(key.ConsoleKeyInfo.KeyChar))
                     {
@@ -169,10 +175,32 @@ namespace PrettyPrompt.Panes
                     return c2Index;
             }
 
-            bool IsWordStart(char c1, char c2) => !char.IsLetterOrDigit(c1) && char.IsLetterOrDigit(c2);
+            static bool IsWordStart(char c1, char c2) => !char.IsLetterOrDigit(c1) && char.IsLetterOrDigit(c2);
 
             return bound;
         }
 
+        /// <summary>
+        /// If we have text with consistent, leading indentation, trim that indentation ("dedent" it).
+        /// This handles the scenario where users are pasting from an IDE.
+        /// </summary>
+        private static string DedentMultipleLines(string text)
+        {
+            var lines = text.Split(new[] { '\r', '\n' });
+            if (lines.Length > 1)
+            {
+                var leadingIndent = lines
+                    .Where(line => line != string.Empty)
+                    .Select(line => line.TakeWhile(char.IsWhiteSpace).Count())
+                    .Min();
+
+                for (var i = 0; i < lines.Length; i++)
+                {
+                    lines[i] = lines[i].Substring(Math.Min(lines[i].Length, leadingIndent));
+                }
+            }
+            var pastedText = string.Join('\n', lines);
+            return pastedText;
+        }
     }
 }

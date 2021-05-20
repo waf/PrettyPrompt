@@ -10,3 +10,5 @@ coverage:
     patch:
       default:
         enabled: no
+ignore:
+  - "**/SystemConsole.cs" # an abstraction for testability of System.Console. Cannot be tested headless.

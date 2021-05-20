@@ -18,6 +18,7 @@ namespace PrettyPrompt.Consoles
         public void Clear() => Console.Clear();
         public void ShowCursor() => Console.CursorVisible = true;
         public void HideCursor() => Console.CursorVisible = false;
+        public bool KeyAvailable => Console.KeyAvailable;
         public ConsoleKeyInfo ReadKey(bool intercept) => Console.ReadKey(intercept);
 
         public bool CaptureControlC
@@ -40,10 +41,10 @@ namespace PrettyPrompt.Consoles
         {
             if (!OperatingSystem.IsWindows()) return;
 
+            // enable writing ansi escape output
             const int STD_OUTPUT_HANDLE = -11;
             const uint ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004;
             const uint DISABLE_NEWLINE_AUTO_RETURN = 0x0008;
-
             var iStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
             if (!GetConsoleMode(iStdOut, out uint outConsoleMode) ||
                 !SetConsoleMode(iStdOut, outConsoleMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN))
