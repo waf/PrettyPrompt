@@ -91,7 +91,7 @@ namespace PrettyPrompt
 
                 if (codePane.Result is not null)
                 {
-                    _ = history.SavePersistentHistoryAsync(codePane.Input).ConfigureAwait(false);
+                    _ = history.SavePersistentHistoryAsync(codePane.Input);
                     cancellationManager.AllowControlCToCancelResult(codePane.Result);
                     return codePane.Result;
                 }
