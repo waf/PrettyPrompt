@@ -172,13 +172,13 @@ namespace PrettyPrompt.Tests
             var console = ConsoleStub.NewConsole();
             // it's possible that if keys are pressed simultaneously / quickly, we'll still have
             // some keys in the buffer after calling Console.ReadKey()
-            console.KeyAvailable.Returns(true, true, true, false);
-            console.StubInput($"abcd{Enter}");
+            console.KeyAvailable.Returns(true, true, false);
+            console.StubInput($"abc{Enter}");
 
             var prompt = new Prompt(console: console);
             var result = await prompt.ReadLineAsync("> ");
 
-            Assert.Equal($"abcd", result.Text);
+            Assert.Equal($"abc", result.Text);
         }
 
         [Fact]
