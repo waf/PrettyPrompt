@@ -6,8 +6,20 @@ namespace PrettyPrompt.Consoles
 {
     internal class KeyPress
     {
+        /// <summary>
+        /// The key press as reported by Console.ReadKey
+        /// </summary>
         public ConsoleKeyInfo ConsoleKeyInfo { get; }
+
+        /// <summary>
+        /// A tuple that represents the key press.
+        /// Intended to be pattern matched, e.g. (A) or (Ctrl, A) or (Ctrl | Shift, A) 
+        /// </summary>
         public object Pattern { get; }
+
+        /// <summary>
+        /// Text that was pasted as a result of this key press.
+        /// </summary>
         public string PastedText { get; }
 
         public KeyPress(ConsoleKeyInfo consoleKeyInfo, string pastedText = null)
