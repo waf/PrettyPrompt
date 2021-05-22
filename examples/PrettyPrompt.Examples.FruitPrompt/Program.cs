@@ -2,6 +2,7 @@
 using PrettyPrompt.Highlighting;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -16,8 +17,17 @@ namespace PrettyPrompt
 
             var prompt = new Prompt(persistentHistoryFilepath: "./history-file", new PromptCallbacks
             {
+                // populate completions and documentation for autocompletion window
                 CompletionCallback = FindCompletions,
+                // defines syntax highlighting
                 HighlightCallback = Highlight,
+                // registers functions to be called when the user presses a key. The text
+                // currently typed into the prompt, along with the caret position within
+                // that text are provided as callback parameters.
+                KeyPressCallbacks =
+                {
+                    [(ConsoleModifiers.Control, ConsoleKey.F1)] = ShowFruitDocumentation
+                }
             });
 
             while (true)
@@ -85,13 +95,55 @@ namespace PrettyPrompt
                 {
                     if (text.Length >= i + fruit.name.Length && text.Substring(i, fruit.name.Length).ToLower() == fruit.name)
                     {
-                        spans.Add(new FormatSpan(i, fruit.name.Length, new ConsoleFormat(foreground: fruit.highlight)));
+                        spans.Add(new FormatSpan(i, fruit.name.Length, new ConsoleFormat(Foreground: fruit.highlight)));
                         i += fruit.name.Length;
                         break;
                     }
                 }
             }
             return Task.FromResult<IReadOnlyCollection<FormatSpan>>(spans);
+        }
+
+        private static Task ShowFruitDocumentation(string text, int caret)
+        {
+            string wordUnderCursor = GetWordAtCaret(text, caret).ToLower();
+
+            if (Fruits.Any(f => f.name.ToLower() == wordUnderCursor))
+            {
+                // wikipedia is the definitive fruit documentation.
+                LaunchBrowser("https://en.wikipedia.org/wiki/" + Uri.EscapeUriString(wordUnderCursor));
+            }
+
+            return Task.CompletedTask;
+
+            // local functions
+            static string GetWordAtCaret(string text, int caret)
+            {
+                var words = text.Split(new[] { ' ', '\n' });
+                string wordAtCaret = string.Empty;
+                int currentIndex = 0;
+                foreach (var word in words)
+                {
+                    if (currentIndex < caret && caret < currentIndex + word.Length)
+                    {
+                        wordAtCaret = word;
+                        break;
+                    }
+                    currentIndex += word.Length + 1; // +1 due to word separator
+                }
+
+                return wordAtCaret;
+            }
+
+            static void LaunchBrowser(string url)
+            {
+                var browser =
+                    OperatingSystem.IsWindows() ? new ProcessStartInfo("cmd", $"/c start {url}") :
+                    OperatingSystem.IsMacOS() ? new ProcessStartInfo("open", url) :
+                    new ProcessStartInfo("xdg-open", url); //linux, unix-like
+
+                Process.Start(browser);
+            }
         }
     }
 }

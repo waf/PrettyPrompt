@@ -11,8 +11,6 @@ namespace PrettyPrompt.Panes
 {
     public record WrappedLine(int StartIndex, string Content);
 
-    public delegate Task<bool> ForceSoftEnterCallbackAsync(string text);
-
     internal class CodePane : IKeyPressHandler
     {
         private readonly ForceSoftEnterCallbackAsync shouldForceSoftEnterAsync;

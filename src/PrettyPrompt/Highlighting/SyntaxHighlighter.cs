@@ -5,8 +5,6 @@ using System.Threading.Tasks;
 
 namespace PrettyPrompt.Highlighting
 {
-    public delegate Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text);
-
     class SyntaxHighlighter
     {
         private readonly HighlightCallbackAsync highlightCallbackAsync;

@@ -36,7 +36,7 @@ namespace PrettyPrompt.Consoles
                 // If the user pastes text, we see it as a bunch of key presses. We don't want to send
                 // them all individually, as it will trigger syntax highlighting and potentially intellisense
                 // for each key press, which is slow. Instead, batch them up to send as single "pasted text" block.
-                var keys = ReadRemainingKeys(key);
+                var keys = ReadRemainingKeys(console, key);
 
                 if (keys.Count < 4) // 4 is not special here, just seemed like a decent number to separate
                                     // between "keys pressed simultaneously" and "pasted text"
@@ -60,13 +60,13 @@ namespace PrettyPrompt.Consoles
         /// <summary>
         /// Read any remaining key presses in the buffer, including the provided <paramref name="key"/>.
         /// </summary>
-        private static List<ConsoleKeyInfo> ReadRemainingKeys(ConsoleKeyInfo key)
+        private static List<ConsoleKeyInfo> ReadRemainingKeys(IConsole console, ConsoleKeyInfo key)
         {
             var keys = new List<ConsoleKeyInfo> { key };
             do
             {
-                keys.Add(Console.ReadKey(true));
-            } while (Console.KeyAvailable);
+                keys.Add(console.ReadKey(true));
+            } while (console.KeyAvailable);
 
             return keys;
         }

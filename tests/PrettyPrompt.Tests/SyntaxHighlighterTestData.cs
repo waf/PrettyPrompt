@@ -23,7 +23,7 @@ namespace PrettyPrompt.Tests
                 {
                     if (text.Length >= i + term.Key.Length && text.Substring(i, term.Key.Length).ToLower() == term.Key)
                     {
-                        spans.Add(new FormatSpan(i, term.Key.Length, new ConsoleFormat(foreground: term.Value)));
+                        spans.Add(new FormatSpan(i, term.Key.Length, new ConsoleFormat(Foreground: term.Value)));
                         i += term.Key.Length;
                         break;
                     }

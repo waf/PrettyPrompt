@@ -154,8 +154,8 @@ namespace PrettyPrompt
             };
         }
 
-        private static ConsoleFormat CompletionBorderColor = new ConsoleFormat(foreground: AnsiColor.Blue);
-        private static ConsoleFormat DocumentationBorderColor = new ConsoleFormat(foreground: AnsiColor.Cyan);
+        private static ConsoleFormat CompletionBorderColor = new ConsoleFormat(Foreground: AnsiColor.Blue);
+        private static ConsoleFormat DocumentationBorderColor = new ConsoleFormat(Foreground: AnsiColor.Cyan);
 
         private Row[] BuildCompletionRows(CompletionPane completionPane, int codeAreaWidth, int wordWidth, ConsoleCoordinate completionBoxStart)
         {

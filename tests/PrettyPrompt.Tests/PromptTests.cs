@@ -1,9 +1,14 @@
 using System.Threading.Tasks;
 using Xunit;
+using NSubstitute;
 using static PrettyPrompt.Consoles.AnsiEscapeCodes;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
 using static System.Environment;
+using System;
+using System.Collections.Generic;
+using PrettyPrompt.Highlighting;
+using System.Linq;
 
 namespace PrettyPrompt.Tests
 {
@@ -98,7 +103,7 @@ namespace PrettyPrompt.Tests
         {
             var console = ConsoleStub.NewConsole();
             console.StubInput(
-                $"pretty{Backspace}{Backspace}{Home}{LeftArrow}{RightArrow}{RightArrow}{Delete}omp{RightArrow}!{RightArrow}{Enter}"
+                $"pretty{Backspace}{Backspace}{Home}{LeftArrow}{RightArrow}{RightArrow}{Delete}omp{RightArrow}{Home}{End}!{RightArrow}{Enter}"
             );
 
             var prompt = new Prompt(console: console);
@@ -134,13 +139,14 @@ namespace PrettyPrompt.Tests
                 $"aaaa bbbb 5555{Shift}{Enter}",
                 $"dddd x5x5 foo.bar{Shift}{Enter}",
                 $"{UpArrow}{Control}{RightArrow}{Control}{RightArrow}{Control}{RightArrow}lum",
+                $"{Control}{LeftArrow}{Control}{LeftArrow}{Backspace}{Tab}",
                 $"{Enter}"
             );
 
             var prompt = new Prompt(console: console);
             var result = await prompt.ReadLineAsync("> ");
 
-            Assert.Equal($"aaaa bbbb 5555{NewLine}dddd x5x5 foo.lumbar{NewLine}", result.Text);
+            Assert.Equal($"aaaa bbbb 5555{NewLine}dddd x5x5    foo.lumbar{NewLine}", result.Text);
         }
 
         [Fact]
@@ -158,6 +164,83 @@ namespace PrettyPrompt.Tests
             var result = await prompt.ReadLineAsync("> ");
 
             Assert.Equal($"aaaa bbbb eeee ffff{NewLine}", result.Text);
+        }
+
+        [Fact]
+        public async Task ReadLine_TypeReallyQuickly_DoesNotDropKeyPresses()
+        {
+            var console = ConsoleStub.NewConsole();
+            // it's possible that if keys are pressed simultaneously / quickly, we'll still have
+            // some keys in the buffer after calling Console.ReadKey()
+            console.KeyAvailable.Returns(true, true, true, false);
+            console.StubInput($"abcd{Enter}");
+
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLineAsync("> ");
+
+            Assert.Equal($"abcd", result.Text);
+        }
+
+        [Fact]
+        public async Task ReadLine_Paste_DoesNotRepeatedlySyntaxHighlight()
+        {
+            var console = ConsoleStub.NewConsole();
+            console.KeyAvailable.Returns(true, " am pasting conten".Select(_ => true).Append(false).ToArray());
+            console.StubInput($"I am pasting content{LeftArrow}{RightArrow}{Enter}");
+
+            int syntaxHighlightingInvocations = 0;
+
+            var prompt = new Prompt(callbacks: new PromptCallbacks
+            {
+                HighlightCallback = text =>
+                {
+                    syntaxHighlightingInvocations++;
+                    return Task.FromResult<IReadOnlyCollection<FormatSpan>>(Array.Empty<FormatSpan>());
+                }
+            }, console: console);
+
+            var result = await prompt.ReadLineAsync("> ");
+
+            Assert.Equal("I am pasting content", result.Text);
+            Assert.Equal(1, syntaxHighlightingInvocations);
+        }
+
+        [Fact]
+        public async Task ReadLine_Paste_TrimsLeadingIndentation()
+        {
+            var console = ConsoleStub.NewConsole();
+            
+            console.KeyAvailable
+                .Returns(true, $"   indent\r        more indent\r\r    inden".Select(_ => true).Append(false).ToArray());
+            console.StubInput($"    indent\r        more indent\r\r    indent{Enter}");
+
+            var prompt = new Prompt( console: console);
+
+            var result = await prompt.ReadLineAsync("> ");
+
+            Assert.Equal($"indent{NewLine}    more indent{NewLine}{NewLine}indent", result.Text);
+        }
+
+        [Fact]
+        public async Task ReadLine_KeyPressCallback_IsInvoked()
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput($"I like apple{Control}{LeftArrow}{Control}{LeftArrow}{F1}{Enter}");
+
+            string input = null;
+            int? caret = null;
+            var prompt = new Prompt(callbacks: new PromptCallbacks
+            {
+                KeyPressCallbacks =
+                {
+                    [F1] = (inputArg, caretArg) => { input = inputArg; caret = caretArg; return Task.CompletedTask; }
+                }
+            }, console: console);
+
+            _ = await prompt.ReadLineAsync("> ");
+
+            Assert.Equal("I like apple", input);
+            Assert.Equal(2, caret);
         }
     }
 }

@@ -22,29 +22,29 @@ namespace PrettyPrompt.Consoles
         public static string MoveCursorRight(int count) => count == 0 ? "" : $"{Escape}[{count}C";
         public static string MoveCursorLeft(int count) => count == 0 ? "" : $"{Escape}[{count}D";
 
-        public static string ForegroundColor(byte r, byte g, byte b) => ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.RGB(r, g, b)));
-        public static string BackgroundColor(byte r, byte g, byte b) => ToAnsiEscapeSequence(new ConsoleFormat(background: AnsiColor.RGB(r, g, b)));
+        public static string ForegroundColor(byte r, byte g, byte b) => ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.RGB(r, g, b)));
+        public static string BackgroundColor(byte r, byte g, byte b) => ToAnsiEscapeSequence(new ConsoleFormat(Background: AnsiColor.RGB(r, g, b)));
 
-        public static readonly string Black = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.Black));
-        public static readonly string Red = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.Red));
-        public static readonly string Green = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.Green));
-        public static readonly string Yellow = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.Yellow));
-        public static readonly string Blue = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.Blue));
-        public static readonly string Magenta = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.Magenta));
-        public static readonly string Cyan = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.Cyan));
-        public static readonly string White = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.White));
-        public static readonly string BrightBlack = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.BrightBlack));
-        public static readonly string BrightRed = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.BrightRed));
-        public static readonly string BrightGreen = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.BrightGreen));
-        public static readonly string BrightYellow = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.BrightYellow));
-        public static readonly string BrightBlue = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.BrightBlue));
-        public static readonly string BrightMagenta = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.BrightMagenta));
-        public static readonly string BrightCyan = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.BrightCyan));
-        public static readonly string BrightWhite = ToAnsiEscapeSequence(new ConsoleFormat(foreground: AnsiColor.BrightWhite));
+        public static readonly string Black = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.Black));
+        public static readonly string Red = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.Red));
+        public static readonly string Green = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.Green));
+        public static readonly string Yellow = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.Yellow));
+        public static readonly string Blue = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.Blue));
+        public static readonly string Magenta = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.Magenta));
+        public static readonly string Cyan = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.Cyan));
+        public static readonly string White = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.White));
+        public static readonly string BrightBlack = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.BrightBlack));
+        public static readonly string BrightRed = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.BrightRed));
+        public static readonly string BrightGreen = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.BrightGreen));
+        public static readonly string BrightYellow = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.BrightYellow));
+        public static readonly string BrightBlue = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.BrightBlue));
+        public static readonly string BrightMagenta = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.BrightMagenta));
+        public static readonly string BrightCyan = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.BrightCyan));
+        public static readonly string BrightWhite = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.BrightWhite));
         public static readonly string Reset = $"{Escape}[0m";
 
         public static string SetColors(AnsiColor fg, AnsiColor bg) =>
-            ToAnsiEscapeSequence(new ConsoleFormat(foreground: fg, background: bg));
+            ToAnsiEscapeSequence(new ConsoleFormat(Foreground: fg, Background: bg));
 
         public static string ToAnsiEscapeSequence(ConsoleFormat formatting) =>
            Escape

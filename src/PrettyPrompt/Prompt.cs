@@ -4,7 +4,6 @@ using PrettyPrompt.Consoles;
 using PrettyPrompt.Highlighting;
 using PrettyPrompt.History;
 using PrettyPrompt.Panes;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -26,6 +25,7 @@ namespace PrettyPrompt
 
         private readonly CompletionCallbackAsync completionCallback;
         private readonly ForceSoftEnterCallbackAsync detectSoftEnterCallback;
+        private readonly Dictionary<object, KeyPressCallbackAsync> keyPressCallbacks;
         private readonly SyntaxHighlighter highlighter;
 
         /// <summary>
@@ -45,10 +45,12 @@ namespace PrettyPrompt
             this.history = new HistoryLog(persistentHistoryFilepath);
             this.cancellationManager = new CancellationManager(this.console);
 
-            this.completionCallback = callbacks?.CompletionCallback ?? ((_, _) => Task.FromResult<IReadOnlyList<CompletionItem>>(Array.Empty<CompletionItem>()));
-            this.detectSoftEnterCallback = callbacks?.ForceSoftEnterCallback ?? ((_) => Task.FromResult(false));
+            callbacks ??= new PromptCallbacks();
+            this.completionCallback = callbacks.CompletionCallback;
+            this.detectSoftEnterCallback = callbacks.ForceSoftEnterCallback;
+            this.keyPressCallbacks = callbacks.KeyPressCallbacks;
 
-            var highlightCallback = callbacks?.HighlightCallback ?? ((_) => Task.FromResult<IReadOnlyCollection<FormatSpan>>(Array.Empty<FormatSpan>()));
+            var highlightCallback = callbacks.HighlightCallback;
             this.highlighter = new SyntaxHighlighter(highlightCallback);
         }
 
@@ -76,18 +78,17 @@ namespace PrettyPrompt
                 // grab the code area width every key press, so we rerender appropriately when the console is resized.
                 codePane.MeasureConsole(console, prompt);
 
-                foreach (var panes in new IKeyPressHandler[] { completionPane, codePane, history })
-                    await panes.OnKeyDown(key).ConfigureAwait(false);
+                await InterpretKeyPress(key, codePane, completionPane).ConfigureAwait(false);
 
-                codePane.WordWrap();
+                await RenderOutput(renderer, codePane, completionPane, key).ConfigureAwait(false);
 
-                foreach (var panes in new IKeyPressHandler[] { completionPane, codePane, history })
-                    await panes.OnKeyUp(key).ConfigureAwait(false);
-
-                var highlights = await highlighter.HighlightAsync(codePane.Input).ConfigureAwait(false);
-                await renderer.RenderOutput(codePane, completionPane, highlights, key).ConfigureAwait(false);
-
+                // typing / word-wrapping may have scrolled the console, giving us more room.
                 codePane.MeasureConsole(console, prompt);
+
+                if (keyPressCallbacks.TryGetValue(key.Pattern, out var callback))
+                {
+                    await callback.Invoke(codePane.Input.ToString(), codePane.Caret).ConfigureAwait(false);
+                }
 
                 if (codePane.Result is not null)
                 {
@@ -99,6 +100,23 @@ namespace PrettyPrompt
 
             Debug.Assert(false, "Should never reach here due to infinite " + nameof(KeyPress.ReadForever));
             return null;
+        }
+
+        private async Task InterpretKeyPress(KeyPress key, CodePane codePane, CompletionPane completionPane)
+        {
+            foreach (var panes in new IKeyPressHandler[] { completionPane, codePane, history })
+                await panes.OnKeyDown(key).ConfigureAwait(false);
+
+            codePane.WordWrap();
+
+            foreach (var panes in new IKeyPressHandler[] { completionPane, codePane, history })
+                await panes.OnKeyUp(key).ConfigureAwait(false);
+        }
+
+        private async Task RenderOutput(Renderer renderer, CodePane codePane, CompletionPane completionPane, KeyPress key)
+        {
+            var highlights = await highlighter.HighlightAsync(codePane.Input).ConfigureAwait(false);
+            await renderer.RenderOutput(codePane, completionPane, highlights, key).ConfigureAwait(false);
         }
     }
 
@@ -116,24 +134,5 @@ namespace PrettyPrompt
     {
         internal CancellationTokenSource CancellationTokenSource { get; set; }
         public CancellationToken CancellationToken => CancellationTokenSource.Token;
-    }
-
-    public class PromptCallbacks
-    {
-        /// <summary>
-        /// An optional delegate that provides autocompletion results
-        /// </summary>
-        public CompletionCallbackAsync CompletionCallback { get; init; }
-
-        /// <summary>
-        /// An optional delegate that controls syntax highlighting
-        /// </summary>
-        public HighlightCallbackAsync HighlightCallback { get; init; }
-
-        /// <summary>
-        /// An optional delegate that allows for intercepting the "Enter" key and causing it to
-        /// insert a "soft enter" (newline) instead of submitting the prompt.
-        /// </summary>
-        public ForceSoftEnterCallbackAsync ForceSoftEnterCallback { get; init; }
     }
 }
