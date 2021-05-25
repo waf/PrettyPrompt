@@ -50,8 +50,8 @@ namespace PrettyPrompt.Consoles
                 // for each key press, which is slow. Instead, batch them up to send as single "pasted text" block.
                 var keys = ReadRemainingKeys(console, key);
 
-                if (keys.Count < 4) // 4 is not special here, just seemed like a decent number to separate
-                                    // between "keys pressed simultaneously" and "pasted text"
+                if (keys.Count < 4 || keys.All(k => char.IsControl(k.KeyChar))) // 4 is not special here, just seemed like a decent number to separate
+                                                                                // between "keys pressed simultaneously" and "pasted text"
                 {
                     foreach (var consoleKey in keys)
                     {

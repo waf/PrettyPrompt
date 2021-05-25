@@ -12,11 +12,7 @@ using System.Threading.Tasks;
 
 namespace PrettyPrompt
 {
-    /// <summary>
-    /// The main entry point of the prompt functionality.
-    /// This class should be instantiated once with the desired configuration; then <see cref="ReadLineAsync"/> 
-    /// can be called once for each line of input.
-    /// </summary>
+    /// <inheritdoc cref="IPrompt" />
     public sealed class Prompt : IPrompt
     {
         private readonly IConsole console;
@@ -54,11 +50,7 @@ namespace PrettyPrompt
             this.highlighter = new SyntaxHighlighter(highlightCallback);
         }
 
-        /// <summary>
-        /// Prompts the user for input and returns the result.
-        /// </summary>
-        /// <param name="prompt">The prompt string to draw (e.g. "> ")</param>
-        /// <returns>The input that the user submitted</returns>
+        /// <inheritdoc cref="IPrompt.ReadLineAsync(string)" />
         public async Task<PromptResult> ReadLineAsync(string prompt)
         {
             var renderer = new Renderer(console, prompt);
@@ -120,8 +112,22 @@ namespace PrettyPrompt
         }
     }
 
-    public interface IPrompt // we don't actually use this interface, but it's likely that users will want to mock the prompt as it's IO related.
+    /// <summary>
+    /// The main entry point of the prompt functionality.
+    /// This class should be instantiated once with the desired configuration; then <see cref="ReadLineAsync"/> 
+    /// can be called once for each line of input.
+    /// </summary>
+    /// <remarks>
+    /// We don't actually use this interface internally, but it's likely that
+    /// users will want to mock the prompt as it's IO-related.
+    /// </remarks>
+    public interface IPrompt
     {
+        /// <summary>
+        /// Prompts the user for input and returns the result.
+        /// </summary>
+        /// <param name="prompt">The prompt string to draw (e.g. "> ")</param>
+        /// <returns>The input that the user submitted</returns>
         Task<PromptResult> ReadLineAsync(string prompt);
     }
 

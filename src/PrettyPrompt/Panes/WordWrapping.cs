@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using PrettyPrompt.Consoles;
 
@@ -62,6 +63,11 @@ namespace PrettyPrompt.Panes
         }
 
 
+        /// <summary>
+        /// Wrap words into lines of at most maxLength long. Split on spaces
+        /// where possible, otherwise split by character if a single word is
+        /// greater than maxLength.
+        /// </summary>
         public static List<string> WrapWords(string text, int maxLength)
         {
             if (text.Length == 0)
@@ -73,7 +79,7 @@ namespace PrettyPrompt.Panes
             foreach (var line in text.Split('\n'))
             {
                 var currentLine = new StringBuilder();
-                foreach (var currentWord in line.Split(' '))
+                foreach (var currentWord in line.Split(' ').SelectMany(word => word.SplitIntoSubstrings(maxLength)))
                 {
                     var wordWithSpace = currentLine.Length == 0 ? currentWord : " " + currentWord;
 

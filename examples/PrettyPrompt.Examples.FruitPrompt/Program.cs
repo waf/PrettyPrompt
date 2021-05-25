@@ -26,7 +26,7 @@ namespace PrettyPrompt
                 // that text are provided as callback parameters.
                 KeyPressCallbacks =
                 {
-                    [(ConsoleModifiers.Control, ConsoleKey.F1)] = ShowFruitDocumentation
+                    [(ConsoleModifiers.Control, ConsoleKey.F1)] = ShowFruitDocumentation // could also just provide a ConsoleKey, instead of a tuple.
                 }
             });
 
@@ -138,7 +138,7 @@ namespace PrettyPrompt
             static void LaunchBrowser(string url)
             {
                 var browser =
-                    OperatingSystem.IsWindows() ? new ProcessStartInfo("cmd", $"/c start {url}") :
+                    OperatingSystem.IsWindows() ? new ProcessStartInfo("explorer", $"{url}") : // using cmd will cancel TreatControlCAsInput. We don't want that.
                     OperatingSystem.IsMacOS() ? new ProcessStartInfo("open", url) :
                     new ProcessStartInfo("xdg-open", url); //linux, unix-like
 
