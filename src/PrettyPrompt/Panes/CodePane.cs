@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TextCopy;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
 
@@ -106,10 +107,17 @@ namespace PrettyPrompt.Panes
                     Input.Insert(Caret, "    ");
                     Caret += 4;
                     break;
+                case (Control | Shift, C):
+                    await ClipboardService.SetTextAsync(Input.ToString());
+                    break;
                 case (Shift, Insert) when key.PastedText is not null:
-                    string pastedText = DedentMultipleLines(key.PastedText);
-                    Input.Insert(Caret, pastedText);
-                    Caret += pastedText.Length;
+                    PasteText(key.PastedText);
+                    break;
+                case (Control, V):
+                case (Control | Shift, V):
+                case (Shift, Insert):
+                    string clipboardText = await ClipboardService.GetTextAsync();
+                    PasteText(clipboardText);
                     break;
                 default:
                     if (!char.IsControl(key.ConsoleKeyInfo.KeyChar))
@@ -119,6 +127,13 @@ namespace PrettyPrompt.Panes
                     }
                     break;
             }
+        }
+
+        private void PasteText(string pastedText)
+        {
+            string dedentedText = DedentMultipleLines(pastedText);
+            Input.Insert(Caret, dedentedText);
+            Caret += dedentedText.Length;
         }
 
         internal void MeasureConsole(IConsole console, string prompt)

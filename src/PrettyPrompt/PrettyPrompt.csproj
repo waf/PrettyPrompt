@@ -30,4 +30,8 @@
       <_Parameter1>PrettyPrompt.Tests</_Parameter1>
     </AssemblyAttribute>
   </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="TextCopy" Version="4.3.0" />
+  </ItemGroup>
 </Project>
