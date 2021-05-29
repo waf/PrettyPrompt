@@ -13,7 +13,10 @@ namespace PrettyPrompt.Consoles
         int WindowHeight { get; }
         int WindowTop { get; }
 
-        void Write(string content);
+        void Write(string value);
+        void WriteLine(string value);
+        void WriteError(string value);
+        void WriteErrorLine(string value);
         void Clear();
         void ShowCursor();
         void HideCursor();
