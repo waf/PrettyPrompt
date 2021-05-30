@@ -5,14 +5,13 @@
 #endregion
 
 using PrettyPrompt.Cancellation;
-using PrettyPrompt.Completion;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Highlighting;
 using PrettyPrompt.History;
 using PrettyPrompt.Panes;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -53,13 +52,13 @@ namespace PrettyPrompt
             this.keyPressCallbacks = callbacks.KeyPressCallbacks;
 
             var highlightCallback = callbacks.HighlightCallback;
-            this.highlighter = new SyntaxHighlighter(highlightCallback);
+            this.highlighter = new SyntaxHighlighter(highlightCallback, HasUserOptedOutFromColor);
         }
 
         /// <inheritdoc cref="IPrompt.ReadLineAsync(string)" />
         public async Task<PromptResult> ReadLineAsync(string prompt)
         {
-            var renderer = new Renderer(console, prompt);
+            var renderer = new Renderer(console, prompt, HasUserOptedOutFromColor);
             renderer.RenderPrompt();
 
             // code pane contains the code the user is typing. It does not include the prompt (i.e. "> ")
@@ -116,6 +115,9 @@ namespace PrettyPrompt
             var highlights = await highlighter.HighlightAsync(codePane.Input).ConfigureAwait(false);
             await renderer.RenderOutput(codePane, completionPane, highlights, key).ConfigureAwait(false);
         }
+
+        /// <inheritdoc cref="IPrompt.HasUserOptedOutFromColor" />
+        public bool HasUserOptedOutFromColor { get; } = Environment.GetEnvironmentVariable("NO_COLOR") is not null;
     }
 
     /// <summary>
@@ -135,6 +137,13 @@ namespace PrettyPrompt
         /// <param name="prompt">The prompt string to draw (e.g. "> ")</param>
         /// <returns>The input that the user submitted</returns>
         Task<PromptResult> ReadLineAsync(string prompt);
+
+        /// <summary>
+        /// <code>true</code> if the user opted out of color, via an environment variable as specified by https://no-color.org/.
+        /// PrettyPrompt will automatically disable colors in this case. You can read this property to control other colors in
+        /// your application.
+        /// </summary>
+        bool HasUserOptedOutFromColor { get; }
     }
 
     /// <summary>

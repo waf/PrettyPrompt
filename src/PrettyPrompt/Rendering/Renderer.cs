@@ -27,14 +27,22 @@ namespace PrettyPrompt
     {
         private readonly IConsole console;
         private readonly string prompt;
+        private readonly ConsoleFormat completionBorderColor;
+        private readonly ConsoleFormat documentationBorderColor;
 
         private Screen previouslyRenderedScreen;
 
-        public Renderer(IConsole console, string prompt)
+        public Renderer(IConsole console, string prompt, bool hasUserOptedOutFromColor)
         {
             this.console = console;
             this.prompt = prompt;
             this.previouslyRenderedScreen = new Screen(0, 0, new ConsoleCoordinate(0, 0));
+
+            if(!hasUserOptedOutFromColor)
+            {
+                this.completionBorderColor = new ConsoleFormat(Foreground: AnsiColor.Blue);
+                this.documentationBorderColor = new ConsoleFormat(Foreground: AnsiColor.Cyan);
+            }
         }
 
         public void RenderPrompt()
@@ -160,9 +168,6 @@ namespace PrettyPrompt
             };
         }
 
-        private static ConsoleFormat CompletionBorderColor = new ConsoleFormat(Foreground: AnsiColor.Blue);
-        private static ConsoleFormat DocumentationBorderColor = new ConsoleFormat(Foreground: AnsiColor.Cyan);
-
         private Row[] BuildCompletionRows(CompletionPane completionPane, int codeAreaWidth, int wordWidth, ConsoleCoordinate completionBoxStart)
         {
             string horizontalBorder = TruncateToWindow(new string(Box.EdgeHorizontal, wordWidth + 2), 2);
@@ -175,21 +180,21 @@ namespace PrettyPrompt
                     string leftBorder = Box.EdgeVertical + (selectedItem == completion ? "|" : " ");
                     string rightBorder = " " + Box.EdgeVertical;
                     return new Row(Cell
-                        .FromText(leftBorder, CompletionBorderColor)
+                        .FromText(leftBorder, completionBorderColor)
                         .Concat(Cell.FromText(TruncateToWindow((completion.DisplayText ?? completion.ReplacementText).PadRight(wordWidth), 4)))
-                        .Concat(Cell.FromText(rightBorder, CompletionBorderColor))
+                        .Concat(Cell.FromText(rightBorder, completionBorderColor))
                         .ToArray()
                     );
                 })
-                .Prepend(new Row(Cell.FromText(Box.CornerUpperLeft + horizontalBorder + Box.CornerUpperRight, CompletionBorderColor)))
-                .Append(new Row(Cell.FromText(Box.CornerLowerLeft + horizontalBorder + Box.CornerLowerRight, CompletionBorderColor)))
+                .Prepend(new Row(Cell.FromText(Box.CornerUpperLeft + horizontalBorder + Box.CornerUpperRight, completionBorderColor)))
+                .Append(new Row(Cell.FromText(Box.CornerLowerLeft + horizontalBorder + Box.CornerLowerRight, completionBorderColor)))
                 .ToArray();
 
             string TruncateToWindow(string line, int offset) =>
                 line.Substring(0, Math.Min(line.Length, codeAreaWidth - completionBoxStart.Column - offset));
         }
 
-        private static Row[] BuildDocumentationRows(string documentation, int maxWidth)
+        private Row[] BuildDocumentationRows(string documentation, int maxWidth)
         {
             if (string.IsNullOrEmpty(documentation) || maxWidth < 12)
                 return Array.Empty<Row>();
@@ -207,12 +212,12 @@ namespace PrettyPrompt
                 .Select(line =>
                     new Row(Cell
                         .FromText(" " + line.Trim().PadRight(actualTextWidth))
-                        .Concat(Cell.FromText(" " + Box.EdgeVertical, DocumentationBorderColor))
+                        .Concat(Cell.FromText(" " + Box.EdgeVertical, documentationBorderColor))
                         .ToArray()
                     )
                 )
-                .Prepend(new Row(Cell.FromText(boxTop, DocumentationBorderColor)))
-                .Append(new Row(Cell.FromText(boxBottom, DocumentationBorderColor)))
+                .Prepend(new Row(Cell.FromText(boxTop, documentationBorderColor)))
+                .Append(new Row(Cell.FromText(boxBottom, documentationBorderColor)))
                 .ToArray();
         }
     }
