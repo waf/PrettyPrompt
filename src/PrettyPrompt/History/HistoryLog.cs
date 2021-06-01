@@ -136,11 +136,14 @@ namespace PrettyPrompt.History
 
         internal void Track(CodePane codePane)
         {
-            if (current?.Previous != null && // Not first?
-                string.IsNullOrEmpty(history.Last?.Value.ToString())) // Is last history empty?
+            if (current?.Previous != null) // Not first?
             {
-                // Remove last empty history.
-                history.RemoveLast();
+                if (string.IsNullOrEmpty(history.Last?.Value.ToString()) ||
+                    history.Last?.Value.ToString() == history.Last?.Previous?.Value.ToString())
+                {
+                    // Remove last empty/duplicate history.
+                    history.RemoveLast();
+                }
             }
 
             current = history.AddLast(codePane.Input);
