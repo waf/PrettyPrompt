@@ -136,10 +136,8 @@ namespace PrettyPrompt.History
 
         internal void Track(CodePane codePane)
         {
-            string lastVal = history.LastOrDefault()?.ToString();
-
-            if (current?.Previous != null &&
-                string.IsNullOrEmpty(lastVal))
+            if (current?.Previous != null && // Not first?
+                string.IsNullOrEmpty(history.Last?.Value.ToString())) // Is last history empty?
             {
                 // Remove last empty history.
                 history.RemoveLast();
