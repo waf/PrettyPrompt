@@ -48,6 +48,39 @@ namespace PrettyPrompt.Tests
         }
 
         [Fact]
+        public async Task ReadLine_WithHistory_DoNotSaveEmptyInput()
+        {
+            var console = ConsoleStub.NewConsole();
+            var prompt = new Prompt(console: console);
+
+            console.StubInput($"Hello World{Enter}");
+            await prompt.ReadLineAsync("> ");
+
+            console.StubInput($"{Enter}");
+            await prompt.ReadLineAsync("> ");
+
+            console.StubInput($"{Enter}");
+            await prompt.ReadLineAsync("> ");
+
+            console.StubInput($"{UpArrow}{Enter}");
+            var result = await prompt.ReadLineAsync("> ");
+            Assert.Equal("Hello World", result.Text);
+
+            console.StubInput($"Hellow{Enter}");
+            await prompt.ReadLineAsync("> ");
+
+            console.StubInput($"{Enter}");
+            await prompt.ReadLineAsync("> ");
+
+            console.StubInput($"{Enter}");
+            await prompt.ReadLineAsync("> ");
+
+            console.StubInput($"{UpArrow}{UpArrow}{Enter}");
+            result = await prompt.ReadLineAsync("> ");
+            Assert.Equal("Hello World", result.Text);
+        }
+
+        [Fact]
         public async Task ReadLine_UnsubmittedText_IsNotLostWhenChangingHistory()
         {
             var console = ConsoleStub.NewConsole();
