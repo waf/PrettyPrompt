@@ -18,6 +18,9 @@ namespace PrettyPrompt.Panes
 {
     internal class CompletionPane : IKeyPressHandler
     {
+        const int MAX_HEIGHT = 10;
+        const int VERTICAL_PADDING = 3; // cursor + top border + bottom border.
+
         private readonly CodePane codePane;
         private readonly CompletionCallbackAsync complete;
 
@@ -121,7 +124,7 @@ namespace PrettyPrompt.Panes
         }
 
         private bool EnoughRoomToDisplay(CodePane codePane) =>
-            codePane.CodeAreaHeight - (codePane.Cursor?.Row).GetValueOrDefault(0) >= 4; // offset + top border + 1 completion item + bottom border
+            codePane.CodeAreaHeight - (codePane.Cursor?.Row).GetValueOrDefault(0) >= VERTICAL_PADDING + 1; // offset + top border + 1 completion item + bottom border
 
         async Task IKeyPressHandler.OnKeyUp(KeyPress key)
         {
@@ -145,7 +148,7 @@ namespace PrettyPrompt.Panes
                     var completions = await this.complete.Invoke(codePane.Input.ToString(), codePane.Caret).ConfigureAwait(false);
                     if(completions.Any())
                     {
-                        SetCompletions(completions, codePane.Input);
+                        SetCompletions(completions, codePane);
                     }
                     else
                     {
@@ -154,7 +157,7 @@ namespace PrettyPrompt.Panes
                 }
                 else if(!key.Handled)
                 {
-                    FilterCompletions(codePane.Input);
+                    FilterCompletions(codePane);
                     if (HasTypedPastCompletion())
                     {
                         Close();
@@ -167,26 +170,30 @@ namespace PrettyPrompt.Panes
             FilteredView.SelectedItem is not null
             && FilteredView.SelectedItem.ReplacementText.Length < (codePane.Caret - openedCaretIndex);
 
-        private void SetCompletions(IReadOnlyList<CompletionItem> completions, StringBuilder input)
+        private void SetCompletions(IReadOnlyList<CompletionItem> completions, CodePane codePane)
         {
             allCompletions = completions;
             if (completions.Any())
             {
                 var completion = completions.First();
                 openedCaretIndex = completion.StartIndex;
-                FilterCompletions(input);
+                FilterCompletions(codePane);
             }
         }
 
-        private void FilterCompletions(StringBuilder input)
+        private void FilterCompletions(CodePane codePane)
         {
+            int height = Math.Min(
+                codePane.CodeAreaHeight - VERTICAL_PADDING, 
+                MAX_HEIGHT);
+
             var filtered = new List<CompletionItem>();
             var previouslySelectedItem = this.FilteredView.SelectedItem;
             int selectedIndex = -1;
             for (var i = 0; i < allCompletions.Count; i++)
             {
                 var completion = allCompletions[i];
-                if (!Matches(completion, input)) continue;
+                if (!Matches(completion, codePane.Input)) continue;
 
                 filtered.Add(completion);
                 if (completion.ReplacementText == previouslySelectedItem?.ReplacementText)
@@ -194,13 +201,13 @@ namespace PrettyPrompt.Panes
                     selectedIndex = filtered.Count - 1;
                 }
             }
-            if (selectedIndex == -1 || !Matches(previouslySelectedItem, input))
+            if (selectedIndex == -1 || !Matches(previouslySelectedItem, codePane.Input))
             {
                 selectedIndex = 0;
             }
             FilteredView = new SlidingArrayWindow<CompletionItem>(
                 filtered.ToArray(),
-                10,
+                height,
                 selectedIndex
             );
 
