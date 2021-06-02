@@ -25,6 +25,8 @@ namespace PrettyPrompt
     /// </summary>
     class Renderer
     {
+        const int BOTTOM_PADDING = 6;
+
         private readonly IConsole console;
         private readonly string prompt;
         private readonly ConsoleFormat completionBorderColor;
@@ -48,7 +50,7 @@ namespace PrettyPrompt
         public void RenderPrompt()
         {
             // write some newlines to ensure we have enough room to render the completion pane.
-            console.Write("\n\n\n" + MoveCursorUp(3) + MoveCursorToColumn(1) + Reset + prompt);
+            console.Write(new string('\n', BOTTOM_PADDING) + MoveCursorUp(BOTTOM_PADDING) + MoveCursorToColumn(1) + Reset + prompt);
         }
 
         public async Task RenderOutput(CodePane codePane, CompletionPane completionPane, IReadOnlyCollection<FormatSpan> highlights, KeyPress key)
