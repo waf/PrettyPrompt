@@ -6,6 +6,7 @@
 
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Highlighting;
+using PrettyPrompt.Rendering;
 using System.Diagnostics;
 using System.Linq;
 
@@ -32,12 +33,14 @@ namespace PrettyPrompt
     internal sealed record Cell
     {
         public string Text { get; }
+        public int CellWidth { get; }
         public ConsoleFormat Formatting { get; set;  }
         public bool TruncateToScreenHeight { get; set; }
 
         private Cell(string text, ConsoleFormat Formatting)
         {
             this.Text = text;
+            this.CellWidth = text == "\n" ? 1 : UnicodeWidth.GetWidth(text);
             this.Formatting = Formatting;
         }
 

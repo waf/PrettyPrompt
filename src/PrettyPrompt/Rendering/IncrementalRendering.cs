@@ -33,16 +33,26 @@ namespace PrettyPrompt.Rendering
                 column: ansiCoordinate.Column + previousScreen.Cursor.Column
             );
 
+            int horizontalRenderPosition = 0;
             for (var i = 0; i < maxIndex; i++)
             {
                 Cell currentCell = i < currentScreen.CharBuffer.Length ? currentScreen.CharBuffer[i] : null;
                 Cell previousCell = i < previousScreen.CharBuffer.Length ? previousScreen.CharBuffer[i] : null;
 
-                if (currentCell != previousCell)
+                if(i % currentScreen.Width == 0)
+                {
+                    horizontalRenderPosition = 0;
+                }
+
+                if(currentCell == previousCell)
+                {
+                    horizontalRenderPosition += currentCell?.CellWidth ?? 1;
+                }
+                else
                 {
                     var cellCoordinate = new ConsoleCoordinate(
-                        row: ansiCoordinate.Row + i / currentScreen.Width,
-                        column: ansiCoordinate.Column + i % currentScreen.Width
+                        row: ansiCoordinate.Row + (i / currentScreen.Width),
+                        column: ansiCoordinate.Column + (horizontalRenderPosition % currentScreen.Width)
                     );
 
                     MoveCursorIfRequired(diff, previousCoordinate, cellCoordinate);
@@ -60,11 +70,13 @@ namespace PrettyPrompt.Rendering
 
                         if (currentCell?.Text is null || currentCell.Text == "\n")
                         {
-                            diff.Append(' ');
-                            UpdateCoordinateFromCursorMove(previousScreen, ansiCoordinate, diff, previousCoordinate, currentCell);
+                            var eraseWidth = previousCell?.CellWidth ?? 1;
+                            diff.Append(' ', eraseWidth);
+                            UpdateCoordinateFromCursorMove(previousScreen, ansiCoordinate, diff, previousCoordinate, previousCell);
 
                             if (currentCell is null)
                             {
+                                horizontalRenderPosition += eraseWidth;
                                 continue;
                             }
                         }
@@ -90,10 +102,12 @@ namespace PrettyPrompt.Rendering
                     if (currentCell.Text == "\n")
                     {
                         UpdateCoordinateFromNewLine(previousCoordinate);
+                        horizontalRenderPosition++;
                     }
                     else
                     {
                         UpdateCoordinateFromCursorMove(currentScreen, ansiCoordinate, diff, previousCoordinate, currentCell);
+                        horizontalRenderPosition += currentCell.CellWidth;
                     }
                 }
             }
@@ -114,8 +128,9 @@ namespace PrettyPrompt.Rendering
 
         private static void UpdateCoordinateFromCursorMove(Screen currentScreen, ConsoleCoordinate ansiCoordinate, StringBuilder diff, ConsoleCoordinate previousCoordinate, Cell currentCell)
         {
+            var cellWidth = currentCell?.CellWidth ?? 1;
             // if we hit the edge of the screen, wrap
-            bool hitRightEdgeOfScreen = previousCoordinate.Column + 1 == currentScreen.Width + ansiCoordinate.Column;
+            bool hitRightEdgeOfScreen = previousCoordinate.Column + cellWidth == currentScreen.Width + ansiCoordinate.Column;
             if (hitRightEdgeOfScreen)
             {
                 if(currentCell is not null && !currentCell.TruncateToScreenHeight)
@@ -126,7 +141,7 @@ namespace PrettyPrompt.Rendering
             }
             else
             {
-                previousCoordinate.Column++;
+                previousCoordinate.Column += cellWidth;
             }
         }
 

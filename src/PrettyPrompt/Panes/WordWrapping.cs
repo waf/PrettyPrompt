@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using PrettyPrompt.Consoles;
+using PrettyPrompt.Rendering;
 
 namespace PrettyPrompt.Panes
 {
@@ -46,7 +47,8 @@ namespace PrettyPrompt.Panes
 
                     if (isCursorPastCharacter && !char.IsControl(character))
                     {
-                        cursor.Column++;
+                        int charWidth = UnicodeWidth.GetWidth(character);
+                        cursor.Column += charWidth;
                     }
                     if (character == '\n' || currentLineLength == width)
                     {
@@ -85,21 +87,33 @@ namespace PrettyPrompt.Panes
             foreach (var line in text.Split('\n'))
             {
                 var currentLine = new StringBuilder();
+                int currentLineWidth = 0;
                 foreach (var currentWord in line.Split(' ').SelectMany(word => word.SplitIntoSubstrings(maxLength)))
                 {
-                    var wordWithSpace = currentLine.Length == 0 ? currentWord : " " + currentWord;
+                    var wordLength = UnicodeWidth.GetWidth(currentWord);
+                    var wordWithSpaceLength = currentLineWidth == 0 ? wordLength : wordLength + 1;
 
-                    if (currentLine.Length > maxLength
-                        || currentLine.Length + wordWithSpace.Length > maxLength)
+                    if (currentLineWidth > maxLength
+                        || currentLineWidth + wordWithSpaceLength > maxLength)
                     {
                         lines.Add(currentLine.ToString());
                         currentLine.Clear();
+                        currentLineWidth = 0;
                     }
 
-                    currentLine.Append(currentLine.Length == 0 ? currentWord : " " + currentWord);
+                    if(currentLineWidth == 0)
+                    {
+                        currentLine.Append(currentWord);
+                        currentLineWidth += wordLength;
+                    }
+                    else
+                    {
+                        currentLine.Append(" " + currentWord);
+                        currentLineWidth += wordLength + 1;
+                    }
                 }
 
-                if (currentLine.Length > 0)
+                if (currentLineWidth > 0)
                 {
                     lines.Add(currentLine.ToString());
                 }
