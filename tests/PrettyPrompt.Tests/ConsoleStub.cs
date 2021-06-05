@@ -51,6 +51,11 @@ namespace PrettyPrompt.Tests
                 .SelectMany(line => MapToConsoleKeyPresses(line))
                 .ToList();
 
+            return consoleStub.StubInput(keys);
+        }
+
+        public static ConfiguredCall StubInput(this IConsole consoleStub, List<ConsoleKeyInfo> keys)
+        {
             return consoleStub
                 .ReadKey(intercept: true)
                 .Returns(keys.First(), keys.Skip(1).ToArray());
@@ -88,7 +93,7 @@ namespace PrettyPrompt.Tests
             return 0;
         }
 
-        private static ConsoleKey CharToConsoleKey(char keyChar) =>
+        public static ConsoleKey CharToConsoleKey(char keyChar) =>
             keyChar switch
             {
                 '.' => ConsoleKey.OemPeriod,
@@ -106,7 +111,8 @@ namespace PrettyPrompt.Tests
                 '*' => ConsoleKey.D8,
                 '(' => ConsoleKey.D9,
                 ')' => ConsoleKey.D0,
-                _ => (ConsoleKey)char.ToUpper(keyChar)
+                <= (char)255 => (ConsoleKey)char.ToUpper(keyChar),
+                _ => ConsoleKey.Oem1
             };
 
         private static ConsoleModifiers AppendFormatStringArgument(List<ConsoleKeyInfo> list, Match key, ConsoleModifiers modifiersPressed, object formatArgument)

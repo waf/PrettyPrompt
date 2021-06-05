@@ -195,9 +195,11 @@ namespace PrettyPrompt.Rendering
                 return 0;
             if (character < 32 || (character >= 0x7f && character < 0xa0))
                 return -1;
-            if (character < 0x0300) // fast path
+
+            // the following two conditions were added for PrettyPrompt fast paths.
+            if (character < 0x0300) // frequent character fast path
                 return 1;
-            if (character >= 0x2500 && character <= 0x257F) // fast path box drawing
+            if (character >= 0x2500 && character <= 0x257F) // fast path for box drawing
                 return 1;
 
             /* binary search in table of non-spacing characters */

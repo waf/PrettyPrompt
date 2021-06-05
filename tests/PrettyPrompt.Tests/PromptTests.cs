@@ -57,7 +57,7 @@ namespace PrettyPrompt.Tests
             var prompt = new Prompt(
                 callbacks: new PromptCallbacks
                 {
-                    CompletionCallback = CompletionTestData.CompletionHandlerAsync
+                    CompletionCallback = new CompletionTestData().CompletionHandlerAsync
                 },
                 console: console
             );

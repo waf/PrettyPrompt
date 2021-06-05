@@ -12,14 +12,16 @@ using System.Threading.Tasks;
 
 namespace PrettyPrompt.Tests
 {
-    public static class CompletionTestData
+    public class CompletionTestData
     {
-        private static readonly IReadOnlyCollection<string> completions = new[]
-        {
-            "Aardvark", "Albatross", "Alligator", "Alpaca", "Ant", "Anteater", "Zebra"
-        };
+        private readonly IReadOnlyCollection<string> completions;
 
-        public static Task<IReadOnlyList<CompletionItem>> CompletionHandlerAsync(string text, int caret)
+        public CompletionTestData(IReadOnlyCollection<string> completions = null)
+        {
+            this.completions = completions ?? new[] {"Aardvark", "Albatross", "Alligator", "Alpaca", "Ant", "Anteater", "Zebra" };
+        }
+
+        public Task<IReadOnlyList<CompletionItem>> CompletionHandlerAsync(string text, int caret)
         {
             var textUntilCaret = text.Substring(0, caret);
             var previousWordStart = textUntilCaret.LastIndexOfAny(new[] { ' ', '\n', '.', '(', ')' });

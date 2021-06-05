@@ -47,6 +47,7 @@ namespace PrettyPrompt
         private static (string name, string description, AnsiColor highlight)[] Fruits = new[]
         {
             ( "apple", "书桌上有一个苹果。", AnsiColor.BrightRed ),
+            ( "书桌上有", "书桌上有一个苹果。", AnsiColor.BrightRed ),
             ( "apricot", "a juicy, soft fruit, resembling a small peach, of an orange-yellow color.", AnsiColor.Yellow ),
             ( "avocado", "a pear-shaped fruit with a rough leathery skin, smooth oily edible flesh, and a large stone.", AnsiColor.Green ),
             ( "banana", "a long curved fruit which grows in clusters and has soft pulpy flesh and yellow skin when ripe.", AnsiColor.BrightYellow ),

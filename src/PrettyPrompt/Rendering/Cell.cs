@@ -7,7 +7,9 @@
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Highlighting;
 using PrettyPrompt.Rendering;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 
 namespace PrettyPrompt
@@ -23,7 +25,7 @@ namespace PrettyPrompt
     /// <summary>
     /// A row of cells. Just here for the readability of method signatures.
     /// </summary>
-    internal sealed record Row(Cell[] Cells);
+    internal sealed record Row(List<Cell> Cells);
 
     /// <summary>
     /// Represents a single character (TextElement) on screen, with any 
@@ -44,11 +46,22 @@ namespace PrettyPrompt
             this.Formatting = Formatting;
         }
 
-        public static Cell[] FromText(string text, ConsoleFormat formatting) =>
-            text.EnumerateTextElements().Select(element => new Cell(element, formatting)).ToArray();
+        public static List<Cell> FromText(string text, ConsoleFormat formatting)
+        {
+            // note, this method is fairly hot, please profile when making changes to it.
+            var enumerator = StringInfo.GetTextElementEnumerator(text);
+            var cells = new List<Cell>(text.Length);
 
-        public static Cell[] FromText(string text) =>
-            text.EnumerateTextElements().Select(element => new Cell(element, null)).ToArray();
+            while(enumerator.MoveNext())
+            {
+                var element = enumerator.GetTextElement();
+                cells.Add(new Cell(element, formatting));
+            }
+            return cells;
+        }
+
+        public static List<Cell> FromText(string text) =>
+            FromText(text, null);
 
         private string GetDebuggerDisplay() =>
             Text + " " + Formatting?.ToString();

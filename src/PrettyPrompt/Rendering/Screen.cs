@@ -21,7 +21,7 @@ namespace PrettyPrompt.Rendering
         public int Width { get; }
         public int Height { get;  }
         public ConsoleCoordinate Cursor { get; }
-        public Cell[] CharBuffer { get; }
+        public Cell[] CellBuffer { get; }
         public int MaxIndex { get; }
 
         public Screen(int width, int height, ConsoleCoordinate cursor, params ScreenArea[] screenAreas)
@@ -36,7 +36,7 @@ namespace PrettyPrompt.Rendering
                 .DefaultIfEmpty()
                 .Max();
             this.Cursor = new ConsoleCoordinate(Math.Min(cursor.Row, Height), Math.Min(cursor.Column, Width));
-            this.CharBuffer = new Cell[Width * Height];
+            this.CellBuffer = new Cell[Width * Height];
             this.MaxIndex = FillCharBuffer(screenAreas);
         }
 
@@ -51,14 +51,16 @@ namespace PrettyPrompt.Rendering
                     var row = area.Start.Row + i;
                     var line = area.Rows[i].Cells;
                     var position = row * Width + area.Start.Column;
-                    var length = Math.Min(line.Length, CharBuffer.Length - position);
+                    // a bit of a hack; some characters earlier in the row may be CJK (double-width). Decrease position to handle.
+                    var cjkOffset = CellBuffer[(row*Width)..position].Sum(c => (c?.CellWidth ?? 1) - 1);
+                    var length = Math.Min(line.Count, CellBuffer.Length - position);
                     if (length > 0)
                     {
                         foreach (var cell in line)
                         {
                             cell.TruncateToScreenHeight = area.TruncateToScreenHeight;
                         }
-                        Array.Copy(line, 0, CharBuffer, position, length);
+                        line.CopyTo(0, CellBuffer, position - cjkOffset, length);
                         maxIndex = Math.Max(maxIndex, position + length);
                     }
                 }

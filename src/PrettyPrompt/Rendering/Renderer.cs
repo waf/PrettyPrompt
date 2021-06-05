@@ -104,7 +104,7 @@ namespace PrettyPrompt
 
             // calculate the diff between the previous screen and the
             // screen to be drawn, and output that diff.
-            string outputDiff = IncrementalRendering.RenderDiff(screen, previouslyRenderedScreen, ansiCoordinate, codePane.Cursor);
+            string outputDiff = IncrementalRendering.CalculateDiff(screen, previouslyRenderedScreen, ansiCoordinate, codePane.Cursor);
             previouslyRenderedScreen = screen;
 
             Write(outputDiff, outputDiff.Length > 64);
@@ -182,12 +182,13 @@ namespace PrettyPrompt
                 .Select((completion, index) =>
                 {
                     string leftBorder = Box.EdgeVertical + (selectedItem == completion ? "|" : " ");
+                    string item = completion.DisplayText ?? completion.ReplacementText;
                     string rightBorder = " " + Box.EdgeVertical;
                     return new Row(Cell
                         .FromText(leftBorder, completionBorderColor)
-                        .Concat(Cell.FromText(TruncateToWindow((completion.DisplayText ?? completion.ReplacementText).PadRight(wordWidth), 4)))
+                        .Concat(Cell.FromText(TruncateToWindow(item + new string(' ', wordWidth - UnicodeWidth.GetWidth(item)), 4)))
                         .Concat(Cell.FromText(rightBorder, completionBorderColor))
-                        .ToArray()
+                        .ToList()
                     );
                 })
                 .Prepend(new Row(Cell.FromText(Box.CornerUpperLeft + horizontalBorder + Box.CornerUpperRight, completionBorderColor)))
@@ -217,7 +218,7 @@ namespace PrettyPrompt
                     new Row(Cell
                         .FromText(" " + line.Trim() + new string(' ', actualTextWidth - UnicodeWidth.GetWidth(line)))
                         .Concat(Cell.FromText(" " + Box.EdgeVertical, documentationBorderColor))
-                        .ToArray()
+                        .ToList()
                     )
                 )
                 .Prepend(new Row(Cell.FromText(boxTop, documentationBorderColor)))
