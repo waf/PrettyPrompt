@@ -137,6 +137,8 @@ namespace PrettyPrompt.Panes
 
         private void PasteText(string pastedText)
         {
+            if (string.IsNullOrEmpty(pastedText)) return;
+
             string dedentedText = DedentMultipleLines(pastedText);
             Input.Insert(Caret, dedentedText);
             Caret += dedentedText.Length;
