@@ -119,6 +119,21 @@ namespace PrettyPrompt.Tests
         }
 
         [Fact]
+        public async Task ReadLine_HomeEndKeys_NavigateLines()
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput(
+                $"{Shift}{Enter}{Shift}{Enter}hello{Home}{Delete}H{End}!{Shift}{Enter}",
+                $"world{Control}{Home}I say:{Control}{End}!{Home}{Delete}W{Enter}"
+            );
+
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLineAsync("> ");
+
+            Assert.Equal($"I say:{NewLine}{NewLine}Hello!{NewLine}World!", result.Text);
+        }
+
+        [Fact]
         public async Task ReadLine_VerticalNavigationKeys()
         {
             var console = ConsoleStub.NewConsole();
@@ -220,7 +235,7 @@ namespace PrettyPrompt.Tests
                 .Returns(true, $"   indent\r        more indent\r\r    inden".Select(_ => true).Append(false).ToArray());
             console.StubInput($"    indent\r        more indent\r\r    indent{Enter}");
 
-            var prompt = new Prompt( console: console);
+            var prompt = new Prompt(console: console);
 
             var result = await prompt.ReadLineAsync("> ");
 
