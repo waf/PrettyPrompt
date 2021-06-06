@@ -72,6 +72,7 @@ namespace PrettyPrompt
                 console.Clear(); // for some reason, using escape codes (ClearEntireScreen and MoveCursorToPosition) leaves
                                  // CursorTop in an old (cached?) state. Using Console.Clear() works around this.
                 RenderPrompt();
+                codePane.MeasureConsole(console, prompt); // our code pane will have more room to render, it now renders at the top of the screen.
             }
 
             // convert our "view models" into characters, contained in screen areas
@@ -103,7 +104,7 @@ namespace PrettyPrompt
 
             // calculate the diff between the previous screen and the
             // screen to be drawn, and output that diff.
-            string outputDiff = IncrementalRendering.RenderDiff(screen, previouslyRenderedScreen, ansiCoordinate, codePane.Cursor);
+            string outputDiff = IncrementalRendering.CalculateDiff(screen, previouslyRenderedScreen, ansiCoordinate, codePane.Cursor);
             previouslyRenderedScreen = screen;
 
             Write(outputDiff, outputDiff.Length > 64);
@@ -143,7 +144,8 @@ namespace PrettyPrompt
             if (completionPane.FilteredView.Count == 0)
                 return Array.Empty<ScreenArea>();
 
-            int wordWidth = completionPane.FilteredView.Max(w => (w.DisplayText ?? w.ReplacementText).Length);
+            int wordWidth = completionPane.FilteredView
+                .Max(w => UnicodeWidth.GetWidth(w.DisplayText ?? w.ReplacementText));
             int boxWidth = wordWidth + 2 + 2; // two border characters, plus two spaces for padding
 
             var completionStart = new ConsoleCoordinate(
@@ -180,12 +182,13 @@ namespace PrettyPrompt
                 .Select((completion, index) =>
                 {
                     string leftBorder = Box.EdgeVertical + (selectedItem == completion ? "|" : " ");
+                    string item = completion.DisplayText ?? completion.ReplacementText;
                     string rightBorder = " " + Box.EdgeVertical;
                     return new Row(Cell
                         .FromText(leftBorder, completionBorderColor)
-                        .Concat(Cell.FromText(TruncateToWindow((completion.DisplayText ?? completion.ReplacementText).PadRight(wordWidth), 4)))
+                        .Concat(Cell.FromText(TruncateToWindow(item + new string(' ', wordWidth - UnicodeWidth.GetWidth(item)), 4)))
                         .Concat(Cell.FromText(rightBorder, completionBorderColor))
-                        .ToArray()
+                        .ToList()
                     );
                 })
                 .Prepend(new Row(Cell.FromText(Box.CornerUpperLeft + horizontalBorder + Box.CornerUpperRight, completionBorderColor)))
@@ -205,7 +208,7 @@ namespace PrettyPrompt
             var requestedBoxWidth = Math.Min(maxWidth, 55);
             var requestedTextWidth = requestedBoxWidth - 3; // 3 because of left padding, right padding, right border
             var wrapped = WordWrapping.WrapWords(documentation.Replace("\r\n", "\n"), requestedTextWidth);
-            var actualTextWidth = wrapped.Select(w => w.Length).Max();
+            var actualTextWidth = wrapped.Select(line => UnicodeWidth.GetWidth(line)).Max();
             var actualBoxWidth = actualTextWidth + 3;
 
             var (boxTop, boxBottom) = Box.HorizontalBorders(actualBoxWidth - 1, leftCorner: false);
@@ -213,9 +216,9 @@ namespace PrettyPrompt
             return wrapped
                 .Select(line =>
                     new Row(Cell
-                        .FromText(" " + line.Trim().PadRight(actualTextWidth))
+                        .FromText(" " + line.Trim() + new string(' ', actualTextWidth - UnicodeWidth.GetWidth(line)))
                         .Concat(Cell.FromText(" " + Box.EdgeVertical, documentationBorderColor))
-                        .ToArray()
+                        .ToList()
                     )
                 )
                 .Prepend(new Row(Cell.FromText(boxTop, documentationBorderColor)))

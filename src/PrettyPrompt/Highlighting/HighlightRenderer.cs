@@ -24,14 +24,14 @@ namespace PrettyPrompt.Highlighting
             for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
             {
                 WrappedLine line = lines[lineIndex];
-                var cells = Cell.FromText(line.Content).ToArray();
-                for (int charIndex = 0; charIndex < cells.Length; charIndex++)
+                var cells = Cell.FromText(line.Content);
+                for (int charIndex = 0; charIndex < cells.Count; charIndex++)
                 {
                     if (highlightsLookup.TryGetValue(line.StartIndex + charIndex, out FormatSpan highlight))
                     {
                         charIndex = ApplyHighlight(highlight, line.StartIndex, charIndex, cells);
                         // we've hit the end of the line, we need to continue the highlight on the next row.
-                        if (charIndex == cells.Length)
+                        if (charIndex == cells.Count)
                         {
                             wrappingHighlight = highlight;
                         }
@@ -47,9 +47,9 @@ namespace PrettyPrompt.Highlighting
             return highlightedRows;
         }
 
-        private static int ApplyHighlight(FormatSpan highlight, int lineStartIndex, int charNumber, Cell[] cells)
+        private static int ApplyHighlight(FormatSpan highlight, int lineStartIndex, int charNumber, List<Cell> cells)
         {
-            var highlightEnd = Math.Min(highlight.Start + highlight.Length - lineStartIndex, cells.Length);
+            var highlightEnd = Math.Min(highlight.Start + highlight.Length - lineStartIndex, cells.Count);
             for (; charNumber < highlightEnd; charNumber++)
             {
                 cells[charNumber].Formatting = highlight.Formatting;

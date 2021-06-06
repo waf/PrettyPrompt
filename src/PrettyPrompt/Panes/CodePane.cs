@@ -137,6 +137,8 @@ namespace PrettyPrompt.Panes
 
         private void PasteText(string pastedText)
         {
+            if (string.IsNullOrEmpty(pastedText)) return;
+
             string dedentedText = DedentMultipleLines(pastedText);
             Input.Insert(Caret, dedentedText);
             Caret += dedentedText.Length;
@@ -208,8 +210,14 @@ namespace PrettyPrompt.Panes
             var lines = text.Split(new[] { '\r', '\n' });
             if (lines.Length > 1)
             {
-                var leadingIndent = lines
+                var nonEmptyLines = lines
                     .Where(line => line != string.Empty)
+                    .ToList();
+
+                if (!nonEmptyLines.Any())
+                    return text;
+
+                var leadingIndent = nonEmptyLines
                     .Select(line => line.TakeWhile(char.IsWhiteSpace).Count())
                     .Min();
 
