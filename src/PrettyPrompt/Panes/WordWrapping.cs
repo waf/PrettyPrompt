@@ -35,6 +35,7 @@ namespace PrettyPrompt.Panes
             int currentLineLength = 0;
             var line = new StringBuilder(width);
             int textIndex = 0;
+            int rowStartIndex = 0;
             foreach (ReadOnlyMemory<char> chunk in input.GetChunks())
             {
                 foreach (char character in chunk.Span)
@@ -42,12 +43,12 @@ namespace PrettyPrompt.Panes
                     line.Append(character);
                     bool isCursorPastCharacter = initialCaretPosition > textIndex;
 
-                    currentLineLength++;
+                    int charWidth = UnicodeWidth.GetWidth(character);
+                    currentLineLength += charWidth;
                     textIndex++;
 
                     if (isCursorPastCharacter && !char.IsControl(character))
                     {
-                        int charWidth = UnicodeWidth.GetWidth(character);
                         cursor.Column += charWidth;
                     }
                     if (character == '\n' || currentLineLength == width)
@@ -57,15 +58,16 @@ namespace PrettyPrompt.Panes
                             cursor.Row++;
                             cursor.Column = 0;
                         }
-                        lines.Add(new WrappedLine(textIndex - currentLineLength, line.ToString()));
+                        lines.Add(new WrappedLine(rowStartIndex, line.ToString()));
                         line = new StringBuilder();
+                        rowStartIndex += currentLineLength;
                         currentLineLength = 0;
                     }
                 }
             }
 
             if (currentLineLength > 0)
-                lines.Add(new WrappedLine(textIndex - currentLineLength, line.ToString()));
+                lines.Add(new WrappedLine(rowStartIndex, line.ToString()));
 
             return new WordWrappedText(lines, cursor);
         }

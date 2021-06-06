@@ -4,9 +4,11 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+using System;
+
 namespace PrettyPrompt.Consoles
 {
-    internal class ConsoleCoordinate
+    internal sealed class ConsoleCoordinate : IEquatable<ConsoleCoordinate>
     {
         public ConsoleCoordinate(int row, int column)
         {
@@ -16,5 +18,16 @@ namespace PrettyPrompt.Consoles
 
         public int Row { get; set; }
         public int Column { get; set; }
+
+        public override bool Equals(object obj) =>
+            Equals(obj as ConsoleCoordinate);
+
+        public bool Equals(ConsoleCoordinate other) =>
+            other != null
+            && Row == other.Row
+            && Column == other.Column;
+
+        public override int GetHashCode() =>
+            HashCode.Combine(Row, Column);
     }
 }

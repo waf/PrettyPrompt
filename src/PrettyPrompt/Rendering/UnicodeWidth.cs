@@ -193,6 +193,8 @@ namespace PrettyPrompt.Rendering
             /* test for 8-bit control characters */
             if (character == 0)
                 return 0;
+            if (character == 10) // PrettyPrompt addition, handle newline. This is a bit suspect.
+                return 1;
             if (character < 32 || (character >= 0x7f && character < 0xa0))
                 return -1;
 

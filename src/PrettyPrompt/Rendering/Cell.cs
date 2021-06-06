@@ -42,7 +42,7 @@ namespace PrettyPrompt
         private Cell(string text, ConsoleFormat Formatting)
         {
             this.Text = text;
-            this.CellWidth = text == "\n" ? 1 : UnicodeWidth.GetWidth(text);
+            this.CellWidth = UnicodeWidth.GetWidth(text);
             this.Formatting = Formatting;
         }
 

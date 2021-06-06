@@ -52,6 +52,11 @@ namespace PrettyPrompt
                 width += cWidth;
                 buffer.Append(c);
             }
+
+            if(buffer.Length > 0)
+            {
+                yield return buffer.ToString();
+            }
         }
 
         /// <summary>
