@@ -70,9 +70,15 @@ namespace PrettyPrompt.Panes
                     Result = new PromptResult(IsSuccess: true, Input.ToString().EnvironmentNewlines(), IsHardEnter: false);
                     break;
                 case Home:
-                    Caret = 0;
+                    Caret = CalculateLineBoundaryIndex(Input, Caret, -1);
                     break;
                 case End:
+                    Caret = CalculateLineBoundaryIndex(Input, Caret, +1);
+                    break;
+                case (Control, Home):
+                    Caret = 0;
+                    break;
+                case (Control, End):
                     Caret = Input.Length;
                     break;
                 case LeftArrow:
@@ -197,6 +203,23 @@ namespace PrettyPrompt.Panes
             }
 
             static bool IsWordStart(char c1, char c2) => !char.IsLetterOrDigit(c1) && char.IsLetterOrDigit(c2);
+
+            return bound;
+        }
+
+        private static int CalculateLineBoundaryIndex(StringBuilder input, int caret, int direction)
+        {
+            if (input.Length == 0) return caret;
+
+            if (direction == +1 && caret < input.Length && input[caret] == '\n') return caret;
+
+            int bound = direction > 0 ? input.Length : 0;
+
+            for (var i = caret + direction; bound == 0 ? i > 0 : i < bound; i += direction)
+            {
+                if (input[i] == '\n')
+                    return i + (direction == -1 ? 1 : 0);
+            }
 
             return bound;
         }

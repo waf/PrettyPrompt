@@ -18,8 +18,8 @@ namespace PrettyPrompt.Panes
 {
     internal class CompletionPane : IKeyPressHandler
     {
-        const int MAX_HEIGHT = 10;
-        const int VERTICAL_PADDING = 3; // cursor + top border + bottom border.
+        private const int MaxCompletionCount = 10;
+        private const int VerticalPaddingHeight = 3; // cursor + top border + bottom border.
 
         private readonly CodePane codePane;
         private readonly CompletionCallbackAsync complete;
@@ -106,6 +106,10 @@ namespace PrettyPrompt.Panes
                 case (Control, Spacebar):
                     key.Handled = true;
                     break;
+                case Home:
+                case End:
+                case (Control, Home):
+                case (Control, End):
                 case LeftArrow:
                     Close();
                     key.Handled = false;
@@ -124,7 +128,7 @@ namespace PrettyPrompt.Panes
         }
 
         private bool EnoughRoomToDisplay(CodePane codePane) =>
-            codePane.CodeAreaHeight - (codePane.Cursor?.Row).GetValueOrDefault(0) >= VERTICAL_PADDING + 1; // offset + top border + 1 completion item + bottom border
+            codePane.CodeAreaHeight - (codePane.Cursor?.Row).GetValueOrDefault(0) >= VerticalPaddingHeight + 1; // offset + top border + 1 completion item + bottom border
 
         async Task IKeyPressHandler.OnKeyUp(KeyPress key)
         {
@@ -183,9 +187,7 @@ namespace PrettyPrompt.Panes
 
         private void FilterCompletions(CodePane codePane)
         {
-            int height = Math.Min(
-                codePane.CodeAreaHeight - VERTICAL_PADDING, 
-                MAX_HEIGHT);
+            int height = Math.Min(codePane.CodeAreaHeight - VerticalPaddingHeight, MaxCompletionCount);
 
             var filtered = new List<CompletionItem>();
             var previouslySelectedItem = this.FilteredView.SelectedItem;

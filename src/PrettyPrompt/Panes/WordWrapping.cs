@@ -72,7 +72,6 @@ namespace PrettyPrompt.Panes
             return new WordWrappedText(lines, cursor);
         }
 
-
         /// <summary>
         /// Wrap words into lines of at most maxLength long. Split on spaces
         /// where possible, otherwise split by character if a single word is

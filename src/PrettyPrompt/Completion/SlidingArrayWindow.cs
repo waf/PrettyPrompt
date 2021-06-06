@@ -29,9 +29,7 @@ namespace PrettyPrompt.Completion
         {
             this.array = array;
             this.windowLength = windowLength;
-            this.windowStart = array.Length - windowLength <= 0 
-                ? 0
-                : Math.Min(selectedIndex, array.Length - windowLength);
+            this.windowStart = CalculateWindowStart(array, windowLength, selectedIndex);
             this.selectedIndex = selectedIndex;
             this.windowBuffer = windowBuffer;
         }
@@ -70,6 +68,11 @@ namespace PrettyPrompt.Completion
             selectedIndex = 0;
             windowStart = 0;
         }
+
+        private static int CalculateWindowStart(T[] array, int windowLength, int selectedIndex) =>
+            array.Length - windowLength <= 0
+            ? 0
+            : Math.Min(selectedIndex, array.Length - windowLength);
 
         public IEnumerator<T> GetEnumerator() =>
             AsArraySegment().GetEnumerator();

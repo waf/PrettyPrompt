@@ -136,18 +136,28 @@ namespace PrettyPrompt.History
 
         internal void Track(CodePane codePane)
         {
-            if (current?.Previous != null) // Not first?
-            {
-                if (string.IsNullOrEmpty(history.Last?.Value.ToString()) ||
-                    history.Last?.Value.ToString() == history.Last?.Previous?.Value.ToString())
-                {
-                    // Remove last empty/duplicate history.
-                    history.RemoveLast();
-                }
-            }
-
+            PruneHistory(history);
             current = history.AddLast(codePane.Input);
             latestCodePane = codePane;
+        }
+
+        /// <summary>
+        /// Remove the latest history entry, if it's empty or duplicate.
+        /// </summary>
+        private static void PruneHistory(LinkedList<StringBuilder> history)
+        {
+            if (!history.Any())
+            {
+                return;
+            }
+
+            var previousEntry = history.Last?.Value.ToString();
+            var penultimateEntry = history.Last?.Previous?.Value.ToString();
+            if (string.IsNullOrEmpty(previousEntry) || previousEntry == penultimateEntry)
+            {
+                // Remove last empty/duplicate history.
+                history.RemoveLast();
+            }
         }
 
         internal async Task SavePersistentHistoryAsync(StringBuilder input)
