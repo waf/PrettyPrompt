@@ -79,6 +79,55 @@ namespace PrettyPrompt.Tests
         }
 
         [Fact]
+        public async Task ReadLine_CompletionMenu_Closes()
+        {
+            var console = ConsoleStub.NewConsole();
+            Prompt prompt = ConfigurePrompt(console);
+
+            // Escape should close menu
+            console.StubInput($"A{Escape}{Enter}"); // it will auto-open when we press A (see previous test)
+            var result = await prompt.ReadLineAsync("> ");
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal($"A", result.Text);
+
+            // Home key (among others) should close menu
+            console.StubInput($"A{Home}{Enter}");
+            var result2 = await prompt.ReadLineAsync("> ");
+
+            Assert.True(result2.IsSuccess);
+            Assert.Equal($"A", result2.Text);
+        }
+
+        [Fact]
+        public async Task ReadLine_CompletionMenu_Scrolls()
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput(
+                $"{Control}{Spacebar}{Control}{Spacebar}",
+                $"{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}",
+                $"{Enter}{Enter}"
+            );
+            Prompt prompt = ConfigurePrompt(console);
+
+            var result = await prompt.ReadLineAsync("> ");
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal($"Zebra", result.Text);
+
+            console.StubInput(
+                $"{Control}{Spacebar}{Control}{Spacebar}",
+                $"{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}",
+                $"{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}",
+                $"{Enter}{Enter}"
+            );
+
+            var result2 = await prompt.ReadLineAsync("> ");
+            Assert.True(result2.IsSuccess);
+            Assert.Equal($"Aardvark", result2.Text);
+        }
+
+        [Fact]
         public async Task ReadLine_FullyTypeCompletion_CanOpenAgain()
         {
             var console = ConsoleStub.NewConsole();

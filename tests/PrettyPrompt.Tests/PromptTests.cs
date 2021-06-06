@@ -235,7 +235,7 @@ namespace PrettyPrompt.Tests
                 .Returns(true, $"   indent\r        more indent\r\r    inden".Select(_ => true).Append(false).ToArray());
             console.StubInput($"    indent\r        more indent\r\r    indent{Enter}");
 
-            var prompt = new Prompt( console: console);
+            var prompt = new Prompt(console: console);
 
             var result = await prompt.ReadLineAsync("> ");
 

@@ -18,7 +18,7 @@ namespace PrettyPrompt.Tests
 
         public CompletionTestData(IReadOnlyCollection<string> completions = null)
         {
-            this.completions = completions ?? new[] {"Aardvark", "Albatross", "Alligator", "Alpaca", "Ant", "Anteater", "Zebra" };
+            this.completions = completions ?? new[] {"Aardvark", "Albatross", "Alligator", "Alpaca", "Ant", "Anteater", "Baboon", "Cat", "Dog", "Elephant", "Fox", "Zebra" };
         }
 
         public Task<IReadOnlyList<CompletionItem>> CompletionHandlerAsync(string text, int caret)
