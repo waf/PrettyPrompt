@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using PrettyPrompt.Consoles;
+using System.Threading.Tasks;
 using Xunit;
 using static System.ConsoleKey;
 
@@ -68,6 +69,26 @@ namespace PrettyPrompt.Tests
             var result = await prompt.ReadLineAsync("> ");
 
             Assert.Equal("书桌上有", result.Text);
+        }
+
+        [Fact]
+        public async Task ReadLineAsync_TypesCJKTextInNarrowWindow_Wraps()
+        {
+            // prompt takes up 2 characters, with 3 full-width characters: 2 + 2*3 = 8
+            var console = ConsoleStub.NewConsole(width: 8);
+            // final character should wrap to next line.
+            console.StubInput($"书桌上有{Enter}");
+
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLineAsync("> ");
+
+            var output = console.GetAllOutput();
+
+            Assert.Equal("书桌上有", result.Text);
+            Assert.Contains("书", output);
+            Assert.Contains("桌", output);
+            Assert.Contains("上" + "\n" + AnsiEscapeCodes.MoveCursorLeft(5), output);
+            Assert.Contains("有", output);
         }
     }
 }
