@@ -19,27 +19,35 @@ namespace PrettyPrompt.Highlighting
                 .ToLookup(h => h.Start)
                 .ToDictionary(h => h.Key, conflictingHighlights => conflictingHighlights.OrderByDescending(h => h.Length).First());
             Row[] highlightedRows = new Row[lines.Count];
-            FormatSpan wrappingHighlight = null;
+            FormatSpan currentHighlight = null;
 
             for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
             {
                 WrappedLine line = lines[lineIndex];
+                int lineFullWidthCharacterOffset = 0;
                 var cells = Cell.FromText(line.Content);
-                for (int charIndex = 0; charIndex < cells.Count; charIndex++)
+                for (int cellIndex = 0; cellIndex < cells.Count; cellIndex++)
                 {
-                    if (highlightsLookup.TryGetValue(line.StartIndex + charIndex, out FormatSpan highlight))
+                    var cell = cells[cellIndex];
+                    if (cell.IsContinuationOfPreviousCharacter)
+                        lineFullWidthCharacterOffset++;
+
+                    // highlight wrapped lines
+                    if (currentHighlight is not null && cellIndex == 0)
                     {
-                        charIndex = ApplyHighlight(highlight, line.StartIndex, charIndex, cells);
-                        // we've hit the end of the line, we need to continue the highlight on the next row.
-                        if (charIndex == cells.Count)
-                        {
-                            wrappingHighlight = highlight;
-                        }
-                        charIndex--; // outer loop will increment, skipping a string index to check for highlighting.
+                        currentHighlight = HighlightSpan(currentHighlight, cells, cellIndex, currentHighlight.Start - line.StartIndex);
                     }
-                    else if (wrappingHighlight is not null && ShouldApplyWrappedHighlighting(wrappingHighlight, line, charIndex))
+
+                    // get current highlight start
+                    int characterPosition = line.StartIndex + cellIndex - lineFullWidthCharacterOffset;
+                    currentHighlight ??= highlightsLookup.GetValueOrDefault(characterPosition);
+
+                    // highlight based on start
+                    if (currentHighlight is not null
+                        && characterPosition >= currentHighlight.Start
+                        && characterPosition < currentHighlight.Start + currentHighlight.Length)
                     {
-                        cells[charIndex].Formatting = wrappingHighlight.Formatting;
+                        currentHighlight = HighlightSpan(currentHighlight, cells, cellIndex, cellIndex);
                     }
                 }
                 highlightedRows[lineIndex] = new Row(cells);
@@ -47,17 +55,21 @@ namespace PrettyPrompt.Highlighting
             return highlightedRows;
         }
 
-        private static int ApplyHighlight(FormatSpan highlight, int lineStartIndex, int charNumber, List<Cell> cells)
+        private static FormatSpan HighlightSpan(FormatSpan currentHighlight, List<Cell> cells, int cellIndex, int endPosition)
         {
-            var highlightEnd = Math.Min(highlight.Start + highlight.Length - lineStartIndex, cells.Count);
-            for (; charNumber < highlightEnd; charNumber++)
+            var highlightedFullWidthOffset = 0;
+            int i;
+            for (i = cellIndex; i < Math.Min(endPosition + currentHighlight.Length + highlightedFullWidthOffset, cells.Count); i++)
             {
-                cells[charNumber].Formatting = highlight.Formatting;
+                if (cells[i].ElementWidth == 2) highlightedFullWidthOffset++;
+                cells[i].Formatting = currentHighlight?.Formatting;
             }
-            return charNumber;
-        }
+            if (i != cells.Count)
+            {
+                currentHighlight = null;
+            }
 
-        private static bool ShouldApplyWrappedHighlighting(FormatSpan wrappingHighlight, WrappedLine line, int charNumber) =>
-            line.StartIndex + charNumber < wrappingHighlight.Start + wrappingHighlight.Length;
+            return currentHighlight;
+        }
     }
 }

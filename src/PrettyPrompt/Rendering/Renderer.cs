@@ -104,7 +104,7 @@ namespace PrettyPrompt
 
             // calculate the diff between the previous screen and the
             // screen to be drawn, and output that diff.
-            string outputDiff = IncrementalRendering.CalculateDiff(screen, previouslyRenderedScreen, ansiCoordinate, codePane.Cursor);
+            string outputDiff = IncrementalRendering.CalculateDiff(screen, previouslyRenderedScreen, ansiCoordinate);
             previouslyRenderedScreen = screen;
 
             Write(outputDiff, outputDiff.Length > 64);
@@ -125,6 +125,14 @@ namespace PrettyPrompt
         private static ScreenArea BuildCodeScreenArea(CodePane codePane, IReadOnlyCollection<FormatSpan> highlights)
         {
             var highlightedLines = HighlightRenderer.ApplyColorToCharacters(highlights, codePane.WordWrappedLines);
+            // if we've filled up the full line, add a new line at the end so we can render our cursor on this new line.
+            if(highlightedLines[^1].Cells.Count > 0
+                && (highlightedLines[^1].Cells.Count >= codePane.CodeAreaWidth
+                    || highlightedLines[^1].Cells[^1]?.Text == "\n"))
+            {
+                Array.Resize(ref highlightedLines, highlightedLines.Length + 1);
+                highlightedLines[^1] = new Row(new List<Cell>());
+            }
             var codeWidget = new ScreenArea(new ConsoleCoordinate(0, 0), highlightedLines, TruncateToScreenHeight: false);
             return codeWidget;
         }

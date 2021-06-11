@@ -10,7 +10,7 @@ namespace PrettyPrompt
 {
     internal static class Program
     {
-        static async Task Main(string[] args)
+        static async Task Main(string[] _)
         {
             Console.WriteLine("Welcome! Try typing some fruit names.");
             Console.WriteLine();
@@ -44,7 +44,7 @@ namespace PrettyPrompt
         }
 
         // demo data
-        private static (string name, string description, AnsiColor highlight)[] Fruits = new[]
+        private static readonly (string name, string description, AnsiColor highlight)[] Fruits = new[]
         {
             ( "apple", "the round fruit of a tree of the rose family, which typically has thin red or green skin and crisp flesh. Many varieties have been developed as dessert or cooking fruit or for making cider.", AnsiColor.BrightRed ),
             ( "apricot", "a juicy, soft fruit, resembling a small peach, of an orange-yellow color.", AnsiColor.Yellow ),

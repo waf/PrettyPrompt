@@ -1,10 +1,6 @@
 ﻿using PrettyPrompt.Consoles;
 using PrettyPrompt.Panes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace PrettyPrompt.Tests
@@ -31,21 +27,42 @@ namespace PrettyPrompt.Tests
         }
 
         [Fact]
-        public void WrapEditableCharacters_DoubleWidthCharacters_UsesUnicodeWidth()
+        public void WrapEditableCharacters_DoubleWidthCharacters_UsesStringWidth()
         {
             var text = "每个人都有他的作战策略，直到脸上中了一拳。";
-            var wrapped = WordWrapping.WrapEditableCharacters(new StringBuilder(text), 13, 20);
+            var wrapped = WordWrapping.WrapEditableCharacters(new StringBuilder(text), initialCaretPosition: 13, width: 20);
 
             Assert.Equal(
                 new[]
                 {
                     new WrappedLine(0, "每个人都有他的作战策"),
-                    new WrappedLine(20, "略，直到脸上中了一拳"),
-                    new WrappedLine(40, "。"),
+                    new WrappedLine(10, "略，直到脸上中了一拳"),
+                    new WrappedLine(20, "。"),
                 },
                 wrapped.WrappedLines
             );
-            Assert.Equal(new ConsoleCoordinate(1, 6), wrapped.Cursor);
+            Assert.Equal(new ConsoleCoordinate(1, 3), wrapped.Cursor);
+        }
+
+
+        [Fact]
+        public void WrapEditableCharacters_DoubleWidthCharactersWithWrappingInMiddleOfCharacter_WrapsCharacter()
+        {
+            var text = "每个人都有他的作战策略， 直到脸上中了一拳。";
+            var wrapped = WordWrapping.WrapEditableCharacters(new StringBuilder(text), initialCaretPosition: 19, width: 19);
+
+            Assert.Equal(
+                new[]
+                {
+                    new WrappedLine(0, "每个人都有他的作战"),  // case 1: we should wrap early, because the next character is a full-width (2-wide) character.
+                    new WrappedLine(9, "策略， 直到脸上中了"), // case 2: single width space ("normal" space) sets us to align to width 19 exactly.
+                    new WrappedLine(19, "一拳。")
+                },
+                wrapped.WrappedLines
+            );
+
+            Assert.Equal(new ConsoleCoordinate(2, 0), wrapped.Cursor);
+
         }
 
         [Fact]

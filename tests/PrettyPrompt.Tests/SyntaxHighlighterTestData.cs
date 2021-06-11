@@ -10,16 +10,21 @@ using System.Threading.Tasks;
 
 namespace PrettyPrompt.Tests
 {
-    public static class SyntaxHighlighterTestData
+    public class SyntaxHighlighterTestData
     {
-        private static readonly IReadOnlyDictionary<string, AnsiColor> highlights = new Dictionary<string, AnsiColor>()
-        {
-            { "red", AnsiColor.BrightRed },
-            { "green", AnsiColor.BrightGreen },
-            { "blue", AnsiColor.BrightBlue },
-        };
+        private readonly IReadOnlyDictionary<string, AnsiColor> highlights;
 
-        public static Task<IReadOnlyCollection<FormatSpan>> HighlightHandlerAsync(string text)
+        public SyntaxHighlighterTestData(IReadOnlyDictionary<string, AnsiColor> colors = null)
+        {
+            this.highlights = colors ?? new Dictionary<string, AnsiColor>()
+            {
+                { "red", AnsiColor.BrightRed },
+                { "green", AnsiColor.BrightGreen },
+                { "blue", AnsiColor.BrightBlue },
+            };
+        }
+
+        public Task<IReadOnlyCollection<FormatSpan>> HighlightHandlerAsync(string text)
         {
             var spans = new List<FormatSpan>();
 
