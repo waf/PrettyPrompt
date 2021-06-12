@@ -35,42 +35,44 @@ namespace PrettyPrompt.Panes
             int currentLineLength = 0;
             var line = new StringBuilder(width);
             int textIndex = 0;
-            int rowStartIndex = 0;
             foreach (ReadOnlyMemory<char> chunk in input.GetChunks())
             {
-                foreach (char character in chunk.Span)
+                for(var i = 0; i < chunk.Span.Length; i++)
                 {
+                    char character = chunk.Span[i];
                     line.Append(character);
                     bool isCursorPastCharacter = initialCaretPosition > textIndex;
 
-                    int charWidth = UnicodeWidth.GetWidth(character);
-                    currentLineLength += charWidth;
+                    currentLineLength += UnicodeWidth.GetWidth(character);
                     textIndex++;
 
                     if (isCursorPastCharacter && !char.IsControl(character))
                     {
-                        cursor.Column += charWidth;
+                        cursor.Column++;
                     }
-                    if (character == '\n' || currentLineLength == width)
+                    if (character == '\n' || currentLineLength == width ||
+                        NextCharacterIsFullWidthAndWillWrap(width, currentLineLength, chunk, i))
                     {
                         if (isCursorPastCharacter)
                         {
                             cursor.Row++;
                             cursor.Column = 0;
                         }
-                        lines.Add(new WrappedLine(rowStartIndex, line.ToString()));
+                        lines.Add(new WrappedLine(textIndex - line.Length, line.ToString()));
                         line = new StringBuilder();
-                        rowStartIndex += currentLineLength;
                         currentLineLength = 0;
                     }
                 }
             }
 
             if (currentLineLength > 0)
-                lines.Add(new WrappedLine(rowStartIndex, line.ToString()));
+                lines.Add(new WrappedLine(textIndex - line.Length, line.ToString()));
 
             return new WordWrappedText(lines, cursor);
         }
+
+        private static bool NextCharacterIsFullWidthAndWillWrap(int width, int currentLineLength, ReadOnlyMemory<char> chunk, int i) =>
+            chunk.Span.Length > i + 1 && UnicodeWidth.GetWidth(chunk.Span[i + 1]) > 1 && currentLineLength + 1 == width;
 
         /// <summary>
         /// Wrap words into lines of at most maxLength long. Split on spaces

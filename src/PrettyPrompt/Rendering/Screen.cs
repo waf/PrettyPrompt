@@ -35,9 +35,9 @@ namespace PrettyPrompt.Rendering
                 )
                 .DefaultIfEmpty()
                 .Max();
-            this.Cursor = new ConsoleCoordinate(Math.Min(cursor.Row, Height), Math.Min(cursor.Column, Width));
             this.CellBuffer = new Cell[Width * Height];
             this.MaxIndex = FillCharBuffer(screenAreas);
+            this.Cursor = PositionCursor(this, cursor);
         }
 
         private int FillCharBuffer(ScreenArea[] screenAreas)
@@ -51,8 +51,6 @@ namespace PrettyPrompt.Rendering
                     var row = area.Start.Row + i;
                     var line = area.Rows[i].Cells;
                     var position = row * Width + area.Start.Column;
-                    // a bit of a hack; some characters earlier in the row may be CJK (double-width). Decrease position to handle.
-                    var cjkOffset = CellBuffer[(row*Width)..position].Sum(c => (c?.CellWidth ?? 1) - 1);
                     var length = Math.Min(line.Count, CellBuffer.Length - position);
                     if (length > 0)
                     {
@@ -60,12 +58,40 @@ namespace PrettyPrompt.Rendering
                         {
                             cell.TruncateToScreenHeight = area.TruncateToScreenHeight;
                         }
-                        line.CopyTo(0, CellBuffer, position - cjkOffset, length);
+                        line.CopyTo(0, CellBuffer, position, length);
                         maxIndex = Math.Max(maxIndex, position + length);
                     }
                 }
             }
             return maxIndex;
+        }
+
+        /// <summary>
+        /// We have our cursor coordinate, but its position represents the position in the input string.
+        /// Normally, this is the same as the coordinate on screen, unless we've rendered CJK characters
+        /// which are "full width" and take up two characters on screen.
+        /// </summary>
+        private static ConsoleCoordinate PositionCursor(Screen screen, ConsoleCoordinate cursor)
+        {
+            if (screen.CellBuffer.Length == 0) return cursor;
+
+            int row = Math.Min(cursor.Row, screen.Height);
+            int column = Math.Min(cursor.Column, screen.Width);
+            int rowStartIndex = row * screen.Width;
+            int foundFullWidthCharacters = 0;
+            for (int i = row * screen.Width; i <= rowStartIndex + column + foundFullWidthCharacters; i++)
+            {
+                var cell = screen.CellBuffer[i];
+                if(cell is not null && cell.IsContinuationOfPreviousCharacter)
+                {
+                    foundFullWidthCharacters++;
+                }
+            }
+            int newColumn = column + foundFullWidthCharacters;
+
+            return newColumn > screen.Width
+                ? new ConsoleCoordinate(row + 1, newColumn - screen.Width)
+                : new ConsoleCoordinate(row, newColumn);
         }
 
         public Screen Resize(int width, int height) =>

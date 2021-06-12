@@ -28,22 +28,32 @@ namespace PrettyPrompt
     internal sealed record Row(List<Cell> Cells);
 
     /// <summary>
-    /// Represents a single character (TextElement) on screen, with any 
-    /// associate formatting.
+    /// Represents a single cell in the console, with any associate formatting.
+    ///
+    /// https://en.wikipedia.org/wiki/Halfwidth_and_fullwidth_forms
+    /// A character can be full-width (e.g. CJK: Chinese, Japanese, Korean) in
+    /// which case it will take up two characters on the console, so we represent
+    /// it as two consecutive cells. The first cell will have <see cref="ElementWidth"/> of 2.
+    /// the trailing cell will have <see cref="IsContinuationOfPreviousCharacter"/> set to true.
     /// </summary>
     [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
     internal sealed record Cell
     {
         public string Text { get; }
-        public int CellWidth { get; }
+        public bool IsContinuationOfPreviousCharacter { get; }
+        public int ElementWidth { get; }
+
         public ConsoleFormat Formatting { get; set;  }
         public bool TruncateToScreenHeight { get; set; }
 
-        private Cell(string text, ConsoleFormat Formatting)
+        private Cell(string text, ConsoleFormat Formatting, int elementWidth = 1, bool isContinuationOfPreviousCharacter = false)
         {
             this.Text = text;
-            this.CellWidth = UnicodeWidth.GetWidth(text);
             this.Formatting = Formatting;
+
+            // full-width handling properties
+            this.IsContinuationOfPreviousCharacter = isContinuationOfPreviousCharacter;
+            this.ElementWidth = elementWidth;
         }
 
         public static List<Cell> FromText(string text, ConsoleFormat formatting)
@@ -55,7 +65,17 @@ namespace PrettyPrompt
             while(enumerator.MoveNext())
             {
                 var element = enumerator.GetTextElement();
-                cells.Add(new Cell(element, formatting));
+                var elementWidth = UnicodeWidth.GetWidth(element);
+                cells.Add(new Cell(element, formatting, elementWidth));
+                if(elementWidth > 1)
+                {
+                    cells.AddRange(
+                        Enumerable.Repeat(
+                            new Cell(null, formatting, isContinuationOfPreviousCharacter: true),
+                            elementWidth - 1
+                        )
+                    );
+                }
             }
             return cells;
         }
