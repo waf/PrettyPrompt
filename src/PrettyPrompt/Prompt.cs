@@ -154,6 +154,6 @@ namespace PrettyPrompt
     public record PromptResult(bool IsSuccess, string Text, bool IsHardEnter)
     {
         internal CancellationTokenSource CancellationTokenSource { get; set; }
-        public CancellationToken CancellationToken => CancellationTokenSource.Token;
+        public CancellationToken CancellationToken => CancellationTokenSource?.Token ?? CancellationToken.None;
     }
 }
