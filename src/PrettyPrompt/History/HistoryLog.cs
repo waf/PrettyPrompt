@@ -99,8 +99,9 @@ namespace PrettyPrompt.History
                     {
                         unsubmittedBuffer = new StringBuilder(history.Last.Value?.ToString());
                     }
-                    SetContents(latestCodePane, current.Previous.Value);
-                    current = current.Previous;
+                    var matchingPreviousEntry = FindPreviousMatchingEntry(unsubmittedBuffer, current);
+                    SetContents(latestCodePane, matchingPreviousEntry.Value);
+                    current = matchingPreviousEntry;
                     key.Handled = true;
                     break;
                 case DownArrow when current.Next is not null:
@@ -126,8 +127,28 @@ namespace PrettyPrompt.History
             return;
         }
 
+        /// <summary>
+        /// Starting at the <paramref name="currentEntry"/> node, search backwards for a node
+        /// that starts with <paramref name="prefix"/>
+        /// </summary>
+        private static LinkedListNode<StringBuilder> FindPreviousMatchingEntry(StringBuilder prefix, LinkedListNode<StringBuilder> currentEntry)
+        {
+            if (prefix.Length == 0) return currentEntry.Previous;
+
+            for(var node = currentEntry.Previous; node is not null; node = node.Previous)
+            {
+                if (node.Value.StartsWith(prefix))
+                {
+                    return node;
+                }
+            }
+            return currentEntry;
+        }
+
         private static void SetContents(CodePane codepane, StringBuilder contents)
         {
+            if (codepane.Input.Equals(contents)) return;
+
             codepane.Input.Clear();
             codepane.Input.Append(contents);
             codepane.Caret = contents.Length;

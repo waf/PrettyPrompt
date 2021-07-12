@@ -129,16 +129,19 @@ namespace PrettyPrompt.Tests
             var console = ConsoleStub.NewConsole();
             var prompt = new Prompt(console: console);
 
-            console.StubInput($"And a one{Enter}");
+            console.StubInput($"one{Enter}");
             await prompt.ReadLineAsync("> ");
 
-            console.StubInput($"And a two{Enter}");
+            console.StubInput($"two{Enter}");
             await prompt.ReadLineAsync("> ");
 
-            console.StubInput($"And a one, two, three...{UpArrow}{Backspace}{Backspace}{Backspace}three{UpArrow}{UpArrow}{DownArrow}{DownArrow}{Enter}");
+            console.StubInput(
+                $"{UpArrow}{Backspace}{Backspace}{Backspace}three{Backspace}{Backspace}{Backspace}{Backspace}",
+                $"{UpArrow}{Enter}"
+            );
             var result = await prompt.ReadLineAsync("> ");
 
-            Assert.Equal("And a three", result.Text);
+            Assert.Equal("two", result.Text);
         }
 
         [Fact]
@@ -156,6 +159,47 @@ namespace PrettyPrompt.Tests
             console.StubInput($"{UpArrow}{Enter}");
             result = await prompt.ReadLineAsync("> ");
             Assert.Equal("", result.Text); // did not navigate to "Entry One" above
+        }
+
+        [Fact]
+        public async Task ReadLine_HistoryWithTextOnPrompt_FiltersHistory()
+        {
+            var console = ConsoleStub.NewConsole();
+            var prompt = new Prompt(console: console);
+
+            console.StubInput($"one{Enter}");
+            await prompt.ReadLineAsync("> ");
+
+            console.StubInput($"two{Enter}");
+            await prompt.ReadLineAsync("> ");
+
+            console.StubInput($"o{UpArrow}{Enter}");
+            var result = await prompt.ReadLineAsync("> ");
+
+            Assert.Equal("one", result.Text);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task ReadLine_HistoryWithNoMatchingTextOnPrompt_DoesNotChange(bool existingTextOnPrompt)
+        {
+            var console = ConsoleStub.NewConsole();
+            var prompt = new Prompt(console: console);
+
+            if(existingTextOnPrompt)
+            {
+                console.StubInput($"apple{Enter}");
+                await prompt.ReadLineAsync("> ");
+
+                console.StubInput($"banana{Enter}");
+                await prompt.ReadLineAsync("> ");
+            }
+
+            console.StubInput($"zebr{UpArrow}{Enter}");
+            var result = await prompt.ReadLineAsync("> ");
+
+            Assert.Equal("zebr", result.Text);
         }
 
         [Fact]
