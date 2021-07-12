@@ -12,17 +12,20 @@ A cross-platform command line prompt that provides syntax highlighting, autocomp
 
 ## Features
 
-- Syntax highlighting support via ANSI escape sequences. Supports both the terminal color palette and full RGB colors.
-- Autocompletion menu, with extended documentation tooltips
-- Multi-line input
-- Word-wrapping
-- History navigation, optionally persistent across sessions
-- Optionally detects incomplete lines and converts <kbd>Enter</kbd> to a "soft newline" (<kbd>Shift-Enter</kbd>).
-- Unsurprising keybindings: <kbd>Home</kbd>, <kbd>End</kbd>, <kbd>Ctrl-L</kbd> to clear screen, <kbd>Ctrl-C</kbd> to cancel current line, <kbd>Ctrl+Space</kbd> to open autocomplete menu, and more.
-- Cross platform copy/paste: <kbd>Ctrl-Shift-C</kbd> for copy, <kbd>Ctrl-V</kbd> or <kbd>Shift-Insert</kbd> for pasting.
-- Works "in-line" on the command line; it doesn't take over the entire terminal window.
-- Provides a `CancellationToken` for each prompt result, so the end-user of your application can cancel long running tasks via <kbd>Ctrl-C</kbd>.
-- Supports registering callbacks for key presses, to customize application behavior.
+- User Experience (UX) features:
+  - Syntax highlighting support via ANSI escape sequences. Supports both the terminal color palette and full RGB colors.
+  - Autocompletion menu, with extended documentation tooltips
+  - Multi-line input
+  - Word-wrapping
+  - History navigation, optionally persistent across sessions, with history filtering (similar to PSReadLine's `HistorySearchBackward`).
+  - Unsurprising keybindings: <kbd>Home</kbd>, <kbd>End</kbd>, <kbd>Ctrl-L</kbd> to clear screen, <kbd>Ctrl-C</kbd> to cancel current line, <kbd>Ctrl+Space</kbd> to open autocomplete menu, and more.
+  - Cross platform copy/paste: <kbd>Ctrl-Shift-C</kbd> for copy, <kbd>Ctrl-V</kbd> or <kbd>Shift-Insert</kbd> for pasting.
+  - Works "in-line" on the command line; it doesn't take over the entire terminal window.
+- Developer Experience (DX) features:
+  - Provides a `CancellationToken` for each prompt result, so the end-user of your application can cancel long running tasks via <kbd>Ctrl-C</kbd>.
+  - Supports registering callbacks for key presses, to customize application behavior.
+  - Optionally detects incomplete lines and converts <kbd>Enter</kbd> to a "soft newline" (<kbd>Shift-Enter</kbd>).
+  - Fast rendering—PrettyPrompt only renders the diff of what changed, so the screen doesn't flicker as text is redrawn.
 
 ## Installation
 
