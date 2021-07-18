@@ -5,6 +5,7 @@
 #endregion
 
 using PrettyPrompt.Consoles;
+using PrettyPrompt.TextSelection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -21,6 +22,7 @@ namespace PrettyPrompt.Panes
     internal class CodePane : IKeyPressHandler
     {
         private readonly ForceSoftEnterCallbackAsync shouldForceSoftEnterAsync;
+        private readonly SelectionKeyPressHandler selectionHandler;
 
         // dimensions
         public int TopCoordinate { get; set; }
@@ -37,10 +39,13 @@ namespace PrettyPrompt.Panes
         public IReadOnlyList<WrappedLine> WordWrappedLines { get; private set; }
         public ConsoleCoordinate Cursor { get; private set; }
 
+        public List<SelectionSpan> Selection { get; } = new();
+
         public CodePane(int topCoordinate, ForceSoftEnterCallbackAsync shouldForceSoftEnterAsync)
         {
             this.TopCoordinate = topCoordinate;
             this.shouldForceSoftEnterAsync = shouldForceSoftEnterAsync;
+            this.selectionHandler = new SelectionKeyPressHandler(this);
             this.Caret = 0;
             this.Input = new StringBuilder();
         }
@@ -49,9 +54,11 @@ namespace PrettyPrompt.Panes
         {
             if (key.Handled) return;
 
+            await this.selectionHandler.OnKeyDown(key);
+
             switch (key.Pattern)
             {
-                case (Control, C):
+                case (Control, C) when Selection.Count == 0:
                     Result = new PromptResult(IsSuccess: false, string.Empty, IsHardEnter: false);
                     break;
                 case (Control, L):
@@ -81,9 +88,11 @@ namespace PrettyPrompt.Panes
                 case (Control, End):
                     Caret = Input.Length;
                     break;
+                case (Shift, LeftArrow):
                 case LeftArrow:
                     Caret = Math.Max(0, Caret - 1);
                     break;
+                case (Shift, RightArrow):
                 case RightArrow:
                     Caret = Math.Min(Input.Length, Caret + 1);
                     break;
@@ -119,6 +128,29 @@ namespace PrettyPrompt.Panes
                     Input.Insert(Caret, "    ");
                     Caret += 4;
                     break;
+                case (Control, X) when Selection.Any():
+                {
+                    var (start, end) = Selection[0].GetCaretIndices(WordWrappedLines);
+                    var cutContent = Input.ToString(start, end - start);
+                    Input.Remove(start, end - start);
+                    Caret = start;
+                    await ClipboardService.SetTextAsync(cutContent);
+                    break;
+                }
+                case (Control, X):
+                {
+                    await ClipboardService.SetTextAsync(Input.ToString());
+                    Input.Clear();
+                    Caret = 0;
+                    break;
+                }
+                case (Control, C) when Selection.Any():
+                {
+                    var (start, end) = Selection[0].GetCaretIndices(WordWrappedLines);
+                    var copiedContent = Input.ToString(start, end - start);
+                    await ClipboardService.SetTextAsync(copiedContent);
+                    break;
+                }
                 case (Control | Shift, C):
                     await ClipboardService.SetTextAsync(Input.ToString());
                     break;
@@ -159,12 +191,13 @@ namespace PrettyPrompt.Panes
             this.CodeAreaHeight = console.WindowHeight - this.TopCoordinate;
         }
 
-        public Task OnKeyUp(KeyPress key)
+        public async Task OnKeyUp(KeyPress key)
         {
-            if (key.Handled) return Task.CompletedTask;
+            if (key.Handled) return;
 
             switch (key.Pattern)
             {
+                case (Shift, UpArrow) when Cursor.Row > 0:
                 case UpArrow when Cursor.Row > 0:
                     Cursor.Row--;
                     var aboveLine = WordWrappedLines[Cursor.Row];
@@ -172,6 +205,7 @@ namespace PrettyPrompt.Panes
                     Caret = aboveLine.StartIndex + Cursor.Column;
                     key.Handled = true;
                     break;
+                case (Shift, DownArrow) when Cursor.Row < WordWrappedLines.Count - 1:
                 case DownArrow when Cursor.Row < WordWrappedLines.Count - 1:
                     Cursor.Row++;
                     var belowLine = WordWrappedLines[Cursor.Row];
@@ -181,7 +215,7 @@ namespace PrettyPrompt.Panes
                     break;
             }
 
-            return Task.CompletedTask;
+            await this.selectionHandler.OnKeyUp(key);
         }
 
         public void WordWrap() =>

@@ -124,7 +124,7 @@ namespace PrettyPrompt
 
         private static ScreenArea BuildCodeScreenArea(CodePane codePane, IReadOnlyCollection<FormatSpan> highlights)
         {
-            var highlightedLines = HighlightRenderer.ApplyColorToCharacters(highlights, codePane.WordWrappedLines);
+            var highlightedLines = CellRenderer.ApplyColorToCharacters(highlights, codePane.WordWrappedLines, codePane.Selection);
             // if we've filled up the full line, add a new line at the end so we can render our cursor on this new line.
             if(highlightedLines[^1].Cells.Count > 0
                 && (highlightedLines[^1].Cells.Count >= codePane.CodeAreaWidth

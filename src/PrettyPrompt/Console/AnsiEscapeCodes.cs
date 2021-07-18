@@ -14,6 +14,9 @@ namespace PrettyPrompt.Consoles
         private const char Escape = '\u001b';
         private const string ResetForegroundColor = "39";
         private const string ResetBackgroundColor = "49";
+        private const string Bold = "1";
+        private const string Underline = "4";
+        private const string Reverse = "7";
         public static readonly string ClearLine = $"{Escape}[0K";
         public static readonly string ClearToEndOfScreen = $"{Escape}[0J";
         public static readonly string ClearEntireScreen = $"{Escape}[2J";
@@ -57,13 +60,21 @@ namespace PrettyPrompt.Consoles
             + "["
             + string.Join(
                 separator: ";",
-                values: new[]
-                {
-                    formatting.Foreground?.Foreground ?? ResetForegroundColor,
-                    formatting.Background?.Background ?? ResetBackgroundColor,
-                    formatting.Bold ? "1" : null,
-                    formatting.Underline ? "4" : null
-                }.Where(format => format is not null)
+                values: (formatting.Inverted
+                    ? new[]
+                    {
+                        ResetForegroundColor,
+                        ResetBackgroundColor,
+                        Reverse
+                    }
+                    : new[]
+                    {
+                        formatting.Foreground?.Foreground ?? ResetForegroundColor,
+                        formatting.Background?.Background ?? ResetBackgroundColor,
+                        formatting.Bold ? Bold : null,
+                        formatting.Underline ? Underline : null,
+                    }
+                ).Where(format => format is not null)
               )
             + "m";
     }

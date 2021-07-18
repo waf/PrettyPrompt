@@ -108,6 +108,7 @@ namespace PrettyPrompt.Panes
                     break;
                 case Home:
                 case End:
+                case (Shift, _):
                 case (Control, Home):
                 case (Control, End):
                 case LeftArrow:
@@ -162,7 +163,7 @@ namespace PrettyPrompt.Panes
                 else if(!key.Handled)
                 {
                     FilterCompletions(codePane);
-                    if (HasTypedPastCompletion())
+                    if (HasTypedPastCompletion() || ShouldCancelOpenMenu(key))
                     {
                         Close();
                     }
@@ -173,6 +174,9 @@ namespace PrettyPrompt.Panes
         private bool HasTypedPastCompletion() =>
             FilteredView.SelectedItem is not null
             && FilteredView.SelectedItem.ReplacementText.Length < (codePane.Caret - openedCaretIndex);
+
+        private bool ShouldCancelOpenMenu(KeyPress key) =>
+            key.Pattern is LeftArrow or (_, LeftArrow);
 
         private void SetCompletions(IReadOnlyList<CompletionItem> completions, CodePane codePane)
         {

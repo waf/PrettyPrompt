@@ -29,5 +29,10 @@ namespace PrettyPrompt.Consoles
 
         public override int GetHashCode() =>
             HashCode.Combine(Row, Column);
+
+        public ConsoleCoordinate Clone(int rowOffset = 0, int columnOffset = 0) =>
+            new ConsoleCoordinate(Math.Max(0, Row + rowOffset), Math.Max(0, Column + columnOffset));
+
+        public override string ToString() => $"Row {Row}, Column {Column}";
     }
 }
