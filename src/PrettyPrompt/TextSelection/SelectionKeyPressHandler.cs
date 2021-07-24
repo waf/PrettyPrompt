@@ -1,5 +1,5 @@
 ﻿using PrettyPrompt.Consoles;
-using PrettyPrompt.Panes;
+using PrettyPrompt.Documents;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -10,41 +10,46 @@ namespace PrettyPrompt.TextSelection
 {
     class SelectionKeyPressHandler : IKeyPressHandler
     {
-        private readonly CodePane codePane;
+        private readonly Document document;
         private ConsoleCoordinate previousCursorLocation;
 
-        public SelectionKeyPressHandler(CodePane codePane)
+        public SelectionKeyPressHandler(Document document)
         {
-            this.codePane = codePane;
+            this.document = document;
         }
 
         public Task OnKeyDown(KeyPress key)
         {
-            this.previousCursorLocation = codePane.Cursor;
+            this.previousCursorLocation = document.Cursor;
 
             if(key.Pattern is (Control, A))
             {
-                codePane.Caret = codePane.Input.Length;
+                document.Caret = document.Length;
             }
             return Task.CompletedTask;
         }
 
         public Task OnKeyUp(KeyPress key)
         {
-            var selection = codePane.Selection;
-            var cursor = codePane.Cursor;
+            var selection = document.Selection;
+            var cursor = document.Cursor;
+
+            // as a special case, even though Ctrl+C isn't related to selection, it should keep the current selected text.
+            if (key.Pattern is (Control, C)) return Task.CompletedTask;
 
             if (key.Pattern is (Control, A))
             {
                 selection.Clear();
                 var start = new ConsoleCoordinate(0, 0);
-                var end = new ConsoleCoordinate(codePane.WordWrappedLines.Count, codePane.WordWrappedLines.Last().Content.Length);
+                var end = new ConsoleCoordinate(document.WordWrappedLines.Count - 1, document.WordWrappedLines[^1].Content.Length);
                 selection.Add(new SelectionSpan(start, end));
                 return Task.CompletedTask;
             }
 
             var (anchor, selectionCursor) = key.Pattern switch
             {
+                (Control | Shift, LeftArrow) => (previousCursorLocation, cursor.Clone()),
+                (Control | Shift, RightArrow) => (previousCursorLocation, cursor.Clone(columnOffset: -1)),
                 (Shift, LeftArrow) => (previousCursorLocation.Clone(columnOffset: -1), cursor.Clone()),
                 (Shift, RightArrow) => (previousCursorLocation, cursor.Clone(columnOffset: -1)),
                 (Shift, UpArrow) => (previousCursorLocation, cursor.Clone()),

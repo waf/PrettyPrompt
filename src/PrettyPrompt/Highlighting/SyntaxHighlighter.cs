@@ -6,7 +6,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading.Tasks;
 
 namespace PrettyPrompt.Highlighting
@@ -29,19 +28,17 @@ namespace PrettyPrompt.Highlighting
             this.previousOutput = Array.Empty<FormatSpan>();
         }
 
-        public async Task<IReadOnlyCollection<FormatSpan>> HighlightAsync(StringBuilder input)
+        public async Task<IReadOnlyCollection<FormatSpan>> HighlightAsync(string input)
         {
             if (hasUserOptedOutFromColor) return Array.Empty<FormatSpan>();
 
-            string thisInput = input.ToString();
-
-            if (thisInput.Equals(previousInput))
+            if (input.Equals(previousInput))
             {
                 return previousOutput;
             }
 
-            var highlights = await highlightCallbackAsync.Invoke(thisInput).ConfigureAwait(false);
-            previousInput = thisInput;
+            var highlights = await highlightCallbackAsync.Invoke(input).ConfigureAwait(false);
+            previousInput = input;
             previousOutput = highlights;
             return highlights;
         }

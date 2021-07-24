@@ -32,7 +32,7 @@ namespace PrettyPrompt.TextSelection
         public (int start, int end) GetCaretIndices(IReadOnlyList<WrappedLine> wrappedLines)
         {
             var start = wrappedLines[Start.Row].StartIndex + Start.Column;
-            var end = wrappedLines[End.Row].StartIndex + End.Column + 1;
+            var end = wrappedLines[End.Row].StartIndex + End.Column;
             return (start, end);
         }
     }

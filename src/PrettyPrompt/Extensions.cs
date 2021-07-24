@@ -92,20 +92,5 @@ namespace PrettyPrompt
                 i++;
             }
         }
-
-        /// <summary>
-        /// Like <see cref="string.StartsWith(string)"/>, but for StringBuilders (without calling ToString).
-        /// </summary>
-        public static bool StartsWith(this StringBuilder source, StringBuilder prefix)
-        {
-            if (prefix.Length > source.Length) return false;
-
-            for (int i = 0; i < prefix.Length; i++)
-            {
-                if (source[i] != prefix[i]) return false;
-            }
-
-            return true;
-        }
     }
 }
