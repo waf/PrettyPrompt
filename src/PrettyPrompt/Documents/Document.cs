@@ -1,5 +1,10 @@
-﻿using PrettyPrompt.Consoles;
-using PrettyPrompt.Panes;
+﻿#region License Header
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#endregion
+
+using PrettyPrompt.Consoles;
 using PrettyPrompt.TextSelection;
 using System;
 using System.Collections.Generic;
@@ -165,7 +170,7 @@ namespace PrettyPrompt.Documents
             this.Caret = newVersion.Caret;
         }
 
-        public void DiscardUndoRedoHistory() => undoRedoHistory.Discard();
+        public void ClearUndoRedoHistory() => undoRedoHistory.Clear();
 
         /*
          * The following methods are forwarding along the StringBuilder APIs.
@@ -182,4 +187,6 @@ namespace PrettyPrompt.Documents
         public override int GetHashCode() => this.text.GetHashCode();
         private string GetDebuggerDisplay() => this.text.ToString().Insert(this.Caret, "|");
     }
+
+    public record WrappedLine(int StartIndex, string Content);
 }

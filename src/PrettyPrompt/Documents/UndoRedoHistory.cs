@@ -1,4 +1,9 @@
-﻿using System;
+﻿#region License Header
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#endregion
+
 using System.Collections.Generic;
 
 namespace PrettyPrompt.Documents
@@ -8,7 +13,7 @@ namespace PrettyPrompt.Documents
     /// </summary>
     /// <remarks>
     /// Implementation is naive -- it just stores full snapshots in a linked list and undo/redo navigates
-    /// through it. If tracking snapshots of the input ends up causing high memory, we can investigate more .
+    /// through it. If tracking snapshots of the input ends up causing high memory, we can rework it.
     /// </remarks>
     internal sealed class UndoRedoHistory
     {
@@ -40,7 +45,7 @@ namespace PrettyPrompt.Documents
             return currentUndoRedoEntry?.Value ?? new Document();
         }
 
-        internal void Discard()
+        internal void Clear()
         {
             history.Clear();
             currentUndoRedoEntry = null;

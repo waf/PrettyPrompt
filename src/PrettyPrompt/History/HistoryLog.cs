@@ -182,9 +182,10 @@ namespace PrettyPrompt.History
                 history.RemoveLast();
             }
 
+            // discard undo/redo history to reduce memory usage
             if(history.Last is not null)
             {
-                history.Last.Value.DiscardUndoRedoHistory();
+                history.Last.Value.ClearUndoRedoHistory();
             }
         }
 

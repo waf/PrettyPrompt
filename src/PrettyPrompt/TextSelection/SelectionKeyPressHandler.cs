@@ -1,7 +1,12 @@
-﻿using PrettyPrompt.Consoles;
+﻿#region License Header
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+#endregion
+
+using PrettyPrompt.Consoles;
 using PrettyPrompt.Documents;
 using System;
-using System.Linq;
 using System.Threading.Tasks;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
@@ -48,9 +53,13 @@ namespace PrettyPrompt.TextSelection
 
             var (anchor, selectionCursor) = key.Pattern switch
             {
+                (Shift, Home) => (previousCursorLocation, cursor.Clone()),
+                (Control | Shift, Home) => (previousCursorLocation, cursor.Clone()),
+                (Shift, End) => (previousCursorLocation, cursor.Clone()),
+                (Control | Shift, End) => (previousCursorLocation, cursor.Clone()),
                 (Control | Shift, LeftArrow) => (previousCursorLocation, cursor.Clone()),
-                (Control | Shift, RightArrow) => (previousCursorLocation, cursor.Clone(columnOffset: -1)),
                 (Shift, LeftArrow) => (previousCursorLocation.Clone(columnOffset: -1), cursor.Clone()),
+                (Control | Shift, RightArrow) => (previousCursorLocation, cursor.Clone(columnOffset: -1)),
                 (Shift, RightArrow) => (previousCursorLocation, cursor.Clone(columnOffset: -1)),
                 (Shift, UpArrow) => (previousCursorLocation, cursor.Clone()),
                 (Shift, DownArrow) => (previousCursorLocation, cursor.Clone()),

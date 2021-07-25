@@ -27,24 +27,24 @@ namespace PrettyPrompt.Highlighting
             this.friendlyName = friendlyName;
         }
 
-        public static readonly AnsiColor Black = new AnsiColor("30", "40", nameof(Black));
-        public static readonly AnsiColor Red = new AnsiColor("31", "41", nameof(Red));
-        public static readonly AnsiColor Green = new AnsiColor("32", "42", nameof(Green));
-        public static readonly AnsiColor Yellow = new AnsiColor("33", "43", nameof(Yellow));
-        public static readonly AnsiColor Blue = new AnsiColor("34", "44", nameof(Blue));
-        public static readonly AnsiColor Magenta = new AnsiColor("35", "45", nameof(Magenta));
-        public static readonly AnsiColor Cyan = new AnsiColor("36", "46", nameof(Cyan));
-        public static readonly AnsiColor White = new AnsiColor("37", "47", nameof(White));
-        public static readonly AnsiColor BrightBlack = new AnsiColor("90", "100", nameof(BrightBlack));
-        public static readonly AnsiColor BrightRed = new AnsiColor("91", "101", nameof(BrightRed));
-        public static readonly AnsiColor BrightGreen = new AnsiColor("92", "102", nameof(BrightGreen));
-        public static readonly AnsiColor BrightYellow = new AnsiColor("93", "103", nameof(BrightYellow));
-        public static readonly AnsiColor BrightBlue = new AnsiColor("94", "104", nameof(BrightBlue));
-        public static readonly AnsiColor BrightMagenta = new AnsiColor("95", "105", nameof(BrightMagenta));
-        public static readonly AnsiColor BrightCyan = new AnsiColor("96", "106", nameof(BrightCyan));
-        public static readonly AnsiColor BrightWhite = new AnsiColor("97", "107", nameof(BrightWhite));
+        public static readonly AnsiColor Black = new("30", "40", nameof(Black));
+        public static readonly AnsiColor Red = new("31", "41", nameof(Red));
+        public static readonly AnsiColor Green = new("32", "42", nameof(Green));
+        public static readonly AnsiColor Yellow = new("33", "43", nameof(Yellow));
+        public static readonly AnsiColor Blue = new("34", "44", nameof(Blue));
+        public static readonly AnsiColor Magenta = new("35", "45", nameof(Magenta));
+        public static readonly AnsiColor Cyan = new("36", "46", nameof(Cyan));
+        public static readonly AnsiColor White = new("37", "47", nameof(White));
+        public static readonly AnsiColor BrightBlack = new("90", "100", nameof(BrightBlack));
+        public static readonly AnsiColor BrightRed = new("91", "101", nameof(BrightRed));
+        public static readonly AnsiColor BrightGreen = new("92", "102", nameof(BrightGreen));
+        public static readonly AnsiColor BrightYellow = new("93", "103", nameof(BrightYellow));
+        public static readonly AnsiColor BrightBlue = new("94", "104", nameof(BrightBlue));
+        public static readonly AnsiColor BrightMagenta = new("95", "105", nameof(BrightMagenta));
+        public static readonly AnsiColor BrightCyan = new("96", "106", nameof(BrightCyan));
+        public static readonly AnsiColor BrightWhite = new("97", "107", nameof(BrightWhite));
 
-        public static AnsiColor RGB(byte r, byte g, byte b) => new AnsiColor($"38;2;{r};{g};{b}", $"48;2;{r};{g};{b}", "RGB");
+        public static AnsiColor RGB(byte r, byte g, byte b) => new($"38;2;{r};{g};{b}", $"48;2;{r};{g};{b}", "RGB");
 
         public override bool Equals(object obj)
         {

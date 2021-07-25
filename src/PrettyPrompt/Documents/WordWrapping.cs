@@ -11,7 +11,7 @@ using System.Text;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Rendering;
 
-namespace PrettyPrompt.Panes
+namespace PrettyPrompt.Documents
 {
     record WordWrappedText(IReadOnlyList<WrappedLine> WrappedLines, ConsoleCoordinate Cursor);
 

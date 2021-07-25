@@ -5,6 +5,7 @@
 #endregion
 
 using PrettyPrompt.Consoles;
+using PrettyPrompt.Documents;
 using PrettyPrompt.Highlighting;
 using PrettyPrompt.Panes;
 using PrettyPrompt.Rendering;

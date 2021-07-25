@@ -1,5 +1,5 @@
 ﻿using PrettyPrompt.Consoles;
-using PrettyPrompt.Panes;
+using PrettyPrompt.Documents;
 using System.Text;
 using Xunit;
 

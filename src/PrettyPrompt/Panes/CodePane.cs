@@ -16,8 +16,6 @@ using static System.ConsoleModifiers;
 
 namespace PrettyPrompt.Panes
 {
-    public record WrappedLine(int StartIndex, string Content);
-
     internal class CodePane : IKeyPressHandler
     {
         private readonly ForceSoftEnterCallbackAsync shouldForceSoftEnterAsync;
@@ -73,16 +71,16 @@ namespace PrettyPrompt.Panes
                 case Enter:
                     Result = new PromptResult(IsSuccess: true, Document.GetText().EnvironmentNewlines(), IsHardEnter: false);
                     break;
-                case Home:
+                case Home or (Shift, Home):
                     Document.MoveToLineBoundary(-1);
                     break;
-                case End:
+                case End or (Shift, End):
                     Document.MoveToLineBoundary(+1);
                     break;
-                case (Control, Home):
+                case (Control, Home) or (Control | Shift, Home):
                     Document.Caret = 0;
                     break;
-                case (Control, End):
+                case (Control, End) or (Control | Shift, End):
                     Document.Caret = Document.Length;
                     break;
                 case (Shift, LeftArrow):
