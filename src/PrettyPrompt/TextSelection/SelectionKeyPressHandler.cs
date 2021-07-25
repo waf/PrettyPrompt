@@ -53,16 +53,14 @@ namespace PrettyPrompt.TextSelection
 
             var (anchor, selectionCursor) = key.Pattern switch
             {
-                (Shift, Home) => (previousCursorLocation, cursor.Clone()),
-                (Control | Shift, Home) => (previousCursorLocation, cursor.Clone()),
-                (Shift, End) => (previousCursorLocation, cursor.Clone()),
-                (Control | Shift, End) => (previousCursorLocation, cursor.Clone()),
-                (Control | Shift, LeftArrow) => (previousCursorLocation, cursor.Clone()),
-                (Shift, LeftArrow) => (previousCursorLocation.Clone(columnOffset: -1), cursor.Clone()),
+                (Shift, Home) or (Control | Shift, Home) 
+                or (Shift, End) or (Control | Shift, End)
+                or (Shift, UpArrow) or (Shift, DownArrow)
+                or (Control | Shift, LeftArrow) => (previousCursorLocation, cursor.Clone()),
+
                 (Control | Shift, RightArrow) => (previousCursorLocation, cursor.Clone(columnOffset: -1)),
+                (Shift, LeftArrow) => (previousCursorLocation.Clone(columnOffset: -1), cursor.Clone()),
                 (Shift, RightArrow) => (previousCursorLocation, cursor.Clone(columnOffset: -1)),
-                (Shift, UpArrow) => (previousCursorLocation, cursor.Clone()),
-                (Shift, DownArrow) => (previousCursorLocation, cursor.Clone()),
                 _ => (null, null)
             };
 
