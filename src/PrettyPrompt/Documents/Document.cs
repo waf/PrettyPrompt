@@ -17,7 +17,7 @@ namespace PrettyPrompt.Documents
     /// A Document represents the input text being typed into the prompt.
     /// It contains the text being typed, the caret/cursor positions, text selection, and word wrapping.
     /// </summary>
-    [DebuggerDisplay($"{{{nameof(GetDebuggerDisplay)}(),nq}}")]
+    [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
     internal class Document : IEquatable<Document>
     {
         private readonly StringBuilder text;
