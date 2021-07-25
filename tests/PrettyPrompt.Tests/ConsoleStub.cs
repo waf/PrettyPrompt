@@ -100,6 +100,7 @@ namespace PrettyPrompt.Tests
                 ',' => ConsoleKey.OemComma,
                 '-' => ConsoleKey.OemMinus,
                 '+' => ConsoleKey.OemPlus,
+                '\'' => ConsoleKey.Oem7,
                 '/' => ConsoleKey.Divide,
                 '!' => ConsoleKey.D1,
                 '@' => ConsoleKey.D2,
@@ -134,6 +135,7 @@ namespace PrettyPrompt.Tests
             {
                 ConsoleKey.Backspace => '\b',
                 ConsoleKey.Tab => '\t',
+                ConsoleKey.Oem7 => '\'',
                 ConsoleKey.Spacebar => ' ',
                 _ => '\0' // home, enter, arrow keys, etc
             };

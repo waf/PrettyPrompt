@@ -78,12 +78,47 @@ namespace PrettyPrompt.Tests
                 $"{Shift}{RightArrow}{Shift}{RightArrow}{Shift}{Home}{Shift}{End}{Shift}{DownArrow}{Shift}{DownArrow}",
                 $"{Control | Shift}{End}{Control | Shift}{LeftArrow}{Shift}{LeftArrow}{Delete}{Enter}"
                 );
-            var prompt = new Prompt(console: console);
 
+            var prompt = new Prompt(console: console);
             var result = await prompt.ReadLineAsync("> ");
 
             Assert.True(result.IsSuccess);
             Assert.Equal("There once was rain!", result.Text);
+        }
+
+        [Fact]
+        public async Task ReadLine_TextOperationsWithUndo_AreUndone()
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput(
+                $"It's a small world, after all",
+                $"{Control}{LeftArrow}{Control}{LeftArrow}{Control}{LeftArrow}{Control}{LeftArrow}",
+                $"{Control | Shift}{RightArrow}{Delete}",
+                $"{Control}{Z}{Enter}"
+            );
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLineAsync("> ");
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal("It's a small world, after all", result.Text);
+        }
+
+        [Fact]
+        public async Task ReadLine_TextOperationsWithRedo_AreRedone()
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput(
+                $"It's a small world, after all",
+                $"{Control}{LeftArrow}{Control}{LeftArrow}{Control}{LeftArrow}{Control}{LeftArrow}",
+                $"{Control | Shift}{RightArrow}{Delete}",
+                $"{Control}{Z}",
+                $"{Control}{Y}{Control}{Y}{Enter}"
+            );
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLineAsync("> ");
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal("It's a world, after all", result.Text);
         }
     }
 }
