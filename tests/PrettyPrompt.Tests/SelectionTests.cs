@@ -120,5 +120,39 @@ namespace PrettyPrompt.Tests
             Assert.True(result.IsSuccess);
             Assert.Equal("It's a world, after all", result.Text);
         }
+
+        [Fact]
+        public async Task ReadLine_CopiedText_CanBePasted()
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput(
+                $"baby shark doo",
+                $"{Control | Shift}{LeftArrow}{Shift}{LeftArrow}{Control}{C}{End}",
+                $"{Control}{V}{Control}{V}{Control}{V}{Enter}"
+            );
+
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLineAsync("> ");
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal("baby shark doo doo doo doo", result.Text);
+        }
+
+        [Fact]
+        public async Task ReadLine_CutText_CanBePasted()
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput(
+                $"baby shark doo doo doo doo",
+                $"{Home}{Control | Shift}{RightArrow}{Control | Shift}{RightArrow}{Shift}{LeftArrow}{Shift}{LeftArrow}",
+                $"{Control}{X}{Delete}{End} {Control}{V}{Enter}"
+            );
+
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLineAsync("> ");
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal("doo doo doo doo baby shark", result.Text);
+        }
     }
 }
