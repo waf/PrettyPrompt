@@ -106,11 +106,10 @@ namespace PrettyPrompt.Panes
                 case (Control, Spacebar):
                     key.Handled = true;
                     break;
-                case Home:
-                case End:
-                case (Shift, _):
-                case (Control, Home):
-                case (Control, End):
+                case Home or (_, Home):
+                case End or (_, End):
+                case (Shift, LeftArrow or RightArrow or UpArrow or DownArrow or Home or End)
+                     or (Control | Shift, LeftArrow or RightArrow or UpArrow or DownArrow or Home or End):
                 case LeftArrow:
                     Close();
                     key.Handled = false;
