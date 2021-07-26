@@ -6,10 +6,10 @@
 
 using PrettyPrompt.Completion;
 using PrettyPrompt.Consoles;
+using PrettyPrompt.Documents;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
@@ -72,7 +72,7 @@ namespace PrettyPrompt.Panes
             {
                 if (key.Pattern is (Control, Spacebar))
                 {
-                    Open(codePane.Caret);
+                    Open(codePane.Document.Caret);
                     key.Handled = true;
                     return Task.CompletedTask;
                 }
@@ -100,7 +100,7 @@ namespace PrettyPrompt.Panes
                 case RightArrow:
                 case Tab:
                 case (Control, Spacebar) when FilteredView.Count == 1:
-                    codePane.Caret = InsertCompletion(codePane.Input, codePane.Caret, FilteredView.SelectedItem);
+                    InsertCompletion(codePane.Document, FilteredView.SelectedItem);
                     key.Handled = true;
                     break;
                 case (Control, Spacebar):
@@ -108,6 +108,7 @@ namespace PrettyPrompt.Panes
                     break;
                 case Home:
                 case End:
+                case (Shift, _):
                 case (Control, Home):
                 case (Control, End):
                 case LeftArrow:
@@ -127,21 +128,21 @@ namespace PrettyPrompt.Panes
             return Task.CompletedTask;
         }
 
-        private bool EnoughRoomToDisplay(CodePane codePane) =>
-            codePane.CodeAreaHeight - (codePane.Cursor?.Row).GetValueOrDefault(0) >= VerticalPaddingHeight + 1; // offset + top border + 1 completion item + bottom border
+        private static bool EnoughRoomToDisplay(CodePane codePane) =>
+            codePane.CodeAreaHeight - (codePane.Document.Cursor?.Row).GetValueOrDefault(0) >= VerticalPaddingHeight + 1; // offset + top border + 1 completion item + bottom border
 
         async Task IKeyPressHandler.OnKeyUp(KeyPress key)
         {
             if (!EnoughRoomToDisplay(this.codePane)) return;
 
             if (!char.IsControl(key.ConsoleKeyInfo.KeyChar)
-                && ShouldAutomaticallyOpen(codePane.Input, codePane.Caret) is int offset and >= 0)
+                && ShouldAutomaticallyOpen(codePane.Document, codePane.Document.Caret) is int offset and >= 0)
             {
                 Close();
-                Open(codePane.Caret - offset);
+                Open(codePane.Document.Caret - offset);
             }
 
-            if (codePane.Caret < openedCaretIndex)
+            if (codePane.Document.Caret < openedCaretIndex)
             {
                 Close();
             }
@@ -149,7 +150,7 @@ namespace PrettyPrompt.Panes
             {
                 if (allCompletions.Count == 0)
                 {
-                    var completions = await this.complete.Invoke(codePane.Input.ToString(), codePane.Caret).ConfigureAwait(false);
+                    var completions = await this.complete.Invoke(codePane.Document.GetText(), codePane.Document.Caret).ConfigureAwait(false);
                     if(completions.Any())
                     {
                         SetCompletions(completions, codePane);
@@ -162,7 +163,7 @@ namespace PrettyPrompt.Panes
                 else if(!key.Handled)
                 {
                     FilterCompletions(codePane);
-                    if (HasTypedPastCompletion())
+                    if (HasTypedPastCompletion() || ShouldCancelOpenMenu(key))
                     {
                         Close();
                     }
@@ -172,15 +173,17 @@ namespace PrettyPrompt.Panes
 
         private bool HasTypedPastCompletion() =>
             FilteredView.SelectedItem is not null
-            && FilteredView.SelectedItem.ReplacementText.Length < (codePane.Caret - openedCaretIndex);
+            && FilteredView.SelectedItem.ReplacementText.Length < (codePane.Document.Caret - openedCaretIndex);
+
+        private static bool ShouldCancelOpenMenu(KeyPress key) =>
+            key.Pattern is LeftArrow or (_, LeftArrow);
 
         private void SetCompletions(IReadOnlyList<CompletionItem> completions, CodePane codePane)
         {
             allCompletions = completions;
             if (completions.Any())
             {
-                var completion = completions.First();
-                openedCaretIndex = completion.StartIndex;
+                openedCaretIndex = completions[0].StartIndex;
                 FilterCompletions(codePane);
             }
         }
@@ -195,7 +198,7 @@ namespace PrettyPrompt.Panes
             for (var i = 0; i < allCompletions.Count; i++)
             {
                 var completion = allCompletions[i];
-                if (!Matches(completion, codePane.Input)) continue;
+                if (!Matches(completion, codePane.Document)) continue;
 
                 filtered.Add(completion);
                 if (completion.ReplacementText == previouslySelectedItem?.ReplacementText)
@@ -203,7 +206,7 @@ namespace PrettyPrompt.Panes
                     selectedIndex = filtered.Count - 1;
                 }
             }
-            if (selectedIndex == -1 || !Matches(previouslySelectedItem, codePane.Input))
+            if (selectedIndex == -1 || !Matches(previouslySelectedItem, codePane.Document))
             {
                 selectedIndex = 0;
             }
@@ -213,14 +216,14 @@ namespace PrettyPrompt.Panes
                 selectedIndex
             );
 
-            bool Matches(CompletionItem completion, StringBuilder input) =>
+            bool Matches(CompletionItem completion, Document input) =>
                 completion.ReplacementText.StartsWith(
-                    input.ToString(completion.StartIndex, codePane.Caret - completion.StartIndex).Trim(),
+                    input.GetText(completion.StartIndex, codePane.Document.Caret - completion.StartIndex).Trim(),
                     StringComparison.CurrentCultureIgnoreCase
                 );
         }
 
-        private static int ShouldAutomaticallyOpen(StringBuilder input, int caret)
+        private static int ShouldAutomaticallyOpen(Document input, int caret)
         {
             if (caret > 0 && input[caret - 1] is '.' or '(') return 0; // typical "intellisense behavior", opens for new methods and parameters
 
@@ -238,12 +241,12 @@ namespace PrettyPrompt.Panes
                 : -1;
         }
 
-        private int InsertCompletion(StringBuilder input, int caret, CompletionItem completion, string suffix = "")
+        private void InsertCompletion(Document input, CompletionItem completion, string suffix = "")
         {
-            input.Remove(completion.StartIndex, caret - completion.StartIndex);
-            input.Insert(completion.StartIndex, completion.ReplacementText + suffix);
+            input.Remove(completion.StartIndex, input.Caret - completion.StartIndex);
+            input.InsertAtCaret(completion.ReplacementText + suffix);
+            input.Caret = completion.StartIndex + completion.ReplacementText.Length + suffix.Length;
             Close();
-            return completion.StartIndex + completion.ReplacementText.Length + suffix.Length;
         }
     }
 }

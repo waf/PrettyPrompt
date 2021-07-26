@@ -64,6 +64,7 @@ namespace PrettyPrompt
             // code pane contains the code the user is typing. It does not include the prompt (i.e. "> ")
             var codePane = new CodePane(topCoordinate: console.CursorTop, detectSoftEnterCallback);
             codePane.MeasureConsole(console, prompt);
+
             // completion pane is the pop-up window that shows potential autocompletions.
             var completionPane = new CompletionPane(codePane, completionCallback);
 
@@ -77,19 +78,23 @@ namespace PrettyPrompt
 
                 await InterpretKeyPress(key, codePane, completionPane).ConfigureAwait(false);
 
-                await RenderOutput(renderer, codePane, completionPane, key).ConfigureAwait(false);
-
                 // typing / word-wrapping may have scrolled the console, giving us more room.
                 codePane.MeasureConsole(console, prompt);
 
+                // render the typed input, with syntax highlighting
+                var inputText = codePane.Document.GetText();
+                var highlights = await highlighter.HighlightAsync(inputText).ConfigureAwait(false);
+                await renderer.RenderOutput(codePane, completionPane, highlights, key).ConfigureAwait(false);
+
+                // process any user-defined keyboard shortcuts
                 if (keyPressCallbacks.TryGetValue(key.Pattern, out var callback))
                 {
-                    await callback.Invoke(codePane.Input.ToString(), codePane.Caret).ConfigureAwait(false);
+                    await callback.Invoke(inputText, codePane.Document.Caret).ConfigureAwait(false);
                 }
 
                 if (codePane.Result is not null)
                 {
-                    _ = history.SavePersistentHistoryAsync(codePane.Input);
+                    _ = history.SavePersistentHistoryAsync(inputText);
                     cancellationManager.AllowControlCToCancelResult(codePane.Result);
                     return codePane.Result;
                 }
@@ -108,12 +113,6 @@ namespace PrettyPrompt
 
             foreach (var panes in new IKeyPressHandler[] { completionPane, codePane, history })
                 await panes.OnKeyUp(key).ConfigureAwait(false);
-        }
-
-        private async Task RenderOutput(Renderer renderer, CodePane codePane, CompletionPane completionPane, KeyPress key)
-        {
-            var highlights = await highlighter.HighlightAsync(codePane.Input).ConfigureAwait(false);
-            await renderer.RenderOutput(codePane, completionPane, highlights, key).ConfigureAwait(false);
         }
 
         /// <inheritdoc cref="IPrompt.HasUserOptedOutFromColor" />

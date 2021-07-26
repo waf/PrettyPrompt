@@ -5,6 +5,7 @@
 #endregion
 
 using PrettyPrompt.Consoles;
+using PrettyPrompt.Documents;
 using PrettyPrompt.Highlighting;
 using PrettyPrompt.Panes;
 using PrettyPrompt.Rendering;
@@ -58,7 +59,7 @@ namespace PrettyPrompt
             if (codePane.Result is not null)
             {
                 Write(
-                    MoveCursorDown(codePane.WordWrappedLines.Count - codePane.Cursor.Row - 1)
+                    MoveCursorDown(codePane.Document.WordWrappedLines.Count - codePane.Document.Cursor.Row - 1)
                     + MoveCursorToColumn(1)
                     + "\n"
                     + ClearToEndOfScreen,
@@ -79,7 +80,7 @@ namespace PrettyPrompt
             ScreenArea codeWidget = BuildCodeScreenArea(codePane, highlights);
             ScreenArea[] completionWidgets = await BuildCompletionScreenAreas(
                 completionPane,
-                cursor: codePane.Cursor,
+                cursor: codePane.Document.Cursor,
                 codeAreaStartColumn: prompt.Length,
                 codeAreaWidth: codePane.CodeAreaWidth
             ).ConfigureAwait(false);
@@ -94,7 +95,7 @@ namespace PrettyPrompt
             // draw screen areas to screen representation.
             // later screen areas can overlap earlier screen areas.
             var screen = new Screen(
-                codePane.CodeAreaWidth, codePane.CodeAreaHeight, codePane.Cursor, screenAreas: new[] { codeWidget }.Concat(completionWidgets).ToArray()
+                codePane.CodeAreaWidth, codePane.CodeAreaHeight, codePane.Document.Cursor, screenAreas: new[] { codeWidget }.Concat(completionWidgets).ToArray()
             );
 
             if (DidCodeAreaResize(previouslyRenderedScreen, screen))
@@ -124,7 +125,7 @@ namespace PrettyPrompt
 
         private static ScreenArea BuildCodeScreenArea(CodePane codePane, IReadOnlyCollection<FormatSpan> highlights)
         {
-            var highlightedLines = HighlightRenderer.ApplyColorToCharacters(highlights, codePane.WordWrappedLines);
+            var highlightedLines = CellRenderer.ApplyColorToCharacters(highlights, codePane.Document.WordWrappedLines, codePane.Document.Selection);
             // if we've filled up the full line, add a new line at the end so we can render our cursor on this new line.
             if(highlightedLines[^1].Cells.Count > 0
                 && (highlightedLines[^1].Cells.Count >= codePane.CodeAreaWidth
@@ -182,16 +183,16 @@ namespace PrettyPrompt
 
         private Row[] BuildCompletionRows(CompletionPane completionPane, int codeAreaWidth, int wordWidth, ConsoleCoordinate completionBoxStart)
         {
-            string horizontalBorder = TruncateToWindow(new string(Box.EdgeHorizontal, wordWidth + 2), 2);
+            string horizontalBorder = TruncateToWindow(new string(BoxDrawing.EdgeHorizontal, wordWidth + 2), 2);
 
             var selectedItem = completionPane.FilteredView.SelectedItem;
 
             return completionPane.FilteredView
                 .Select((completion, index) =>
                 {
-                    string leftBorder = Box.EdgeVertical + (selectedItem == completion ? "|" : " ");
+                    string leftBorder = BoxDrawing.EdgeVertical + (selectedItem == completion ? "|" : " ");
                     string item = completion.DisplayText ?? completion.ReplacementText;
-                    string rightBorder = " " + Box.EdgeVertical;
+                    string rightBorder = " " + BoxDrawing.EdgeVertical;
                     return new Row(Cell
                         .FromText(leftBorder, completionBorderColor)
                         .Concat(Cell.FromText(TruncateToWindow(item + new string(' ', wordWidth - UnicodeWidth.GetWidth(item)), 4)))
@@ -199,8 +200,8 @@ namespace PrettyPrompt
                         .ToList()
                     );
                 })
-                .Prepend(new Row(Cell.FromText(Box.CornerUpperLeft + horizontalBorder + Box.CornerUpperRight, completionBorderColor)))
-                .Append(new Row(Cell.FromText(Box.CornerLowerLeft + horizontalBorder + Box.CornerLowerRight, completionBorderColor)))
+                .Prepend(new Row(Cell.FromText(BoxDrawing.CornerUpperLeft + horizontalBorder + BoxDrawing.CornerUpperRight, completionBorderColor)))
+                .Append(new Row(Cell.FromText(BoxDrawing.CornerLowerLeft + horizontalBorder + BoxDrawing.CornerLowerRight, completionBorderColor)))
                 .ToArray();
 
             string TruncateToWindow(string line, int offset) =>
@@ -219,13 +220,13 @@ namespace PrettyPrompt
             var actualTextWidth = wrapped.Select(line => UnicodeWidth.GetWidth(line)).Max();
             var actualBoxWidth = actualTextWidth + 3;
 
-            var (boxTop, boxBottom) = Box.HorizontalBorders(actualBoxWidth - 1, leftCorner: false);
+            var (boxTop, boxBottom) = BoxDrawing.HorizontalBorders(actualBoxWidth - 1, leftCorner: false);
 
             return wrapped
                 .Select(line =>
                     new Row(Cell
                         .FromText(" " + line.Trim() + new string(' ', actualTextWidth - UnicodeWidth.GetWidth(line)))
-                        .Concat(Cell.FromText(" " + Box.EdgeVertical, documentationBorderColor))
+                        .Concat(Cell.FromText(" " + BoxDrawing.EdgeVertical, documentationBorderColor))
                         .ToList()
                     )
                 )

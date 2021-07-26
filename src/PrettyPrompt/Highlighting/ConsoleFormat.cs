@@ -16,6 +16,6 @@ namespace PrettyPrompt.Highlighting
         AnsiColor Foreground = null,
         AnsiColor Background = null,
         bool Bold = false,
-        bool Underline = false
-    );
+        bool Underline = false,
+        bool Inverted = false);
 }

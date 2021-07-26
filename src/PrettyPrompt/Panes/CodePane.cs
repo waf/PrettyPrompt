@@ -5,10 +5,10 @@
 #endregion
 
 using PrettyPrompt.Consoles;
+using PrettyPrompt.Documents;
+using PrettyPrompt.TextSelection;
 using System;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using TextCopy;
 using static System.ConsoleKey;
@@ -16,111 +16,131 @@ using static System.ConsoleModifiers;
 
 namespace PrettyPrompt.Panes
 {
-    public record WrappedLine(int StartIndex, string Content);
-
     internal class CodePane : IKeyPressHandler
     {
         private readonly ForceSoftEnterCallbackAsync shouldForceSoftEnterAsync;
+        private readonly SelectionKeyPressHandler selectionHandler;
 
-        // dimensions
+        /// <summary>
+        /// The input text being edited in the pane
+        /// </summary>
+        public Document Document { get; }
+
+        /// <summary>
+        /// The final input text that was entered into the pane.
+        /// When null, the text is still being edited.
+        /// </summary>
+        public PromptResult Result { get; private set; }
+
+        // pane dimensions
         public int TopCoordinate { get; set; }
         public int CodeAreaWidth { get; set; }
         public int CodeAreaHeight { get; private set; }
         public int WindowTop { get; private set; }
 
-        // input/output
-        public StringBuilder Input { get; }
-        public int Caret { get; set; }
-        public PromptResult Result { get; private set; }
-
-        // word wrapping
-        public IReadOnlyList<WrappedLine> WordWrappedLines { get; private set; }
-        public ConsoleCoordinate Cursor { get; private set; }
-
         public CodePane(int topCoordinate, ForceSoftEnterCallbackAsync shouldForceSoftEnterAsync)
         {
             this.TopCoordinate = topCoordinate;
             this.shouldForceSoftEnterAsync = shouldForceSoftEnterAsync;
-            this.Caret = 0;
-            this.Input = new StringBuilder();
+            this.Document = new Document();
+            this.selectionHandler = new SelectionKeyPressHandler(Document);
         }
 
         public async Task OnKeyDown(KeyPress key)
         {
             if (key.Handled) return;
 
+            await this.selectionHandler.OnKeyDown(key);
+
             switch (key.Pattern)
             {
-                case (Control, C):
+                case (Control, C) when Document.Selection.Count == 0:
                     Result = new PromptResult(IsSuccess: false, string.Empty, IsHardEnter: false);
                     break;
                 case (Control, L):
                     TopCoordinate = 0; // actually clearing the screen is handled in the renderer.
                     break;
-                case Enter when await shouldForceSoftEnterAsync(Input.ToString()):
+                case Enter when await shouldForceSoftEnterAsync(Document.GetText()):
                 case (Shift, Enter):
-                    Input.Insert(Caret, '\n');
-                    Caret++;
+                    Document.InsertAtCaret('\n');
                     break;
                 case (Control, Enter):
                 case (Control | Alt, Enter):
-                    Result = new PromptResult(IsSuccess: true, Input.ToString().EnvironmentNewlines(), IsHardEnter: true);
+                    Result = new PromptResult(IsSuccess: true, Document.GetText().EnvironmentNewlines(), IsHardEnter: true);
                     break;
                 case Enter:
-                    Result = new PromptResult(IsSuccess: true, Input.ToString().EnvironmentNewlines(), IsHardEnter: false);
+                    Result = new PromptResult(IsSuccess: true, Document.GetText().EnvironmentNewlines(), IsHardEnter: false);
                     break;
-                case Home:
-                    Caret = CalculateLineBoundaryIndex(Input, Caret, -1);
+                case Home or (Shift, Home):
+                    Document.MoveToLineBoundary(-1);
                     break;
-                case End:
-                    Caret = CalculateLineBoundaryIndex(Input, Caret, +1);
+                case End or (Shift, End):
+                    Document.MoveToLineBoundary(+1);
                     break;
-                case (Control, Home):
-                    Caret = 0;
+                case (Control, Home) or (Control | Shift, Home):
+                    Document.Caret = 0;
                     break;
-                case (Control, End):
-                    Caret = Input.Length;
+                case (Control, End) or (Control | Shift, End):
+                    Document.Caret = Document.Length;
                     break;
+                case (Shift, LeftArrow):
                 case LeftArrow:
-                    Caret = Math.Max(0, Caret - 1);
+                    Document.Caret = Math.Max(0, Document.Caret - 1);
                     break;
+                case (Shift, RightArrow):
                 case RightArrow:
-                    Caret = Math.Min(Input.Length, Caret + 1);
+                    Document.Caret = Math.Min(Document.Length, Document.Caret + 1);
                     break;
+                case (Control | Shift, LeftArrow):
                 case (Control, LeftArrow):
-                    Caret = CalculateWordBoundaryIndex(Input, Caret, -1);
+                    Document.MoveToWordBoundary(-1);
                     break;
+                case (Control | Shift, RightArrow):
                 case (Control, RightArrow):
-                    Caret = CalculateWordBoundaryIndex(Input, Caret, +1);
+                    Document.MoveToWordBoundary(+1);
                     break;
-                case (Control, Backspace):
-                    var startDeleteIndex = CalculateWordBoundaryIndex(Input, Caret, -1);
-                    Input.Remove(startDeleteIndex, Caret - startDeleteIndex);
-                    Caret = startDeleteIndex;
+                case (Control, Backspace) when Document.Selection.Count == 0:
+                    var startDeleteIndex = Document.CalculateWordBoundaryIndexNearCaret(-1);
+                    Document.Remove(startDeleteIndex, Document.Caret - startDeleteIndex);
                     break;
-                case (Control, Delete):
-                    var endDeleteIndex = CalculateWordBoundaryIndex(Input, Caret, +1);
-                    Input.Remove(Caret, endDeleteIndex - Caret);
+                case (Control, Delete) when Document.Selection.Count == 0:
+                    var endDeleteIndex = Document.CalculateWordBoundaryIndexNearCaret(+1);
+                    Document.Remove(Document.Caret, endDeleteIndex - Document.Caret);
                     break;
-                case Backspace:
-                    if (Caret >= 1)
-                    {
-                        Input.Remove(Caret - 1, 1);
-                        Caret--;
-                    }
+                case Backspace when Document.Selection.Count == 0:
+                    Document.Remove(Document.Caret - 1, 1);
                     break;
-                case Delete:
-                    if (Caret < Input.Length)
-                    {
-                        Input.Remove(Caret, 1);
-                    }
+                case Delete when Document.Selection.Count == 0:
+                    Document.Remove(Document.Caret, 1);
+                    break;
+                case (_, Delete) or (_, Backspace) or Delete or Backspace when Document.Selection.Any():
+                    Document.DeleteSelectedText();
                     break;
                 case Tab:
-                    Input.Insert(Caret, "    ");
-                    Caret += 4;
+                    Document.InsertAtCaret("    ");
                     break;
+                case (Control, X) when Document.Selection.Any():
+                {
+                    var (start, end) = Document.Selection[0].GetCaretIndices(Document.WordWrappedLines);
+                    var cutContent = Document.GetText(start, end - start);
+                    Document.Remove(start, end - start);
+                    await ClipboardService.SetTextAsync(cutContent);
+                    break;
+                }
+                case (Control, X):
+                {
+                    await ClipboardService.SetTextAsync(Document.GetText());
+                    break;
+                }
+                case (Control, C) when Document.Selection.Any():
+                {
+                    var (start, end) = Document.Selection[0].GetCaretIndices(Document.WordWrappedLines);
+                    var copiedContent = Document.GetText(start, end - start);
+                    await ClipboardService.SetTextAsync(copiedContent);
+                    break;
+                }
                 case (Control | Shift, C):
-                    await ClipboardService.SetTextAsync(Input.ToString());
+                    await ClipboardService.SetTextAsync(Document.GetText());
                     break;
                 case (Shift, Insert) when key.PastedText is not null:
                     PasteText(key.PastedText);
@@ -131,11 +151,18 @@ namespace PrettyPrompt.Panes
                     string clipboardText = await ClipboardService.GetTextAsync();
                     PasteText(clipboardText);
                     break;
+                case (Control, Z):
+                    Document.Undo();
+                    WordWrap();
+                    break;
+                case (Control, Y):
+                    Document.Redo();
+                    WordWrap();
+                    break;
                 default:
                     if (!char.IsControl(key.ConsoleKeyInfo.KeyChar))
                     {
-                        Input.Insert(Caret, key.ConsoleKeyInfo.KeyChar);
-                        Caret++;
+                        Document.InsertAtCaret(key.ConsoleKeyInfo.KeyChar);
                     }
                     break;
             }
@@ -146,8 +173,7 @@ namespace PrettyPrompt.Panes
             if (string.IsNullOrEmpty(pastedText)) return;
 
             string dedentedText = DedentMultipleLines(pastedText);
-            Input.Insert(Caret, dedentedText);
-            Caret += dedentedText.Length;
+            this.Document.InsertAtCaret(dedentedText);
         }
 
         internal void MeasureConsole(IConsole console, string prompt)
@@ -159,70 +185,34 @@ namespace PrettyPrompt.Panes
             this.CodeAreaHeight = console.WindowHeight - this.TopCoordinate;
         }
 
-        public Task OnKeyUp(KeyPress key)
+        public async Task OnKeyUp(KeyPress key)
         {
-            if (key.Handled) return Task.CompletedTask;
+            if (key.Handled) return;
 
             switch (key.Pattern)
             {
-                case UpArrow when Cursor.Row > 0:
-                    Cursor.Row--;
-                    var aboveLine = WordWrappedLines[Cursor.Row];
-                    Cursor.Column = Math.Min(aboveLine.Content.TrimEnd().Length, Cursor.Column);
-                    Caret = aboveLine.StartIndex + Cursor.Column;
+                case (Shift, UpArrow) when Document.Cursor.Row > 0:
+                case UpArrow when Document.Cursor.Row > 0:
+                    Document.Cursor.Row--;
+                    var aboveLine = Document.WordWrappedLines[Document.Cursor.Row];
+                    Document.Cursor.Column = Math.Min(aboveLine.Content.TrimEnd().Length, Document.Cursor.Column);
+                    Document.Caret = aboveLine.StartIndex + Document.Cursor.Column;
                     key.Handled = true;
                     break;
-                case DownArrow when Cursor.Row < WordWrappedLines.Count - 1:
-                    Cursor.Row++;
-                    var belowLine = WordWrappedLines[Cursor.Row];
-                    Cursor.Column = Math.Min(belowLine.Content.TrimEnd().Length, Cursor.Column);
-                    Caret = belowLine.StartIndex + Cursor.Column;
+                case (Shift, DownArrow) when Document.Cursor.Row < Document.WordWrappedLines.Count - 1:
+                case DownArrow when Document.Cursor.Row < Document.WordWrappedLines.Count - 1:
+                    Document.Cursor.Row++;
+                    var belowLine = Document.WordWrappedLines[Document.Cursor.Row];
+                    Document.Cursor.Column = Math.Min(belowLine.Content.TrimEnd().Length, Document.Cursor.Column);
+                    Document.Caret = belowLine.StartIndex + Document.Cursor.Column;
                     key.Handled = true;
                     break;
             }
 
-            return Task.CompletedTask;
+            await this.selectionHandler.OnKeyUp(key);
         }
 
-        public void WordWrap() =>
-            (WordWrappedLines, Cursor) = WordWrapping.WrapEditableCharacters(Input, Caret, CodeAreaWidth);
-
-        private static int CalculateWordBoundaryIndex(StringBuilder input, int caret, int direction)
-        {
-            int bound = direction > 0 ? input.Length : 0;
-
-            if (Math.Abs(caret - bound) <= 2)
-                return bound;
-
-            for (var i = caret + direction; bound == 0 ? i > 0 : i < bound - 1; i += direction)
-            {
-                int c1Index = i + (direction > 0 ? 0 : -1);
-                int c2Index = i + (direction > 0 ? 1 : 0);
-                if (IsWordStart(input[c1Index], input[c2Index]))
-                    return c2Index;
-            }
-
-            static bool IsWordStart(char c1, char c2) => !char.IsLetterOrDigit(c1) && char.IsLetterOrDigit(c2);
-
-            return bound;
-        }
-
-        private static int CalculateLineBoundaryIndex(StringBuilder input, int caret, int direction)
-        {
-            if (input.Length == 0) return caret;
-
-            if (direction == +1 && caret < input.Length && input[caret] == '\n') return caret;
-
-            int bound = direction > 0 ? input.Length : 0;
-
-            for (var i = caret + direction; bound == 0 ? i > 0 : i < bound; i += direction)
-            {
-                if (input[i] == '\n')
-                    return i + (direction == -1 ? 1 : 0);
-            }
-
-            return bound;
-        }
+        public void WordWrap() => Document.WordWrap(CodeAreaWidth);
 
         /// <summary>
         /// If we have text with consistent, leading indentation, trim that indentation ("dedent" it).

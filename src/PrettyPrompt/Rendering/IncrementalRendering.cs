@@ -81,6 +81,11 @@ namespace PrettyPrompt.Rendering
                 // write out current character, with any formatting
                 if (currentCell.Formatting != currentFormatRun)
                 {
+                    // text selection is implemented by inverting colors. Reset inverted colors if required.
+                    if(currentFormatRun is not null && currentCell.Formatting.Inverted != currentFormatRun.Inverted)
+                    {
+                        diff.Append(Reset);
+                    }
                     diff.Append(
                         ToAnsiEscapeSequence(currentCell.Formatting)
                         + currentCell.Text

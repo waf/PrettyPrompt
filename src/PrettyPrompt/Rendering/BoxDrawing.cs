@@ -6,7 +6,7 @@
 
 namespace PrettyPrompt.Rendering
 {
-    static class Box
+    static class BoxDrawing
     {
         public const char CornerUpperRight = '┐';
         public const char CornerLowerRight = '┘';

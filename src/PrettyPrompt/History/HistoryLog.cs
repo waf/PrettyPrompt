@@ -5,6 +5,7 @@
 #endregion
 
 using PrettyPrompt.Consoles;
+using PrettyPrompt.Documents;
 using PrettyPrompt.Panes;
 using System;
 using System.Collections.Generic;
@@ -24,13 +25,13 @@ namespace PrettyPrompt.History
         /// <summary>
         /// The actual history, stored as a linked list so we can efficiently go next/prev
         /// </summary>
-        private readonly LinkedList<StringBuilder> history = new LinkedList<StringBuilder>();
+        private readonly LinkedList<Document> history = new();
 
         /// <summary>
         /// The currently active history item. Usually, it's the last element of <see cref="history"/>, unless
         /// the user is navigating next/prev in history.
         /// </summary>
-        private LinkedListNode<StringBuilder> current;
+        private LinkedListNode<Document> current;
 
         /// <summary>
         /// The currently code pane being edited. The contents of this pane will be changed when
@@ -43,7 +44,7 @@ namespace PrettyPrompt.History
         /// it so we can restore it when the user stops navigating through history (i.e. they press Down Arrow until
         /// they're back to their current prompt).
         /// </summary>
-        private StringBuilder unsubmittedBuffer;
+        private Document unsubmittedBuffer;
 
         /// <summary>
         /// Filepath of the history storage file. If null, history is not saved. History is stored as base64 encoded lines,
@@ -72,7 +73,7 @@ namespace PrettyPrompt.History
             for (int i = loadedHistoryLines.Length - 1; i >= 0; i--)
             {
                 var entry = Encoding.UTF8.GetString(Convert.FromBase64String(loadedHistoryLines[i]));
-                history.AddFirst(new StringBuilder(entry));
+                history.AddFirst(new Document(entry, 0));
             }
 
             // trim history.
@@ -97,7 +98,7 @@ namespace PrettyPrompt.History
                 case UpArrow when current.Previous is not null:
                     if (current == history.Last)
                     {
-                        unsubmittedBuffer = new StringBuilder(history.Last.Value?.ToString());
+                        unsubmittedBuffer = history.Last.Value?.Clone() ?? new Document();
                     }
                     var matchingPreviousEntry = FindPreviousMatchingEntry(unsubmittedBuffer, current);
                     SetContents(latestCodePane, matchingPreviousEntry.Value);
@@ -131,13 +132,15 @@ namespace PrettyPrompt.History
         /// Starting at the <paramref name="currentEntry"/> node, search backwards for a node
         /// that starts with <paramref name="prefix"/>
         /// </summary>
-        private static LinkedListNode<StringBuilder> FindPreviousMatchingEntry(StringBuilder prefix, LinkedListNode<StringBuilder> currentEntry)
+        private static LinkedListNode<Document> FindPreviousMatchingEntry(Document prefix, LinkedListNode<Document> currentEntry)
         {
             if (prefix.Length == 0) return currentEntry.Previous;
 
+            string prefixText = prefix.GetText();
+
             for(var node = currentEntry.Previous; node is not null; node = node.Previous)
             {
-                if (node.Value.StartsWith(prefix))
+                if (node.Value.StartsWith(prefixText))
                 {
                     return node;
                 }
@@ -145,47 +148,52 @@ namespace PrettyPrompt.History
             return currentEntry;
         }
 
-        private static void SetContents(CodePane codepane, StringBuilder contents)
+        private static void SetContents(CodePane codepane, Document contents)
         {
-            if (codepane.Input.Equals(contents)) return;
+            if (codepane.Document.Equals(contents)) return;
 
-            codepane.Input.Clear();
-            codepane.Input.Append(contents);
-            codepane.Caret = contents.Length;
+            codepane.Document.Clear();
+            codepane.Document.InsertAtCaret(contents.GetText());
             codepane.WordWrap();
         }
 
         internal void Track(CodePane codePane)
         {
             PruneHistory(history);
-            current = history.AddLast(codePane.Input);
+            current = history.AddLast(codePane.Document);
             latestCodePane = codePane;
         }
 
         /// <summary>
         /// Remove the latest history entry, if it's empty or duplicate.
         /// </summary>
-        private static void PruneHistory(LinkedList<StringBuilder> history)
+        private static void PruneHistory(LinkedList<Document> history)
         {
             if (!history.Any())
             {
                 return;
             }
 
-            var previousEntry = history.Last?.Value.ToString();
-            var penultimateEntry = history.Last?.Previous?.Value.ToString();
+            var previousEntry = history.Last?.Value.GetText();
+            var penultimateEntry = history.Last?.Previous?.Value.GetText();
             if (string.IsNullOrEmpty(previousEntry) || previousEntry == penultimateEntry)
             {
                 // Remove last empty/duplicate history.
                 history.RemoveLast();
             }
+
+            // discard undo/redo history to reduce memory usage
+            if(history.Last is not null)
+            {
+                history.Last.Value.ClearUndoRedoHistory();
+            }
         }
 
-        internal async Task SavePersistentHistoryAsync(StringBuilder input)
+        internal async Task SavePersistentHistoryAsync(string input)
         {
             if (input.Length == 0 || string.IsNullOrEmpty(persistentHistoryFilepath)) return;
 
-            var entry = Convert.ToBase64String(Encoding.UTF8.GetBytes(input.ToString()));
+            var entry = Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
             await File.AppendAllLinesAsync(persistentHistoryFilepath, new[] { entry }).ConfigureAwait(false);
         }
     }
