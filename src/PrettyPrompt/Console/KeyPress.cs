@@ -56,8 +56,15 @@ namespace PrettyPrompt.Consoles
                 // for each key press, which is slow. Instead, batch them up to send as single "pasted text" block.
                 var keys = ReadRemainingKeys(console, key);
 
-                if (keys.Count < 4 || keys.All(k => char.IsControl(k.KeyChar))) // 4 is not special here, just seemed like a decent number to separate
-                                                                                // between "keys pressed simultaneously" and "pasted text"
+                if (key.Key == ConsoleKey.Escape)
+                {
+                    if(MapInputEscapeSequence(keys) is KeyPress ansiEscapedInput)
+                    {
+                        yield return ansiEscapedInput;
+                    }
+                }
+                else if (keys.Count < 4 || keys.All(k => char.IsControl(k.KeyChar))) // 4 is not special here, just seemed like a decent number to separate
+                                                                                     // between "keys pressed simultaneously" and "pasted text"
                 {
                     foreach (var consoleKey in keys)
                     {
@@ -73,6 +80,30 @@ namespace PrettyPrompt.Consoles
                     );
                 }
             }
+        }
+
+        /// <summary>
+        /// On Linux, .NET doesn't map all the ANSI escaped inputs into ConsoleKeyInfos. Map some of the missing ones here.
+        /// </summary>
+        private static KeyPress MapInputEscapeSequence(List<ConsoleKeyInfo> keys)
+        {
+            var sequence = new string(keys.Select(key => key.KeyChar).ToArray());
+            return sequence switch
+            {
+                "\u001b1;5P" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F1, shift: false, alt: false, control: true)),
+                "\u001b1;5Q" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F2, shift: false, alt: false, control: true)),
+                "\u001b1;5R" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F3, shift: false, alt: false, control: true)),
+                "\u001b1;5S" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F4, shift: false, alt: false, control: true)),
+                "\u001b15;5~" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F5, shift: false, alt: false, control: true)),
+                "\u001b17;5~" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F6, shift: false, alt: false, control: true)),
+                "\u001b18;5~" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F7, shift: false, alt: false, control: true)),
+                "\u001b19;5~" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F8, shift: false, alt: false, control: true)),
+                "\u001b20;5~" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F9, shift: false, alt: false, control: true)),
+                "\u001b21;5~" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F10, shift: false, alt: false, control: true)),
+                "\u001b23;5~" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F11, shift: false, alt: false, control: true)),
+                "\u001b24;5~" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F12, shift: false, alt: false, control: true)),
+                _ => null
+            };
         }
 
         /// <summary>
