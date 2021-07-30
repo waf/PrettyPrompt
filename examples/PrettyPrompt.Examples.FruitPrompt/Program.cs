@@ -142,7 +142,7 @@ namespace PrettyPrompt
                     OperatingSystem.IsMacOS() ? new ProcessStartInfo("open", url) :
                     new ProcessStartInfo("xdg-open", url); //linux, unix-like
 
-                Process.Start(browser);
+                Process.Start(browser).WaitForExit();
             }
         }
     }
