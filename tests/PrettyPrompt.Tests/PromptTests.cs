@@ -254,7 +254,7 @@ namespace PrettyPrompt.Tests
             {
                 KeyPressCallbacks =
                 {
-                    [F1] = (inputArg, caretArg) => { input = inputArg; caret = caretArg; return Task.CompletedTask; }
+                    [F1] = (inputArg, caretArg) => { input = inputArg; caret = caretArg; return Task.FromResult<KeyPressCallbackResult>(null); }
                 }
             }, console: console);
 
@@ -262,6 +262,28 @@ namespace PrettyPrompt.Tests
 
             Assert.Equal("I like apple", input);
             Assert.Equal(2, caret);
+        }
+
+        [Fact]
+        public async Task ReadLine_KeyPressCallbackReturnsOutput_IsReturned()
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput($"I like apple{Control}{LeftArrow}{Control}{LeftArrow}{F2}{Enter}");
+
+            var callbackOutput = new KeyPressCallbackResult("", "Callback output!");
+            var prompt = new Prompt(callbacks: new PromptCallbacks
+            {
+                KeyPressCallbacks =
+                {
+                    [F2] = (inputArg, caretArg) => {
+                        return Task.FromResult(callbackOutput);
+                    }
+                }
+            }, console: console);
+
+            var result = await prompt.ReadLineAsync("> ");
+
+            Assert.Equal(callbackOutput, result);
         }
     }
 }

@@ -24,9 +24,9 @@ namespace PrettyPrompt
     /// This class mostly deals with generating Cells, which the <see cref="IncrementalRendering"/> class then processes
     /// to generate the minimal set of ANSI escape sequences to write to the screen.
     /// </summary>
-    class Renderer
+    internal class Renderer
     {
-        const int BOTTOM_PADDING = 6;
+        private const int BottomPadding = 6;
 
         private readonly IConsole console;
         private readonly string prompt;
@@ -51,12 +51,12 @@ namespace PrettyPrompt
         public void RenderPrompt()
         {
             // write some newlines to ensure we have enough room to render the completion pane.
-            console.Write(new string('\n', BOTTOM_PADDING) + MoveCursorUp(BOTTOM_PADDING) + MoveCursorToColumn(1) + Reset + prompt);
+            console.Write(new string('\n', BottomPadding) + MoveCursorUp(BottomPadding) + MoveCursorToColumn(1) + Reset + prompt);
         }
 
-        public async Task RenderOutput(CodePane codePane, CompletionPane completionPane, IReadOnlyCollection<FormatSpan> highlights, KeyPress key)
+        public async Task RenderOutput(PromptResult result, CodePane codePane, CompletionPane completionPane, IReadOnlyCollection<FormatSpan> highlights, KeyPress key)
         {
-            if (codePane.Result is not null)
+            if (result is not null)
             {
                 Write(
                     MoveCursorDown(codePane.Document.WordWrappedLines.Count - codePane.Document.Cursor.Row - 1)

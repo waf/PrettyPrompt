@@ -17,7 +17,7 @@ namespace PrettyPrompt.Highlighting
     /// </summary>
     static class CellRenderer
     {
-        public static Row[] ApplyColorToCharacters(IReadOnlyCollection<FormatSpan> highlights, IReadOnlyList<WrappedLine> lines, List<SelectionSpan> selections)
+        public static Row[] ApplyColorToCharacters(IReadOnlyCollection<FormatSpan> highlights, IReadOnlyList<WrappedLine> lines, IList<SelectionSpan> selections)
         {
             var selectionStart = selections.Select(s => (s.Start.Row, s.Start.Column)).ToHashSet();
             var selectionEnd = selections.Select(s => (s.End.Row, s.End.Column)).ToHashSet();
@@ -92,6 +92,16 @@ namespace PrettyPrompt.Highlighting
             }
 
             return currentHighlight;
+        }
+
+        /// <summary>
+        /// This is just an extra function used by <see cref="Prompt.RenderAnsiOutput"/> that highlights arbitrary text. It's
+        /// not used for drawing input during normal functioning of the prompt.
+        /// </summary>
+        public static Row[] ApplyColorToCharacters(IReadOnlyCollection<FormatSpan> highlights, string text, int textWidth)
+        {
+            var wrapped = WordWrapping.WrapEditableCharacters(new System.Text.StringBuilder(text), 0, textWidth);
+            return ApplyColorToCharacters(highlights, wrapped.WrappedLines, Array.Empty<SelectionSpan>());
         }
     }
 }
