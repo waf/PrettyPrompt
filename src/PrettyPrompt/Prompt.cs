@@ -26,6 +26,7 @@ namespace PrettyPrompt
         private readonly CancellationManager cancellationManager;
 
         private readonly CompletionCallbackAsync completionCallback;
+        private readonly OpenCompletionWindowCallbackAsync shouldOpenCompletionWindow;
         private readonly ForceSoftEnterCallbackAsync detectSoftEnterCallback;
         private readonly Dictionary<object, KeyPressCallbackAsync> keyPressCallbacks;
         private readonly SyntaxHighlighter highlighter;
@@ -49,6 +50,7 @@ namespace PrettyPrompt
 
             callbacks ??= new PromptCallbacks();
             this.completionCallback = callbacks.CompletionCallback;
+            this.shouldOpenCompletionWindow = callbacks.OpenCompletionWindowCallback;
             this.detectSoftEnterCallback = callbacks.ForceSoftEnterCallback;
             this.keyPressCallbacks = callbacks.KeyPressCallbacks;
 
@@ -67,7 +69,7 @@ namespace PrettyPrompt
             codePane.MeasureConsole(console, prompt);
 
             // completion pane is the pop-up window that shows potential autocompletions.
-            var completionPane = new CompletionPane(codePane, completionCallback);
+            var completionPane = new CompletionPane(codePane, completionCallback, shouldOpenCompletionWindow);
 
             history.Track(codePane);
             cancellationManager.CaptureControlC();

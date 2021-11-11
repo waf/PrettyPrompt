@@ -23,6 +23,7 @@ namespace PrettyPrompt.Panes
 
         private readonly CodePane codePane;
         private readonly CompletionCallbackAsync complete;
+        private readonly OpenCompletionWindowCallbackAsync shouldOpenCompletionWindow;
 
         /// <summary>
         /// The index of the caret when the pane was opened
@@ -44,10 +45,11 @@ namespace PrettyPrompt.Panes
         /// </summary>
         public bool IsOpen { get; set; }
 
-        public CompletionPane(CodePane codePane, CompletionCallbackAsync complete)
+        public CompletionPane(CodePane codePane, CompletionCallbackAsync complete, OpenCompletionWindowCallbackAsync shouldOpenCompletionWindow)
         {
             this.codePane = codePane;
             this.complete = complete;
+            this.shouldOpenCompletionWindow = shouldOpenCompletionWindow;
         }
 
         private void Open(int caret)
@@ -135,7 +137,7 @@ namespace PrettyPrompt.Panes
             if (!EnoughRoomToDisplay(this.codePane)) return;
 
             if (!char.IsControl(key.ConsoleKeyInfo.KeyChar)
-                && ShouldAutomaticallyOpen(codePane.Document, codePane.Document.Caret) is int offset and >= 0)
+                && (await ShouldAutomaticallyOpen(codePane.Document, codePane.Document.Caret)) is int offset and >= 0)
             {
                 Close();
                 Open(codePane.Document.Caret - offset);
@@ -222,22 +224,30 @@ namespace PrettyPrompt.Panes
                 );
         }
 
-        private static int ShouldAutomaticallyOpen(Document input, int caret)
+        private Task<int> ShouldAutomaticallyOpen(Document input, int caret)
         {
-            if (caret > 0 && input[caret - 1] is '.' or '(') return 0; // typical "intellisense behavior", opens for new methods and parameters
+            if(shouldOpenCompletionWindow is not null)
+            {
+                return shouldOpenCompletionWindow(input.GetText(), caret);
+            }
+
+            if (caret > 0 && input[caret - 1] is '.' or '(') // typical "intellisense behavior", opens for new methods and parameters
+            {
+                return Task.FromResult(0);
+            }
 
             if (caret == 1 && !char.IsWhiteSpace(input[0]) // 1 word character typed in brand new prompt
                 && (input.Length == 1 || !char.IsLetterOrDigit(input[1]))) // if there's more than one character on the prompt, but we're typing a new word at the beginning (e.g. "a| bar")
             {
-                return 1;
+                return Task.FromResult(1);
             }
 
             // open when we're starting a new "word" in the prompt.
             return caret - 2 >= 0
                 && char.IsWhiteSpace(input[caret - 2])
                 && char.IsLetter(input[caret - 1])
-                ? 1
-                : -1;
+                ? Task.FromResult(1)
+                : Task.FromResult(-1);
         }
 
         private void InsertCompletion(Document input, CompletionItem completion, string suffix = "")
