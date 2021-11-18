@@ -22,6 +22,21 @@ namespace PrettyPrompt
     public delegate Task<IReadOnlyList<CompletionItem>> CompletionCallbackAsync(string text, int caret);
 
     /// <summary>
+    /// A callback your application can provide to determine whether or not the completion window
+    /// should automatically open. If not specified, C# intellisense style behavior is used.
+    /// </summary>
+    /// <param name="text">The user's input text</param>
+    /// <param name="caret">The index of the text caret in the input text</param>
+    /// <returns>
+    /// An integer that represents if the completion window should open and the offset at which it should be anchored.
+    /// If the caret moves behind this anchor, the completion window will automatically close. For example:
+    /// Less than zero, the window does not open.
+    /// zero, the window opens and the completion window is anchored at the current index.
+    /// one, the window opens and the completion window is anchored at one character before the cursor.
+    /// </returns>
+    public delegate Task<int> OpenCompletionWindowCallbackAsync(string text, int caret);
+
+    /// <summary>
     /// A callback your application can provide to syntax-highlight input text.
     /// <seealso cref="PromptCallbacks.HighlightCallback"/>
     /// </summary>
@@ -69,6 +84,11 @@ namespace PrettyPrompt
         /// </summary>
         public CompletionCallbackAsync CompletionCallback { get; init; } =
             (_, _) => Task.FromResult<IReadOnlyList<CompletionItem>>(Array.Empty<CompletionItem>());
+
+        /// <summary>
+        /// An optional delegate that controls when the completion window should open.
+        /// </summary>
+        public OpenCompletionWindowCallbackAsync OpenCompletionWindowCallback { get; init; }
 
         /// <summary>
         /// An optional delegate that controls syntax highlighting
