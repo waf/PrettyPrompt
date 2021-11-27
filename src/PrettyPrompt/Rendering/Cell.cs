@@ -57,17 +57,17 @@ namespace PrettyPrompt
         }
 
         public static List<Cell> FromText(string text, ConsoleFormat formatting)
+            => FromText(new FormattedString(text, formatting));
+
+        public static List<Cell> FromText(FormattedString formattedString)
         {
             // note, this method is fairly hot, please profile when making changes to it.
-            var enumerator = StringInfo.GetTextElementEnumerator(text);
-            var cells = new List<Cell>(text.Length);
-
-            while(enumerator.MoveNext())
+            var cells = new List<Cell>(formattedString.Length);
+            foreach (var (element, formatting) in formattedString.EnumerateTextElements())
             {
-                var element = enumerator.GetTextElement();
                 var elementWidth = UnicodeWidth.GetWidth(element);
                 cells.Add(new Cell(element, formatting, elementWidth));
-                if(elementWidth > 1)
+                if (elementWidth > 1)
                 {
                     cells.AddRange(
                         Enumerable.Repeat(

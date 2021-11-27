@@ -4,18 +4,18 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Documents;
 using PrettyPrompt.Highlighting;
 using PrettyPrompt.Panes;
 using PrettyPrompt.Rendering;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using static PrettyPrompt.Consoles.AnsiEscapeCodes;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
+using static PrettyPrompt.Consoles.AnsiEscapeCodes;
 
 namespace PrettyPrompt
 {
@@ -41,7 +41,7 @@ namespace PrettyPrompt
             this.prompt = prompt;
             this.previouslyRenderedScreen = new Screen(0, 0, new ConsoleCoordinate(0, 0));
 
-            if(!hasUserOptedOutFromColor)
+            if (!hasUserOptedOutFromColor)
             {
                 this.completionBorderColor = new ConsoleFormat(Foreground: AnsiColor.Blue);
                 this.documentationBorderColor = new ConsoleFormat(Foreground: AnsiColor.Cyan);
@@ -127,7 +127,7 @@ namespace PrettyPrompt
         {
             var highlightedLines = CellRenderer.ApplyColorToCharacters(highlights, codePane.Document.WordWrappedLines, codePane.Document.Selection);
             // if we've filled up the full line, add a new line at the end so we can render our cursor on this new line.
-            if(highlightedLines[^1].Cells.Count > 0
+            if (highlightedLines[^1].Cells.Count > 0
                 && (highlightedLines[^1].Cells.Count >= codePane.CodeAreaWidth
                     || highlightedLines[^1].Cells[^1]?.Text == "\n"))
             {
@@ -154,7 +154,7 @@ namespace PrettyPrompt
                 return Array.Empty<ScreenArea>();
 
             int wordWidth = completionPane.FilteredView
-                .Max(w => UnicodeWidth.GetWidth(w.DisplayText ?? w.ReplacementText));
+                .Max(w => UnicodeWidth.GetWidth(w.DisplayText.Text ?? w.ReplacementText));
             int boxWidth = wordWidth + 2 + 2; // two border characters, plus two spaces for padding
 
             var completionStart = new ConsoleCoordinate(
@@ -167,7 +167,7 @@ namespace PrettyPrompt
 
             var documentationStart = new ConsoleCoordinate(cursor.Row + 1, completionStart.Column + boxWidth);
             var selectedItemDescription = await (
-                completionPane.FilteredView.SelectedItem.ExtendedDescription?.Value ?? Task.FromResult("")
+                completionPane.FilteredView.SelectedItem.ExtendedDescription?.Value ?? Task.FromResult(FormattedString.Empty)
             ).ConfigureAwait(false);
             var documentationRows = BuildDocumentationRows(
                 documentation: selectedItemDescription,
@@ -183,19 +183,19 @@ namespace PrettyPrompt
 
         private Row[] BuildCompletionRows(CompletionPane completionPane, int codeAreaWidth, int wordWidth, ConsoleCoordinate completionBoxStart)
         {
-            string horizontalBorder = TruncateToWindow(new string(BoxDrawing.EdgeHorizontal, wordWidth + 2), 2);
+            var horizontalBorder = TruncateToWindow(new string(BoxDrawing.EdgeHorizontal, wordWidth + 2), 2).Text;
 
             var selectedItem = completionPane.FilteredView.SelectedItem;
 
             return completionPane.FilteredView
                 .Select((completion, index) =>
                 {
-                    string leftBorder = BoxDrawing.EdgeVertical + (selectedItem == completion ? "|" : " ");
-                    string item = completion.DisplayText ?? completion.ReplacementText;
-                    string rightBorder = " " + BoxDrawing.EdgeVertical;
+                    var leftBorder = BoxDrawing.EdgeVertical + (selectedItem == completion ? "|" : " ");
+                    var item = completion.DisplayText.Length > 0 ? completion.DisplayText : completion.ReplacementText;
+                    var rightBorder = " " + BoxDrawing.EdgeVertical;
                     return new Row(Cell
                         .FromText(leftBorder, completionBorderColor)
-                        .Concat(Cell.FromText(TruncateToWindow(item + new string(' ', wordWidth - UnicodeWidth.GetWidth(item)), 4)))
+                        .Concat(Cell.FromText(TruncateToWindow(item + new string(' ', wordWidth - item.GetUnicodeWidth()), 4)))
                         .Concat(Cell.FromText(rightBorder, completionBorderColor))
                         .ToList()
                     );
@@ -204,20 +204,20 @@ namespace PrettyPrompt
                 .Append(new Row(Cell.FromText(BoxDrawing.CornerLowerLeft + horizontalBorder + BoxDrawing.CornerLowerRight, completionBorderColor)))
                 .ToArray();
 
-            string TruncateToWindow(string line, int offset) =>
-                line.Substring(0, Math.Min(line.Length, codeAreaWidth - completionBoxStart.Column - offset));
+            FormattedString TruncateToWindow(FormattedString line, int offset) =>
+               line.Substring(0, Math.Min(line.Length, codeAreaWidth - completionBoxStart.Column - offset));
         }
 
-        private Row[] BuildDocumentationRows(string documentation, int maxWidth)
+        private Row[] BuildDocumentationRows(FormattedString documentation, int maxWidth)
         {
-            if (string.IsNullOrEmpty(documentation) || maxWidth < 12)
+            if (string.IsNullOrEmpty(documentation.Text) || maxWidth < 12)
                 return Array.Empty<Row>();
 
             // request word wrapping. actual line lengths won't be exactly the requested width due to wrapping.
             var requestedBoxWidth = Math.Min(maxWidth, 55);
             var requestedTextWidth = requestedBoxWidth - 3; // 3 because of left padding, right padding, right border
             var wrapped = WordWrapping.WrapWords(documentation.Replace("\r\n", "\n"), requestedTextWidth);
-            var actualTextWidth = wrapped.Select(line => UnicodeWidth.GetWidth(line)).Max();
+            var actualTextWidth = wrapped.Max(line => line.GetUnicodeWidth());
             var actualBoxWidth = actualTextWidth + 3;
 
             var (boxTop, boxBottom) = BoxDrawing.HorizontalBorders(actualBoxWidth - 1, leftCorner: false);
@@ -225,7 +225,7 @@ namespace PrettyPrompt
             return wrapped
                 .Select(line =>
                     new Row(Cell
-                        .FromText(" " + line.Trim() + new string(' ', actualTextWidth - UnicodeWidth.GetWidth(line)))
+                        .FromText(" " + line.Trim() + new string(' ', actualTextWidth - line.GetUnicodeWidth()))
                         .Concat(Cell.FromText(" " + BoxDrawing.EdgeVertical, documentationBorderColor))
                         .ToList()
                     )
