@@ -4,10 +4,10 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using PrettyPrompt.Consoles;
-using PrettyPrompt.Documents;
 using System;
 using System.Threading.Tasks;
+using PrettyPrompt.Consoles;
+using PrettyPrompt.Documents;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
 
@@ -27,7 +27,7 @@ namespace PrettyPrompt.TextSelection
         {
             this.previousCursorLocation = document.Cursor;
 
-            if(key.Pattern is (Control, A))
+            if (key.Pattern is (Control, A))
             {
                 document.Caret = document.Length;
             }
@@ -53,14 +53,22 @@ namespace PrettyPrompt.TextSelection
 
             var (anchor, selectionCursor) = key.Pattern switch
             {
-                (Shift, Home) or (Control | Shift, Home) 
-                or (Shift, End) or (Control | Shift, End)
-                or (Shift, UpArrow) or (Shift, DownArrow)
-                or (Control | Shift, LeftArrow) => (previousCursorLocation, cursor.Clone()),
+                (Shift, End) or
+                (Control | Shift, End) or
+                (Shift, RightArrow) or
+                (Control | Shift, RightArrow) or
+                (Shift, DownArrow) or
+                (Control | Shift, DownArrow)
+                    => (previousCursorLocation.Clone(), cursor.Clone(columnOffset: -1)),
 
-                (Control | Shift, RightArrow) => (previousCursorLocation, cursor.Clone(columnOffset: -1)),
-                (Shift, LeftArrow) => (previousCursorLocation.Clone(columnOffset: -1), cursor.Clone()),
-                (Shift, RightArrow) => (previousCursorLocation, cursor.Clone(columnOffset: -1)),
+                (Shift, Home) or
+                (Control | Shift, Home) or
+                (Shift, UpArrow) or
+                (Control | Shift, UpArrow) or
+                (Shift, LeftArrow) or
+                (Control | Shift, LeftArrow)
+                    => (previousCursorLocation.Clone(columnOffset: -1), cursor.Clone()),
+
                 _ => (null, null)
             };
 
@@ -70,7 +78,7 @@ namespace PrettyPrompt.TextSelection
                 return Task.CompletedTask;
             }
 
-            if(selection.Count == 0)
+            if (selection.Count == 0)
             {
                 selection.Add(new SelectionSpan(anchor, selectionCursor));
                 return Task.CompletedTask;
