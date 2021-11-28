@@ -159,8 +159,8 @@ namespace PrettyPrompt.Tests
             console.StubInput(
                 $"aaaa bbbb 5555{Shift}{Enter}",
                 $"dddd x5x5 foo.bar{Shift}{Enter}",
-                $"{UpArrow}{Control}{RightArrow}{Control}{RightArrow}{Control}{RightArrow}lum",
-                $"{Control}{LeftArrow}{Control}{LeftArrow}{Backspace}{Tab}",
+                $"{UpArrow}{Control}{RightArrow}{Control}{RightArrow}{Control}{RightArrow}{Control}{RightArrow}lum",
+                $"{Control}{LeftArrow}{Control}{LeftArrow}{Control}{LeftArrow}{Backspace}{Tab}",
                 $"{Enter}"
             );
 
