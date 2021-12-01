@@ -4,12 +4,12 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using PrettyPrompt.Consoles;
-using PrettyPrompt.Documents;
-using PrettyPrompt.TextSelection;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using PrettyPrompt.Consoles;
+using PrettyPrompt.Documents;
+using PrettyPrompt.TextSelection;
 using TextCopy;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
@@ -54,7 +54,7 @@ namespace PrettyPrompt.Panes
 
             switch (key.Pattern)
             {
-                case (Control, C) when Document.Selection.Count == 0:
+                case (Control, C) when Document.Selection is null:
                     Result = new PromptResult(IsSuccess: false, string.Empty, IsHardEnter: false);
                     break;
                 case (Control, L):
@@ -99,46 +99,46 @@ namespace PrettyPrompt.Panes
                 case (Control, RightArrow):
                     Document.MoveToWordBoundary(+1);
                     break;
-                case (Control, Backspace) when Document.Selection.Count == 0:
+                case (Control, Backspace) when Document.Selection is null:
                     var startDeleteIndex = Document.CalculateWordBoundaryIndexNearCaret(-1);
                     Document.Remove(startDeleteIndex, Document.Caret - startDeleteIndex);
                     break;
-                case (Control, Delete) when Document.Selection.Count == 0:
+                case (Control, Delete) when Document.Selection is null:
                     var endDeleteIndex = Document.CalculateWordBoundaryIndexNearCaret(+1);
                     Document.Remove(Document.Caret, endDeleteIndex - Document.Caret);
                     break;
-                case Backspace when Document.Selection.Count == 0:
+                case Backspace when Document.Selection is null:
                     Document.Remove(Document.Caret - 1, 1);
                     break;
-                case Delete when Document.Selection.Count == 0:
+                case Delete when Document.Selection is null:
                     Document.Remove(Document.Caret, 1);
                     break;
-                case (_, Delete) or (_, Backspace) or Delete or Backspace when Document.Selection.Any():
+                case (_, Delete) or (_, Backspace) or Delete or Backspace when Document.Selection.HasValue:
                     Document.DeleteSelectedText();
                     break;
                 case Tab:
                     Document.InsertAtCaret("    ");
                     break;
-                case (Control, X) when Document.Selection.Any():
-                {
-                    var (start, end) = Document.Selection[0].GetCaretIndices(Document.WordWrappedLines);
-                    var cutContent = Document.GetText(start, end - start);
-                    Document.Remove(start, end - start);
-                    await ClipboardService.SetTextAsync(cutContent);
-                    break;
-                }
+                case (Control, X) when Document.Selection.TryGet(out var selection):
+                    {
+                        var (start, end) = selection.GetCaretIndices(Document.WordWrappedLines);
+                        var cutContent = Document.GetText(start, end - start);
+                        Document.Remove(start, end - start);
+                        await ClipboardService.SetTextAsync(cutContent);
+                        break;
+                    }
                 case (Control, X):
-                {
-                    await ClipboardService.SetTextAsync(Document.GetText());
-                    break;
-                }
-                case (Control, C) when Document.Selection.Any():
-                {
-                    var (start, end) = Document.Selection[0].GetCaretIndices(Document.WordWrappedLines);
-                    var copiedContent = Document.GetText(start, end - start);
-                    await ClipboardService.SetTextAsync(copiedContent);
-                    break;
-                }
+                    {
+                        await ClipboardService.SetTextAsync(Document.GetText());
+                        break;
+                    }
+                case (Control, C) when Document.Selection.TryGet(out var selection):
+                    {
+                        var (start, end) = selection.GetCaretIndices(Document.WordWrappedLines);
+                        var copiedContent = Document.GetText(start, end - start);
+                        await ClipboardService.SetTextAsync(copiedContent);
+                        break;
+                    }
                 case (Control | Shift, C):
                     await ClipboardService.SetTextAsync(Document.GetText());
                     break;
@@ -193,23 +193,27 @@ namespace PrettyPrompt.Panes
             {
                 case (Shift, UpArrow) when Document.Cursor.Row > 0:
                 case UpArrow when Document.Cursor.Row > 0:
-                    Document.Cursor.Row--;
-                    var aboveLine = Document.WordWrappedLines[Document.Cursor.Row];
-                    Document.Cursor.Column = Math.Min(aboveLine.Content.TrimEnd().Length, Document.Cursor.Column);
-                    Document.Caret = aboveLine.StartIndex + Document.Cursor.Column;
-                    key.Handled = true;
-                    break;
+                    {
+                        var newCursor = Document.Cursor.MoveUp();
+                        var aboveLine = Document.WordWrappedLines[newCursor.Row];
+                        Document.Cursor = newCursor.WithColumn(Math.Min(aboveLine.Content.AsSpan().TrimEnd().Length, newCursor.Column));
+                        Document.Caret = aboveLine.StartIndex + Document.Cursor.Column;
+                        key.Handled = true;
+                        break;
+                    }
                 case (Shift, DownArrow) when Document.Cursor.Row < Document.WordWrappedLines.Count - 1:
                 case DownArrow when Document.Cursor.Row < Document.WordWrappedLines.Count - 1:
-                    Document.Cursor.Row++;
-                    var belowLine = Document.WordWrappedLines[Document.Cursor.Row];
-                    Document.Cursor.Column = Math.Min(belowLine.Content.TrimEnd().Length, Document.Cursor.Column);
-                    Document.Caret = belowLine.StartIndex + Document.Cursor.Column;
-                    key.Handled = true;
-                    break;
+                    {
+                        var newCursor = Document.Cursor.MoveDown();
+                        var belowLine = Document.WordWrappedLines[newCursor.Row];
+                        Document.Cursor = newCursor.WithColumn(Math.Min(belowLine.Content.AsSpan().TrimEnd().Length, newCursor.Column));
+                        Document.Caret = belowLine.StartIndex + Document.Cursor.Column;
+                        key.Handled = true;
+                        break;
+                    }
             }
 
-            await this.selectionHandler.OnKeyUp(key);
+            await selectionHandler.OnKeyUp(key);
         }
 
         public void WordWrap() => Document.WordWrap(CodeAreaWidth);

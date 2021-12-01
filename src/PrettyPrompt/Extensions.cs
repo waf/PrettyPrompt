@@ -4,11 +4,11 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using PrettyPrompt.Rendering;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using PrettyPrompt.Rendering;
 
 namespace PrettyPrompt
 {
@@ -22,7 +22,7 @@ namespace PrettyPrompt
         public static IEnumerable<string> EnumerateTextElements(this string text)
         {
             var enumerator = StringInfo.GetTextElementEnumerator(text);
-            while(enumerator.MoveNext())
+            while (enumerator.MoveNext())
             {
                 yield return enumerator.GetTextElement();
             }
@@ -43,7 +43,7 @@ namespace PrettyPrompt
             foreach (var c in str)
             {
                 var cWidth = UnicodeWidth.GetWidth(c);
-                if(width + cWidth > maxChunkSize)
+                if (width + cWidth > maxChunkSize)
                 {
                     yield return buffer.ToString();
                     buffer.Clear();
@@ -53,7 +53,7 @@ namespace PrettyPrompt
                 buffer.Append(c);
             }
 
-            if(buffer.Length > 0)
+            if (buffer.Length > 0)
             {
                 yield return buffer.ToString();
             }
@@ -90,6 +90,21 @@ namespace PrettyPrompt
                 hasLeft = leftEnumerator.MoveNext();
                 hasRight = rightEnumerator.MoveNext();
                 i++;
+            }
+        }
+
+        public static bool TryGet<T>(this T? nullableValue, out T value)
+            where T : struct
+        {
+            if (nullableValue.HasValue)
+            {
+                value = nullableValue.GetValueOrDefault();
+                return true;
+            }
+            else
+            {
+                value = default;
+                return false;
             }
         }
     }

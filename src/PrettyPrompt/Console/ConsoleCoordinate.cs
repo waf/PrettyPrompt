@@ -5,34 +5,38 @@
 #endregion
 
 using System;
+using System.Diagnostics;
 
 namespace PrettyPrompt.Consoles
 {
-    internal sealed class ConsoleCoordinate : IEquatable<ConsoleCoordinate>
+    internal readonly struct ConsoleCoordinate : IEquatable<ConsoleCoordinate>
     {
+        public readonly int Row;
+        public readonly int Column;
+
         public ConsoleCoordinate(int row, int column)
         {
+            Debug.Assert(row >= 0);
+            Debug.Assert(column >= 0);
+
             Row = row;
             Column = column;
         }
 
-        public int Row { get; set; }
-        public int Column { get; set; }
+        public ConsoleCoordinate MoveUp() => new(Math.Max(0, Row - 1), Column);
+        public ConsoleCoordinate MoveDown() => new(Row + 1, Column);
+        public ConsoleCoordinate MoveLeft() => new(Row, Math.Max(0, Column - 1));
+        public ConsoleCoordinate MoveRight() => new(Row, Column + 1);
 
-        public override bool Equals(object obj) =>
-            Equals(obj as ConsoleCoordinate);
+        public ConsoleCoordinate WithRow(int row) => new(row, Column);
+        public ConsoleCoordinate WithColumn(int column) => new(Row, column);
 
-        public bool Equals(ConsoleCoordinate other) =>
-            other != null
-            && Row == other.Row
-            && Column == other.Column;
+        public ConsoleCoordinate Offset(int rowOffset, int columnOffset) => new(Row + rowOffset, Column + columnOffset);
 
-        public override int GetHashCode() =>
-            HashCode.Combine(Row, Column);
-
-        public ConsoleCoordinate Clone(int rowOffset = 0, int columnOffset = 0) =>
-            new ConsoleCoordinate(Math.Max(0, Row + rowOffset), Math.Max(0, Column + columnOffset));
-
+        public override bool Equals(object obj) => obj is ConsoleCoordinate other && Equals(other);
+        public bool Equals(ConsoleCoordinate other) => Row == other.Row && Column == other.Column;
+        public bool Equals(int row, int column) => Row == row && Column == column;
+        public override int GetHashCode() => HashCode.Combine(Row, Column);
         public override string ToString() => $"Row {Row}, Column {Column}";
     }
 }

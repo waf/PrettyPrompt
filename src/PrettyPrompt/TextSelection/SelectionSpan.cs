@@ -4,27 +4,25 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+using System.Collections.Generic;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Documents;
-using System.Collections.Generic;
 
 namespace PrettyPrompt.TextSelection
 {
-    internal class SelectionSpan
+    internal readonly struct SelectionSpan
     {
+        public readonly ConsoleCoordinate Anchor;
+        public readonly ConsoleCoordinate Cursor;
+
+        public ConsoleCoordinate Start => IsCursorPastAnchor() ? Anchor : Cursor;
+        public ConsoleCoordinate End => IsCursorPastAnchor() ? Cursor : Anchor;
+
         public SelectionSpan(ConsoleCoordinate anchor, ConsoleCoordinate cursor)
         {
             Anchor = anchor;
             Cursor = cursor;
         }
-
-        public ConsoleCoordinate Anchor { get; set; }
-
-        public ConsoleCoordinate Cursor { get; set; }
-
-        public ConsoleCoordinate Start => IsCursorPastAnchor() ? Anchor : Cursor;
-
-        public ConsoleCoordinate End => IsCursorPastAnchor() ? Cursor : Anchor;
 
         private bool IsCursorPastAnchor() =>
             Anchor.Row < Cursor.Row || ((Anchor.Row == Cursor.Row) && Anchor.Column < Cursor.Column);
@@ -35,7 +33,7 @@ namespace PrettyPrompt.TextSelection
             var end = End;
             var selectionStart = wrappedLines[start.Row].StartIndex + start.Column;
             var selectionEnd = wrappedLines[end.Row].StartIndex + end.Column + 1;
-            if(end.Column == wrappedLines[end.Row].Content.Length)
+            if (end.Column == wrappedLines[end.Row].Content.Length)
             {
                 selectionEnd--;
             }

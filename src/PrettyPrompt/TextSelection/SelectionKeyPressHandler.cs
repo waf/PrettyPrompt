@@ -39,62 +39,66 @@ namespace PrettyPrompt.TextSelection
             var selection = document.Selection;
             var cursor = document.Cursor;
 
-            // as a special case, even though Ctrl+C isn't related to selection, it should keep the current selected text.
-            if (key.Pattern is (Control, C)) return Task.CompletedTask;
+            if (key.Pattern is (Control, C))
+            {
+                // as a special case, even though Ctrl+C isn't related to selection, it should keep the current selected text.
+                return Task.CompletedTask;
+            }
 
             if (key.Pattern is (Control, A))
             {
-                selection.Clear();
                 var start = new ConsoleCoordinate(0, 0);
                 var end = new ConsoleCoordinate(document.WordWrappedLines.Count - 1, document.WordWrappedLines[^1].Content.Length);
-                selection.Add(new SelectionSpan(start, end));
+                document.Selection = new SelectionSpan(start, end);
                 return Task.CompletedTask;
             }
 
-            var (anchor, selectionCursor) = key.Pattern switch
+            (ConsoleCoordinate Anchor, ConsoleCoordinate SelectionCursor)? anchorWithSelectionCursorNullable =
+                key.Pattern switch
+                {
+                    (Shift, End) or
+                    (Control | Shift, End) or
+                    (Shift, RightArrow) or
+                    (Control | Shift, RightArrow) or
+                    (Shift, DownArrow) or
+                    (Control | Shift, DownArrow)
+                        => (previousCursorLocation, cursor.MoveLeft()),
+
+                    (Shift, Home) or
+                    (Control | Shift, Home) or
+                    (Shift, UpArrow) or
+                    (Control | Shift, UpArrow) or
+                    (Shift, LeftArrow) or
+                    (Control | Shift, LeftArrow)
+                        => (previousCursorLocation.MoveLeft(), cursor),
+
+                    _ => null
+                };
+
+            if (anchorWithSelectionCursorNullable.TryGet(out var anchorWithSelectionCursor))
             {
-                (Shift, End) or
-                (Control | Shift, End) or
-                (Shift, RightArrow) or
-                (Control | Shift, RightArrow) or
-                (Shift, DownArrow) or
-                (Control | Shift, DownArrow)
-                    => (previousCursorLocation.Clone(), cursor.Clone(columnOffset: -1)),
-
-                (Shift, Home) or
-                (Control | Shift, Home) or
-                (Shift, UpArrow) or
-                (Control | Shift, UpArrow) or
-                (Shift, LeftArrow) or
-                (Control | Shift, LeftArrow)
-                    => (previousCursorLocation.Clone(columnOffset: -1), cursor.Clone()),
-
-                _ => (null, null)
-            };
-
-            if (anchor is null) // keypress is not related to selection
-            {
-                selection.Clear();
-                return Task.CompletedTask;
+                var (anchor, selectionCursor) = anchorWithSelectionCursor;
+                if (selection.TryGet(out var selectionValue))
+                {
+                    var newCursor = key.Pattern is (Shift, RightArrow) && ShouldCursorLeadSelection(cursor, selectionValue.Anchor)
+                      ? cursor
+                      : selectionCursor;
+                    document.Selection = new SelectionSpan(selectionValue.Anchor, newCursor);
+                }
+                else
+                {
+                    document.Selection = new SelectionSpan(anchor, selectionCursor);
+                }
             }
-
-            if (selection.Count == 0)
+            else
             {
-                selection.Add(new SelectionSpan(anchor, selectionCursor));
-                return Task.CompletedTask;
+                // keypress is not related to selection
+                document.Selection = null;
             }
-
-            foreach (var select in selection)
-            {
-                select.Cursor = key.Pattern is (Shift, RightArrow) && ShouldCursorLeadSelection(cursor, select)
-                    ? cursor.Clone()
-                    : selectionCursor;
-            }
-
             return Task.CompletedTask;
         }
 
-        private static bool ShouldCursorLeadSelection(ConsoleCoordinate cursor, SelectionSpan select) =>
-            select.Anchor.Row > cursor.Row || (select.Anchor.Row == cursor.Row && select.Anchor.Column >= cursor.Column);
+        private static bool ShouldCursorLeadSelection(ConsoleCoordinate cursor, ConsoleCoordinate selectionAnchor) =>
+                    selectionAnchor.Row > cursor.Row || (selectionAnchor.Row == cursor.Row && selectionAnchor.Column >= cursor.Column);
     }
 }

@@ -4,10 +4,10 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using PrettyPrompt.Consoles;
-using PrettyPrompt.Highlighting;
 using System;
 using System.Text;
+using PrettyPrompt.Consoles;
+using PrettyPrompt.Highlighting;
 using static PrettyPrompt.Consoles.AnsiEscapeCodes;
 
 namespace PrettyPrompt.Rendering
@@ -48,14 +48,10 @@ namespace PrettyPrompt.Rendering
                     continue;
                 }
 
-                var cellCoordinate = new ConsoleCoordinate(
-                    row: ansiCoordinate.Row + (i / currentScreen.Width),
-                    column: ansiCoordinate.Column + (i % currentScreen.Width)
-                );
+                var cellCoordinate = ansiCoordinate.Offset(i / currentScreen.Width, i % currentScreen.Width);
 
                 MoveCursorIfRequired(diff, previousCoordinate, cellCoordinate);
-                previousCoordinate.Row = cellCoordinate.Row;
-                previousCoordinate.Column = cellCoordinate.Column;
+                previousCoordinate = cellCoordinate;
 
                 // handle when we're erasing characters/formatting from the previously rendered screen.
                 if (currentCell?.Formatting == null)
@@ -69,7 +65,7 @@ namespace PrettyPrompt.Rendering
                     if (currentCell?.Text is null || currentCell.Text == "\n")
                     {
                         diff.Append(' ');
-                        UpdateCoordinateFromCursorMove(previousScreen, ansiCoordinate, diff, previousCoordinate, currentCell);
+                        UpdateCoordinateFromCursorMove(previousScreen, ansiCoordinate, diff, ref previousCoordinate, currentCell);
 
                         if (currentCell is null)
                         {
@@ -82,7 +78,7 @@ namespace PrettyPrompt.Rendering
                 if (currentCell.Formatting != currentFormatRun)
                 {
                     // text selection is implemented by inverting colors. Reset inverted colors if required.
-                    if(currentFormatRun is not null && currentCell.Formatting.Inverted != currentFormatRun.Inverted)
+                    if (currentFormatRun is not null && currentCell.Formatting.Inverted != currentFormatRun.Inverted)
                     {
                         diff.Append(Reset);
                     }
@@ -102,11 +98,11 @@ namespace PrettyPrompt.Rendering
                 // amount of movement required for the next character.
                 if (currentCell.Text == "\n")
                 {
-                    UpdateCoordinateFromNewLine(previousCoordinate);
+                    UpdateCoordinateFromNewLine(ref previousCoordinate);
                 }
                 else
                 {
-                    UpdateCoordinateFromCursorMove(currentScreen, ansiCoordinate, diff, previousCoordinate, currentCell);
+                    UpdateCoordinateFromCursorMove(currentScreen, ansiCoordinate, diff, ref previousCoordinate, currentCell);
                 }
             }
 
@@ -130,41 +126,41 @@ namespace PrettyPrompt.Rendering
             return diff.ToString();
         }
 
-        private static void UpdateCoordinateFromCursorMove(Screen currentScreen, ConsoleCoordinate ansiCoordinate, StringBuilder diff, ConsoleCoordinate previousCoordinate, Cell currentCell)
+        private static void UpdateCoordinateFromCursorMove(Screen currentScreen, ConsoleCoordinate ansiCoordinate, StringBuilder diff, ref ConsoleCoordinate previousCoordinate, Cell currentCell)
         {
             var characterWidth = currentCell is null ? 1 : currentCell.ElementWidth;
             // if we hit the edge of the screen, wrap
             bool hitRightEdgeOfScreen = previousCoordinate.Column + characterWidth == currentScreen.Width + ansiCoordinate.Column;
             if (hitRightEdgeOfScreen)
             {
-                if(currentCell is not null && !currentCell.TruncateToScreenHeight)
+                if (currentCell is not null && !currentCell.TruncateToScreenHeight)
                 {
                     diff.Append('\n');
-                    UpdateCoordinateFromNewLine(previousCoordinate);
-                    if(characterWidth == 2)
+                    UpdateCoordinateFromNewLine(ref previousCoordinate);
+                    if (characterWidth == 2)
                     {
-                        previousCoordinate.Column++;
+                        previousCoordinate = previousCoordinate.MoveRight();
                     }
                 }
             }
             else
             {
-                previousCoordinate.Column++;
-                if(characterWidth == 2)
+                previousCoordinate = previousCoordinate.MoveRight();
+                if (characterWidth == 2)
                 {
-                    previousCoordinate.Column++;
+                    previousCoordinate = previousCoordinate.MoveRight();
                 }
             }
         }
 
-        private static void UpdateCoordinateFromNewLine(ConsoleCoordinate previousCoordinate)
+        private static void UpdateCoordinateFromNewLine(ref ConsoleCoordinate previousCoordinate)
         {
             // for simplicity, we standardize all newlines to "\n" regardless of platform. However, that complicates our diff,
             // because "\n" on windows _only_ moves one line down, it does not change the column. Handle that here.
-            previousCoordinate.Row++;
+            previousCoordinate = previousCoordinate.MoveDown();
             if (!OperatingSystem.IsWindows())
             {
-                previousCoordinate.Column = 1;
+                previousCoordinate = previousCoordinate.WithColumn(1);
             }
         }
 

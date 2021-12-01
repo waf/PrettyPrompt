@@ -130,7 +130,7 @@ namespace PrettyPrompt.Panes
         }
 
         private static bool EnoughRoomToDisplay(CodePane codePane) =>
-            codePane.CodeAreaHeight - (codePane.Document.Cursor?.Row).GetValueOrDefault(0) >= VerticalPaddingHeight + 1; // offset + top border + 1 completion item + bottom border
+            codePane.CodeAreaHeight - codePane.Document.Cursor.Row >= VerticalPaddingHeight + 1; // offset + top border + 1 completion item + bottom border
 
         async Task IKeyPressHandler.OnKeyUp(KeyPress key)
         {
