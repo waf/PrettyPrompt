@@ -66,17 +66,17 @@ namespace PrettyPrompt.Highlighting
                     }
 
                     // if there's text selected, invert colors to represent the highlight of the selected text.
-                    if (selectionStart.Equals(lineIndex, cellIndex - lineFullWidthCharacterOffset))
+                    if (selectionStart.Equals(lineIndex, cellIndex - lineFullWidthCharacterOffset)) //start is inclusive
                     {
                         selectionHighlight = true;
+                    }
+                    if (selectionEnd.Equals(lineIndex, cellIndex - lineFullWidthCharacterOffset)) //end is exclusive
+                    {
+                        selectionHighlight = false;
                     }
                     if (selectionHighlight)
                     {
                         cell.Formatting = new ConsoleFormat { Inverted = true };
-                    }
-                    if (selectionEnd.Equals(lineIndex, cellIndex - lineFullWidthCharacterOffset))
-                    {
-                        selectionHighlight = false;
                     }
                 }
                 highlightedRows[lineIndex] = new Row(cells);

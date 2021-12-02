@@ -36,10 +36,8 @@ namespace PrettyPrompt.TextSelection
 
         public Task OnKeyUp(KeyPress key)
         {
-            var selection = document.Selection;
-            var cursor = document.Cursor;
-
             if (key.Pattern is (Control, C))
+
             {
                 // as a special case, even though Ctrl+C isn't related to selection, it should keep the current selected text.
                 return Task.CompletedTask;
@@ -49,56 +47,63 @@ namespace PrettyPrompt.TextSelection
             {
                 var start = new ConsoleCoordinate(0, 0);
                 var end = new ConsoleCoordinate(document.WordWrappedLines.Count - 1, document.WordWrappedLines[^1].Content.Length);
-                document.Selection = new SelectionSpan(start, end);
+                if (start < end)
+                {
+                    document.Selection = new SelectionSpan(start, end, SelectionDirection.FromLeftToRight);
+                }
                 return Task.CompletedTask;
             }
 
-            (ConsoleCoordinate Anchor, ConsoleCoordinate SelectionCursor)? anchorWithSelectionCursorNullable =
-                key.Pattern switch
-                {
-                    (Shift, End) or
+            var cursor = document.Cursor;
+            switch (key.Pattern)
+            {
+                case (Shift, End) or
                     (Control | Shift, End) or
                     (Shift, RightArrow) or
                     (Control | Shift, RightArrow) or
                     (Shift, DownArrow) or
-                    (Control | Shift, DownArrow)
-                        => (previousCursorLocation, cursor.MoveLeft()),
+                    (Control | Shift, DownArrow):
+                    {
+                        if (previousCursorLocation < cursor)
+                        {
+                            UpdateSelection(new SelectionSpan(previousCursorLocation, cursor, SelectionDirection.FromLeftToRight));
+                        }
+                        break;
+                    }
 
-                    (Shift, Home) or
+                case (Shift, Home) or
                     (Control | Shift, Home) or
                     (Shift, UpArrow) or
                     (Control | Shift, UpArrow) or
                     (Shift, LeftArrow) or
-                    (Control | Shift, LeftArrow)
-                        => (previousCursorLocation.MoveLeft(), cursor),
+                    (Control | Shift, LeftArrow):
+                    {
+                        if (cursor < previousCursorLocation)
+                        {
+                            UpdateSelection(new SelectionSpan(cursor, previousCursorLocation, SelectionDirection.FromRightToLeft));
+                        }
+                        break;
+                    }
 
-                    _ => null
-                };
+                default:
+                    // keypress is not related to selection
+                    document.Selection = null;
+                    break;
+            }
 
-            if (anchorWithSelectionCursorNullable.TryGet(out var anchorWithSelectionCursor))
+            return Task.CompletedTask;
+
+            void UpdateSelection(SelectionSpan newSelection)
             {
-                var (anchor, selectionCursor) = anchorWithSelectionCursor;
-                if (selection.TryGet(out var selectionValue))
+                if (document.Selection.TryGet(out var selection))
                 {
-                    var newCursor = key.Pattern is (Shift, RightArrow) && ShouldCursorLeadSelection(cursor, selectionValue.Anchor)
-                      ? cursor
-                      : selectionCursor;
-                    document.Selection = new SelectionSpan(selectionValue.Anchor, newCursor);
+                    document.Selection = selection.GetUpdatedSelection(newSelection);
                 }
                 else
                 {
-                    document.Selection = new SelectionSpan(anchor, selectionCursor);
+                    document.Selection = newSelection;
                 }
             }
-            else
-            {
-                // keypress is not related to selection
-                document.Selection = null;
-            }
-            return Task.CompletedTask;
         }
-
-        private static bool ShouldCursorLeadSelection(ConsoleCoordinate cursor, ConsoleCoordinate selectionAnchor) =>
-                    selectionAnchor.Row > cursor.Row || (selectionAnchor.Row == cursor.Row && selectionAnchor.Column >= cursor.Column);
     }
 }

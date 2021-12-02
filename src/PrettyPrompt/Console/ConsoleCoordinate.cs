@@ -33,10 +33,22 @@ namespace PrettyPrompt.Consoles
 
         public ConsoleCoordinate Offset(int rowOffset, int columnOffset) => new(Row + rowOffset, Column + columnOffset);
 
+        public static bool operator ==(ConsoleCoordinate left, ConsoleCoordinate right) => left.Equals(right);
+        public static bool operator !=(ConsoleCoordinate left, ConsoleCoordinate right) => !(left == right);
+
+        public static bool operator <(ConsoleCoordinate left, ConsoleCoordinate right)
+            => left.Row == right.Row ? left.Column < right.Column : left.Row < right.Row;
+
+        public static bool operator <=(ConsoleCoordinate left, ConsoleCoordinate right)
+            => left.Row == right.Row ? left.Column <= right.Column : left.Row <= right.Row;
+
+        public static bool operator >(ConsoleCoordinate left, ConsoleCoordinate right) => !(left <= right);
+        public static bool operator >=(ConsoleCoordinate left, ConsoleCoordinate right) => !(left < right);
+
         public override bool Equals(object obj) => obj is ConsoleCoordinate other && Equals(other);
         public bool Equals(ConsoleCoordinate other) => Row == other.Row && Column == other.Column;
         public bool Equals(int row, int column) => Row == row && Column == column;
         public override int GetHashCode() => HashCode.Combine(Row, Column);
-        public override string ToString() => $"Row {Row}, Column {Column}";
+        public override string ToString() => $"Row: {Row}, Column: {Column}";
     }
 }

@@ -4,6 +4,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+using System;
 using System.Threading.Tasks;
 using Xunit;
 using static System.ConsoleKey;
@@ -48,7 +49,7 @@ namespace PrettyPrompt.Tests
             console.StubInput(
                 $"I am really happy!",
                 $"{Control}{LeftArrow}{Control}{LeftArrow}{Control}{LeftArrow}",
-                $"{Control | Shift}{RightArrow}so ",
+                $"{Control | Shift}{RightArrow}so",
                 $"{Shift}{LeftArrow}{Shift}{LeftArrow}{Shift}{LeftArrow}",
                 $"{Shift}{RightArrow}{Shift}{RightArrow}{Shift}{RightArrow}{Shift}{RightArrow}{Shift}{RightArrow}{Shift}{RightArrow}{Shift}{RightArrow}{Shift}{RightArrow}",
                 $"up{Enter}"
@@ -76,7 +77,7 @@ namespace PrettyPrompt.Tests
                 $"{Shift}{UpArrow}{Shift}{UpArrow}{Shift}{UpArrow}",
                 $"{Shift}{RightArrow}{Shift}{RightArrow}{Shift}{RightArrow}{Shift}{RightArrow}{Delete}{Delete}",
                 $"{Shift}{RightArrow}{Shift}{RightArrow}{Shift}{Home}{Shift}{End}{Shift}{DownArrow}{Shift}{DownArrow}",
-                $"{Control | Shift}{End}{Control | Shift}{LeftArrow}{Control | Shift}{LeftArrow}{Shift}{LeftArrow}{Delete}{Enter}"
+                $"{Control | Shift}{End}{Control | Shift}{LeftArrow}{Control | Shift}{LeftArrow}{Delete}{Enter}"
                 );
 
             var prompt = new Prompt(console: console);
@@ -145,7 +146,7 @@ namespace PrettyPrompt.Tests
             console.StubInput(
                 $"baby shark doo doo doo doo",
                 $"{Home}{Control | Shift}{RightArrow}{Control | Shift}{RightArrow}{Shift}{LeftArrow}",
-                $"{Control}{X}{End} {Control}{V}{Backspace}{Enter}"
+                $"{Control}{X}{Delete}{End} {Control}{V}{Enter}"
             );
 
             var prompt = new Prompt(console: console);
@@ -178,8 +179,8 @@ namespace PrettyPrompt.Tests
             result = await prompt.ReadLineAsync("> ");
             Assert.True(result.IsSuccess);
             Assert.Equal("abd", result.Text);
-         
-            
+
+
             //left select 'bc' + delete
             console.StubInput(
                 $"abcd",
@@ -273,6 +274,104 @@ namespace PrettyPrompt.Tests
             var result = await prompt.ReadLineAsync("> ");
             Assert.True(result.IsSuccess);
             Assert.Equal("abgh", result.Text);
+        }
+
+        [Fact]
+        public async Task ReadLine_EmptySelectionAndDelete()
+        {
+            var console = ConsoleStub.NewConsole();
+            var prompt = new Prompt(console: console);
+
+            await Test($"{Control}{A}");
+            await Test($"{Shift}{LeftArrow}");
+            await Test($"{Shift}{RightArrow}");
+            await Test($"{Shift}{UpArrow}");
+            await Test($"{Shift}{DownArrow}");
+            await Test($"{Control}{Shift}{LeftArrow}");
+            await Test($"{Control}{Shift}{RightArrow}");
+            await Test($"{Control}{Shift}{UpArrow}");
+            await Test($"{Control}{Shift}{DownArrow}");
+            await Test($"{Shift}{Home}");
+            await Test($"{Shift}{End}");
+
+            async Task Test(FormattableString input)
+            {
+                console.StubInput(input, $"{Delete}{Enter}");
+                var result = await prompt.ReadLineAsync("> ");
+                Assert.True(result.IsSuccess);
+                Assert.Equal("", result.Text);
+            }
+        }
+
+        [Fact]
+        public async Task ReadLine_ClearSelectionWhenBecomesEmpty()
+        {
+            //select left + right -> empty
+            var console = ConsoleStub.NewConsole();
+            var prompt = new Prompt(console: console);
+            console.StubInput(
+                $"abcd",
+                $"{LeftArrow}{LeftArrow}",
+                $"{Shift}{LeftArrow}{Shift}{RightArrow}X{Enter}"
+            );
+            var result = await prompt.ReadLineAsync("> ");
+            Assert.True(result.IsSuccess);
+            Assert.Equal("abXcd", result.Text);
+
+
+            //select 2x left +  2x right -> empty
+            console.StubInput(
+                $"abcd",
+                $"{LeftArrow}{LeftArrow}",
+                $"{Shift}{LeftArrow}{Shift}{LeftArrow}{Shift}{RightArrow}{Shift}{RightArrow}X{Enter}"
+            );
+            result = await prompt.ReadLineAsync("> ");
+            Assert.True(result.IsSuccess);
+            Assert.Equal("abXcd", result.Text);
+
+
+            //select left + right + right -> delete 'c'
+            console.StubInput(
+                $"abcd",
+                $"{LeftArrow}{LeftArrow}",
+                $"{Shift}{LeftArrow}{Shift}{RightArrow}{Shift}{RightArrow}{Delete}{Enter}"
+            );
+            result = await prompt.ReadLineAsync("> ");
+            Assert.True(result.IsSuccess);
+            Assert.Equal("abd", result.Text);
+
+
+            //select right + right + Home -> delete 'ab'
+            console.StubInput(
+                $"abcd",
+                $"{LeftArrow}{LeftArrow}",
+                $"{Shift}{RightArrow}{Shift}{RightArrow}{Shift}{Home}{Delete}{Enter}"
+            );
+            result = await prompt.ReadLineAsync("> ");
+            Assert.True(result.IsSuccess);
+            Assert.Equal("cd", result.Text);
+
+
+            //select right + left + left -> delete 'b'
+            console.StubInput(
+                $"abcd",
+                $"{LeftArrow}{LeftArrow}",
+                $"{Shift}{RightArrow}{Shift}{LeftArrow}{Shift}{LeftArrow}{Delete}{Enter}"
+            );
+            result = await prompt.ReadLineAsync("> ");
+            Assert.True(result.IsSuccess);
+            Assert.Equal("acd", result.Text);
+
+
+            //select left + left + End -> delete 'cd'
+            console.StubInput(
+                $"abcd",
+                $"{LeftArrow}{LeftArrow}",
+                $"{Shift}{LeftArrow}{Shift}{LeftArrow}{Shift}{End}{Delete}{Enter}"
+            );
+            result = await prompt.ReadLineAsync("> ");
+            Assert.True(result.IsSuccess);
+            Assert.Equal("ab", result.Text);
         }
     }
 }
