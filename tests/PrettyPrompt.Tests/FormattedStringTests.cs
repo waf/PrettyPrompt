@@ -259,5 +259,39 @@ namespace PrettyPrompt.Tests
             Assert.Equal(new FormattedString("eeeee d", new FormatSpan(0, 7, Red)), chunks[1]);
             Assert.Equal(new FormattedString("dd sit", new FormatSpan(0, 2, Red)), chunks[2]);
         }
+
+        [Fact]
+        public void EnumerateTextElements_PreservesFormatting()
+        {
+            var value = new FormattedString(
+                "abc",
+                new FormatSpan(0, 1, Red),
+                new FormatSpan(1, 1, Green),
+                new FormatSpan(2, 1, Yellow));
+
+            var elements = value.EnumerateTextElements().ToArray();
+            Assert.Equal(3, elements.Length);
+            Assert.Equal(("a", Red), elements[0]);
+            Assert.Equal(("b", Green), elements[1]);
+            Assert.Equal(("c", Yellow), elements[2]);
+
+
+            value = new FormattedString(
+                "aaa bb c",
+                new FormatSpan(0, 3, Red),
+                new FormatSpan(4, 2, Green),
+                new FormatSpan(7, 1, Yellow));
+
+            elements = value.EnumerateTextElements().ToArray();
+            Assert.Equal(8, elements.Length);
+            Assert.Equal(("a", Red), elements[0]);
+            Assert.Equal(("a", Red), elements[1]);
+            Assert.Equal(("a", Red), elements[2]);
+            Assert.Equal((" ", ConsoleFormat.None), elements[3]);
+            Assert.Equal(("b", Green), elements[4]);
+            Assert.Equal(("b", Green), elements[5]);
+            Assert.Equal((" ", ConsoleFormat.None), elements[6]);
+            Assert.Equal(("c", Yellow), elements[7]);
+        }
     }
 }

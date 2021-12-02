@@ -317,10 +317,6 @@ namespace PrettyPrompt.Highlighting
                     else
                     {
                         formatting = ConsoleFormat.None;
-                        if (textIndex >= span.End)
-                        {
-                            formatIndex++;
-                        }
                     }
                 }
                 else
@@ -329,7 +325,13 @@ namespace PrettyPrompt.Highlighting
                 }
 
                 yield return (element, formatting);
+
                 textIndex += element.Length;
+                if (formatIndex < formatSpans.Length &&
+                    textIndex >= formatSpans[formatIndex].End)
+                {
+                    formatIndex++;
+                }
             }
         }
 
