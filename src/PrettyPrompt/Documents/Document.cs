@@ -4,12 +4,12 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using PrettyPrompt.Consoles;
-using PrettyPrompt.TextSelection;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
+using PrettyPrompt.Consoles;
+using PrettyPrompt.TextSelection;
 
 namespace PrettyPrompt.Documents
 {
@@ -114,22 +114,42 @@ namespace PrettyPrompt.Documents
 
         public int CalculateWordBoundaryIndexNearCaret(int direction)
         {
-            int bound = direction > 0 ? text.Length : 0;
+            if (direction == 0) throw new ArgumentOutOfRangeException(nameof(direction), "cannot be 0");
+            direction = Math.Sign(direction);
 
-            if (Math.Abs(Caret - bound) <= 2)
-                return bound;
-
-            for (var i = Caret + direction; bound == 0 ? i > 0 : i < bound - 1; i += direction)
+            if (direction > 0)
             {
-                int c1Index = i + (direction > 0 ? 0 : -1);
-                int c2Index = i + (direction > 0 ? 1 : 0);
-                if (IsWordStart(text[c1Index], text[c2Index]))
-                    return c2Index;
+                for (var i = Caret; i < text.Length - 1; i++)
+                {
+                    if (IsWordBoundary(i, i + 1))
+                        return i + 1;
+                }
+                return text.Length;
+            }
+            else
+            {
+                for (var i = Math.Min(Caret, text.Length) - 1; i > 0; i--)
+                {
+                    if (IsWordBoundary(i - 1, i))
+                        return i;
+                }
+                return 0;
             }
 
-            static bool IsWordStart(char c1, char c2) => !char.IsLetterOrDigit(c1) && char.IsLetterOrDigit(c2);
+            bool IsWordBoundary(int index1, int index2)
+            {
+                if (index2 >= text.Length) return false;
 
-            return bound;
+                var c1 = text[index1];
+                var c2 = text[index2];
+
+                var isWhitespace1 = char.IsWhiteSpace(c1);
+                var isWhitespace2 = char.IsWhiteSpace(c2);
+                if (isWhitespace1 && !isWhitespace2) return true;
+                if (isWhitespace1 || isWhitespace2) return false;
+
+                return char.IsLetterOrDigit(c1) != char.IsLetterOrDigit(c2);
+            }
         }
 
         public void MoveToLineBoundary(int direction) =>
