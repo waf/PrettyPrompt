@@ -4,17 +4,17 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
+using System.Threading.Tasks;
 using PrettyPrompt.Cancellation;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Highlighting;
 using PrettyPrompt.History;
 using PrettyPrompt.Panes;
 using PrettyPrompt.Rendering;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace PrettyPrompt
 {
@@ -23,6 +23,7 @@ namespace PrettyPrompt
     {
         private readonly IConsole console;
         private readonly HistoryLog history;
+        private readonly PromptTheme theme;
         private readonly CancellationManager cancellationManager;
 
         private readonly CompletionCallbackAsync completionCallback;
@@ -32,20 +33,23 @@ namespace PrettyPrompt
         private readonly SyntaxHighlighter highlighter;
 
         /// <summary>
-        /// Instantiates a prompt object. This object can be re-used for multiple invocations of <see cref="ReadLineAsync(string)"/>.
+        /// Instantiates a prompt object. This object can be re-used for multiple invocations of <see cref="ReadLineAsync()"/>.
         /// </summary>
         /// <param name="persistentHistoryFilepath">The filepath of where to store history entries. If null, persistent history is disabled.</param>
         /// <param name="callbacks">A collection of callbacks for modifying and intercepting the prompt's behavior</param>
         /// <param name="console">The implementation of the console to use. This is mainly for ease of unit testing</param>
+        /// <param name="theme">Rendering theme. If null, default theme is used.</param>
         public Prompt(
             string persistentHistoryFilepath = null,
             PromptCallbacks callbacks = null,
-            IConsole console = null)
+            IConsole console = null,
+            PromptTheme theme = null)
         {
             this.console = console ?? new SystemConsole();
             this.console.InitVirtualTerminalProcessing();
 
             this.history = new HistoryLog(persistentHistoryFilepath);
+            this.theme = theme ?? new PromptTheme();
             this.cancellationManager = new CancellationManager(this.console);
 
             callbacks ??= new PromptCallbacks();
@@ -55,18 +59,18 @@ namespace PrettyPrompt
             this.keyPressCallbacks = callbacks.KeyPressCallbacks;
 
             var highlightCallback = callbacks.HighlightCallback;
-            this.highlighter = new SyntaxHighlighter(highlightCallback, HasUserOptedOutFromColor);
+            this.highlighter = new SyntaxHighlighter(highlightCallback, PromptTheme.HasUserOptedOutFromColor);
         }
 
-        /// <inheritdoc cref="IPrompt.ReadLineAsync(string)" />
-        public async Task<PromptResult> ReadLineAsync(string prompt)
+        /// <inheritdoc cref="IPrompt.ReadLineAsync()" />
+        public async Task<PromptResult> ReadLineAsync()
         {
-            var renderer = new Renderer(console, prompt, HasUserOptedOutFromColor);
+            var renderer = new Renderer(console, theme);
             renderer.RenderPrompt();
 
             // code pane contains the code the user is typing. It does not include the prompt (i.e. "> ")
             var codePane = new CodePane(topCoordinate: console.CursorTop, detectSoftEnterCallback);
-            codePane.MeasureConsole(console, prompt);
+            codePane.MeasureConsole(console, theme.Prompt);
 
             // completion pane is the pop-up window that shows potential autocompletions.
             var completionPane = new CompletionPane(codePane, completionCallback, shouldOpenCompletionWindow);
@@ -74,15 +78,15 @@ namespace PrettyPrompt
             history.Track(codePane);
             cancellationManager.CaptureControlC();
 
-            foreach(var key in KeyPress.ReadForever(console))
+            foreach (var key in KeyPress.ReadForever(console))
             {
                 // grab the code area width every key press, so we rerender appropriately when the console is resized.
-                codePane.MeasureConsole(console, prompt);
+                codePane.MeasureConsole(console, theme.Prompt);
 
                 await InterpretKeyPress(key, codePane, completionPane).ConfigureAwait(false);
 
                 // typing / word-wrapping may have scrolled the console, giving us more room.
-                codePane.MeasureConsole(console, prompt);
+                codePane.MeasureConsole(console, theme.Prompt);
 
                 // render the typed input, with syntax highlighting
                 var inputText = codePane.Document.GetText();
@@ -128,9 +132,6 @@ namespace PrettyPrompt
             return codePane.Result;
         }
 
-        /// <inheritdoc cref="IPrompt.HasUserOptedOutFromColor" />
-        public bool HasUserOptedOutFromColor { get; } = Environment.GetEnvironmentVariable("NO_COLOR") is not null;
-
         /// <summary>
         /// Given a string, and a collection of highlighting instructions, create ANSI Escape Sequence instructions that will 
         /// draw the highlighted text to the console.
@@ -150,7 +151,7 @@ namespace PrettyPrompt
             var initialCursor = new ConsoleCoordinate(0, 0);
             var finalCursor = new ConsoleCoordinate(rows.Length - 1, 0);
             var output = IncrementalRendering.CalculateDiff(
-                previousScreen:  new Screen(textWidth, rows.Length, initialCursor),
+                previousScreen: new Screen(textWidth, rows.Length, initialCursor),
                 currentScreen: new Screen(textWidth, rows.Length, finalCursor, new ScreenArea(initialCursor, rows, TruncateToScreenHeight: false)),
                 ansiCoordinate: initialCursor
             );
@@ -172,16 +173,8 @@ namespace PrettyPrompt
         /// <summary>
         /// Prompts the user for input and returns the result.
         /// </summary>
-        /// <param name="prompt">The prompt string to draw (e.g. "> ")</param>
         /// <returns>The input that the user submitted</returns>
-        Task<PromptResult> ReadLineAsync(string prompt);
-
-        /// <summary>
-        /// <code>true</code> if the user opted out of color, via an environment variable as specified by https://no-color.org/.
-        /// PrettyPrompt will automatically disable colors in this case. You can read this property to control other colors in
-        /// your application.
-        /// </summary>
-        bool HasUserOptedOutFromColor { get; }
+        Task<PromptResult> ReadLineAsync();
     }
 
     /// <summary>

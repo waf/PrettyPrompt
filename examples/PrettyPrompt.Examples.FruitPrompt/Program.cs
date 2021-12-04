@@ -32,7 +32,7 @@ namespace PrettyPrompt
 
             while (true)
             {
-                var response = await prompt.ReadLineAsync("> ").ConfigureAwait(false);
+                var response = await prompt.ReadLineAsync().ConfigureAwait(false);
                 if (response.IsSuccess)
                 {
                     if (response.Text == "exit") break;

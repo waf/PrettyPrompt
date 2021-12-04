@@ -29,7 +29,7 @@ namespace PrettyPrompt.Tests
                 console: console
             );
 
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal("Aardvark", result.Text);
@@ -44,7 +44,7 @@ namespace PrettyPrompt.Tests
 
             var prompt = ConfigurePrompt(console);
 
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal("Aardvark Zebra Alpaca", result.Text);
@@ -58,7 +58,7 @@ namespace PrettyPrompt.Tests
 
             var prompt = ConfigurePrompt(console);
 
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal($"Aardvark{NewLine}Zebra", result.Text);
@@ -72,7 +72,7 @@ namespace PrettyPrompt.Tests
 
             Prompt prompt = ConfigurePrompt(console);
 
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal($"Aardvark{NewLine}Zebra", result.Text);
@@ -86,14 +86,14 @@ namespace PrettyPrompt.Tests
 
             // Escape should close menu
             console.StubInput($"A{Escape}{Enter}"); // it will auto-open when we press A (see previous test)
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal($"A", result.Text);
 
             // Home key (among others) should close menu
             console.StubInput($"A{Home}{Enter}");
-            var result2 = await prompt.ReadLineAsync("> ");
+            var result2 = await prompt.ReadLineAsync();
 
             Assert.True(result2.IsSuccess);
             Assert.Equal($"A", result2.Text);
@@ -110,7 +110,7 @@ namespace PrettyPrompt.Tests
             );
             Prompt prompt = ConfigurePrompt(console);
 
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal($"Zebra", result.Text);
@@ -122,7 +122,7 @@ namespace PrettyPrompt.Tests
                 $"{Enter}{Enter}"
             );
 
-            var result2 = await prompt.ReadLineAsync("> ");
+            var result2 = await prompt.ReadLineAsync();
             Assert.True(result2.IsSuccess);
             Assert.Equal($"Aardvark", result2.Text);
         }
@@ -135,7 +135,7 @@ namespace PrettyPrompt.Tests
 
             var prompt = ConfigurePrompt(console);
 
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal($"Aardvark Aardvark", result.Text);
@@ -149,7 +149,7 @@ namespace PrettyPrompt.Tests
 
             var prompt = ConfigurePrompt(console);
 
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal($"Aardvark", result.Text);
@@ -163,7 +163,7 @@ namespace PrettyPrompt.Tests
 
             var prompt = ConfigurePrompt(console);
 
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal($"Aardvark a", result.Text);
@@ -177,7 +177,7 @@ namespace PrettyPrompt.Tests
 
             var prompt = ConfigurePrompt(console);
 
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal($"Aardvark Q", result.Text);

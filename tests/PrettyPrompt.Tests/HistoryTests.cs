@@ -20,7 +20,7 @@ namespace PrettyPrompt.Tests
             var prompt = new Prompt(console: console);
 
             console.StubInput($"{UpArrow}{UpArrow}{DownArrow}{DownArrow}yo world{Enter}");
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             // no exceptions, even though we cycled through history when there was no history to cycle through
             Assert.Equal("yo world", result.Text);
@@ -33,16 +33,16 @@ namespace PrettyPrompt.Tests
             var prompt = new Prompt(console: console);
 
             console.StubInput($"Hello World{Enter}");
-            await prompt.ReadLineAsync("> ");
+            await prompt.ReadLineAsync();
 
             console.StubInput($"Howdy World{Enter}");
-            await prompt.ReadLineAsync("> ");
+            await prompt.ReadLineAsync();
 
             console.StubInput($"How ya' doin world{Enter}");
-            await prompt.ReadLineAsync("> ");
+            await prompt.ReadLineAsync();
 
             console.StubInput($"{UpArrow}{UpArrow}{UpArrow}{DownArrow}{Enter}");
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.Equal("Howdy World", result.Text);
         }
@@ -54,29 +54,29 @@ namespace PrettyPrompt.Tests
             var prompt = new Prompt(console: console);
 
             console.StubInput($"Hello World{Enter}");
-            await prompt.ReadLineAsync("> ");
+            await prompt.ReadLineAsync();
 
             console.StubInput($"{Enter}");
-            await prompt.ReadLineAsync("> ");
+            await prompt.ReadLineAsync();
 
             console.StubInput($"{Enter}");
-            await prompt.ReadLineAsync("> ");
+            await prompt.ReadLineAsync();
 
             console.StubInput($"{UpArrow}{Enter}");
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
             Assert.Equal("Hello World", result.Text);
 
             console.StubInput($"Hellow{Enter}");
-            await prompt.ReadLineAsync("> ");
+            await prompt.ReadLineAsync();
 
             console.StubInput($"{Enter}");
-            await prompt.ReadLineAsync("> ");
+            await prompt.ReadLineAsync();
 
             console.StubInput($"{Enter}");
-            await prompt.ReadLineAsync("> ");
+            await prompt.ReadLineAsync();
 
             console.StubInput($"{UpArrow}{UpArrow}{Enter}");
-            result = await prompt.ReadLineAsync("> ");
+            result = await prompt.ReadLineAsync();
             Assert.Equal("Hello World", result.Text);
         }
 
@@ -87,24 +87,24 @@ namespace PrettyPrompt.Tests
             var prompt = new Prompt(console: console);
 
             console.StubInput($"howdy{Enter}");
-            await prompt.ReadLineAsync("> ");
+            await prompt.ReadLineAsync();
 
             console.StubInput($"Hello World{Enter}");
-            await prompt.ReadLineAsync("> ");
+            await prompt.ReadLineAsync();
 
             console.StubInput($"Hello World{Enter}");
-            await prompt.ReadLineAsync("> ");
+            await prompt.ReadLineAsync();
 
             console.StubInput($"Hello World{Enter}");
-            await prompt.ReadLineAsync("> ");
+            await prompt.ReadLineAsync();
 
             console.StubInput($"{UpArrow}{UpArrow}{Enter}");
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
             Assert.Equal("howdy", result.Text);
 
             // Current: howdy -> Hello World -> howdy.
             console.StubInput($"{UpArrow}{UpArrow}{UpArrow}{DownArrow}{Enter}");
-            result = await prompt.ReadLineAsync("> ");
+            result = await prompt.ReadLineAsync();
             Assert.Equal("Hello World", result.Text);
         }
 
@@ -115,10 +115,10 @@ namespace PrettyPrompt.Tests
             var prompt = new Prompt(console: console);
 
             console.StubInput($"Hello World{Enter}");
-            await prompt.ReadLineAsync("> ");
+            await prompt.ReadLineAsync();
 
             console.StubInput($"this prompt is my persistent storage{UpArrow}{DownArrow}{Enter}");
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.Equal("this prompt is my persistent storage", result.Text);
         }
@@ -130,16 +130,16 @@ namespace PrettyPrompt.Tests
             var prompt = new Prompt(console: console);
 
             console.StubInput($"one{Enter}");
-            await prompt.ReadLineAsync("> ");
+            await prompt.ReadLineAsync();
 
             console.StubInput($"two{Enter}");
-            await prompt.ReadLineAsync("> ");
+            await prompt.ReadLineAsync();
 
             console.StubInput(
                 $"{UpArrow}{Backspace}{Backspace}{Backspace}three{Backspace}{Backspace}{Backspace}{Backspace}",
                 $"{UpArrow}{Enter}"
             );
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.Equal("two", result.Text);
         }
@@ -150,14 +150,14 @@ namespace PrettyPrompt.Tests
             var console = ConsoleStub.NewConsole();
             var prompt = new Prompt(console: console);
             console.StubInput($"Entry One{Enter}");
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
             Assert.Equal("Entry One", result.Text);
 
             // second prompt, should not get history from first prompt
             console = ConsoleStub.NewConsole();
             prompt = new Prompt(console: console);
             console.StubInput($"{UpArrow}{Enter}");
-            result = await prompt.ReadLineAsync("> ");
+            result = await prompt.ReadLineAsync();
             Assert.Equal("", result.Text); // did not navigate to "Entry One" above
         }
 
@@ -168,13 +168,13 @@ namespace PrettyPrompt.Tests
             var prompt = new Prompt(console: console);
 
             console.StubInput($"one{Enter}");
-            await prompt.ReadLineAsync("> ");
+            await prompt.ReadLineAsync();
 
             console.StubInput($"two{Enter}");
-            await prompt.ReadLineAsync("> ");
+            await prompt.ReadLineAsync();
 
             console.StubInput($"o{UpArrow}{Enter}");
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.Equal("one", result.Text);
         }
@@ -190,14 +190,14 @@ namespace PrettyPrompt.Tests
             if(existingTextOnPrompt)
             {
                 console.StubInput($"apple{Enter}");
-                await prompt.ReadLineAsync("> ");
+                await prompt.ReadLineAsync();
 
                 console.StubInput($"banana{Enter}");
-                await prompt.ReadLineAsync("> ");
+                await prompt.ReadLineAsync();
             }
 
             console.StubInput($"zebr{UpArrow}{Enter}");
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.Equal("zebr", result.Text);
         }
@@ -210,13 +210,13 @@ namespace PrettyPrompt.Tests
             var console = ConsoleStub.NewConsole();
             var prompt = new Prompt(console: console, persistentHistoryFilepath: historyFile);
             console.StubInput($"Entry One{Enter}");
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
             Assert.Equal("Entry One", result.Text);
 
             console = ConsoleStub.NewConsole();
             prompt = new Prompt(console: console, persistentHistoryFilepath: historyFile);
             console.StubInput($"{UpArrow}{Enter}");
-            result = await prompt.ReadLineAsync("> ");
+            result = await prompt.ReadLineAsync();
             Assert.Equal("Entry One", result.Text); // did not navigate to "Entry One" above
         }
     }

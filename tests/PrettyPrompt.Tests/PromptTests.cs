@@ -27,7 +27,7 @@ namespace PrettyPrompt.Tests
             console.StubInput($"Hello World{Enter}");
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal("Hello World", result.Text);
@@ -40,7 +40,7 @@ namespace PrettyPrompt.Tests
             console.StubInput($"Hello World{Control}{Enter}");
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.True(result.IsHardEnter);
@@ -62,7 +62,7 @@ namespace PrettyPrompt.Tests
                 console: console
             );
 
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal("  ", result.Text);
@@ -75,7 +75,7 @@ namespace PrettyPrompt.Tests
             console.StubInput($"Hello World{Control}c");
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.False(result.IsSuccess);
             Assert.Empty(result.Text);
@@ -89,7 +89,7 @@ namespace PrettyPrompt.Tests
             console.StubInput($"111222333{Control}{L}{Enter}");
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal("111222333", result.Text);
@@ -113,7 +113,7 @@ namespace PrettyPrompt.Tests
             );
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.Equal("prompt!", result.Text);
         }
@@ -128,7 +128,7 @@ namespace PrettyPrompt.Tests
             );
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.Equal($"I say:{NewLine}{NewLine}Hello!{NewLine}World!", result.Text);
         }
@@ -147,7 +147,7 @@ namespace PrettyPrompt.Tests
             );
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.Equal($"pretty well{NewLine}unit-tested?{NewLine}prompt!", result.Text);
         }
@@ -165,7 +165,7 @@ namespace PrettyPrompt.Tests
             );
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.Equal($"aaaa bbbb 5555{NewLine}dddd x5x5    foo.lumbar{NewLine}", result.Text);
         }
@@ -182,7 +182,7 @@ namespace PrettyPrompt.Tests
             );
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.Equal($"aaaa bbbb eeee ffff{NewLine}", result.Text);
         }
@@ -197,7 +197,7 @@ namespace PrettyPrompt.Tests
             console.StubInput($"abc{Enter}");
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.Equal($"abc", result.Text);
         }
@@ -220,7 +220,7 @@ namespace PrettyPrompt.Tests
                 }
             }, console: console);
 
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.Equal("I am pasting content", result.Text);
             Assert.Equal(1, syntaxHighlightingInvocations);
@@ -237,7 +237,7 @@ namespace PrettyPrompt.Tests
 
             var prompt = new Prompt(console: console);
 
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.Equal($"indent{NewLine}    more indent{NewLine}{NewLine}indent", result.Text);
         }
@@ -258,7 +258,7 @@ namespace PrettyPrompt.Tests
                 }
             }, console: console);
 
-            _ = await prompt.ReadLineAsync("> ");
+            _ = await prompt.ReadLineAsync();
 
             Assert.Equal("I like apple", input);
             Assert.Equal(2, caret);
@@ -281,7 +281,7 @@ namespace PrettyPrompt.Tests
                 }
             }, console: console);
 
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.Equal(callbackOutput, result);
         }

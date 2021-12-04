@@ -55,7 +55,7 @@ namespace PrettyPrompt
     /// <item>
     /// If a non-null <see cref="KeyPressCallbackResult"/> is returned, the prompt will be submitted.
     /// The <see cref="KeyPressCallbackResult"/> will be returned by the current
-    /// <see cref="Prompt.ReadLineAsync(string)"/> function.
+    /// <see cref="Prompt.ReadLineAsync()"/> function.
     /// </item>
     /// <item>
     /// If a null <see cref="KeyPressCallbackResult"/> is returned, then the user will remain on the
