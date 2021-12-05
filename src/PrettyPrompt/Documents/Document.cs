@@ -32,7 +32,7 @@ namespace PrettyPrompt.Documents
         /// The two-dimensional coordinate of the text cursor in the document,
         /// after word wrapping / newlines have been processed.
         /// </summary>
-        public ConsoleCoordinate Cursor { get; private set; }
+        public ConsoleCoordinate Cursor { get; set; }
 
         /// <summary>
         /// After <see cref="WordWrap(int)"/> is called, this will contain the
@@ -40,8 +40,7 @@ namespace PrettyPrompt.Documents
         /// </summary>
         public IReadOnlyList<WrappedLine> WordWrappedLines { get; private set; }
 
-        public List<SelectionSpan> Selection { get; } = new();
-
+        public SelectionSpan? Selection { get; set; }
 
         public Document() : this(string.Empty, 0) { }
         public Document(string text, int caret)
@@ -62,19 +61,15 @@ namespace PrettyPrompt.Documents
 
         public void DeleteSelectedText()
         {
-            if (Selection.Count == 0) return;
-
-            undoRedoHistory.Track(this);
-            int firstSelectionStart = 0;
-            for (int i = Selection.Count - 1; i >= 0; i--)
+            if (Selection.TryGet(out var selection))
             {
-                var (start, end) = Selection[i].GetCaretIndices(WordWrappedLines);
+                undoRedoHistory.Track(this);
+                var (start, end) = selection.GetCaretIndices(WordWrappedLines);
                 text.Remove(start, end - start);
-                firstSelectionStart = start;
-            }
 
-            Caret = firstSelectionStart;
-            undoRedoHistory.Track(this);
+                Caret = start;
+                undoRedoHistory.Track(this);
+            }
         }
 
         public void InsertAtCaret(string text)

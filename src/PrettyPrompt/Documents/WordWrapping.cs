@@ -25,17 +25,19 @@ namespace PrettyPrompt.Documents
         /// </summary>
         public static WordWrappedText WrapEditableCharacters(StringBuilder input, int initialCaretPosition, int width)
         {
-            var cursor = new ConsoleCoordinate(0, 0);
             if (input.Length == 0)
             {
-                cursor.Column = initialCaretPosition;
-                return new WordWrappedText(new[] { new WrappedLine(0, string.Empty) }, cursor);
+                return new WordWrappedText(
+                    new[] { new WrappedLine(0, string.Empty) }, 
+                    new ConsoleCoordinate(0, initialCaretPosition));
             }
 
             var lines = new List<WrappedLine>();
             int currentLineLength = 0;
             var line = new StringBuilder(width);
             int textIndex = 0;
+            int cursorColumn = 0;
+            int cursorRow = 0;
             foreach (ReadOnlyMemory<char> chunk in input.GetChunks())
             {
                 for (var i = 0; i < chunk.Span.Length; i++)
@@ -49,15 +51,15 @@ namespace PrettyPrompt.Documents
 
                     if (isCursorPastCharacter && !char.IsControl(character))
                     {
-                        cursor.Column++;
+                        cursorColumn++;
                     }
                     if (character == '\n' || currentLineLength == width ||
                         NextCharacterIsFullWidthAndWillWrap(width, currentLineLength, chunk, i))
                     {
                         if (isCursorPastCharacter)
                         {
-                            cursor.Row++;
-                            cursor.Column = 0;
+                            cursorRow++;
+                            cursorColumn = 0;
                         }
                         lines.Add(new WrappedLine(textIndex - line.Length, line.ToString()));
                         line = new StringBuilder();
@@ -69,7 +71,7 @@ namespace PrettyPrompt.Documents
             if (currentLineLength > 0)
                 lines.Add(new WrappedLine(textIndex - line.Length, line.ToString()));
 
-            return new WordWrappedText(lines, cursor);
+            return new WordWrappedText(lines, new ConsoleCoordinate(cursorRow, cursorColumn));
         }
 
         private static bool NextCharacterIsFullWidthAndWillWrap(int width, int currentLineLength, ReadOnlyMemory<char> chunk, int i) =>

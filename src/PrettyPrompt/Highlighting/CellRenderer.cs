@@ -4,11 +4,12 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using PrettyPrompt.Documents;
-using PrettyPrompt.TextSelection;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using PrettyPrompt.Consoles;
+using PrettyPrompt.Documents;
+using PrettyPrompt.TextSelection;
 
 namespace PrettyPrompt.Highlighting
 {
@@ -17,10 +18,16 @@ namespace PrettyPrompt.Highlighting
     /// </summary>
     static class CellRenderer
     {
-        public static Row[] ApplyColorToCharacters(IReadOnlyCollection<FormatSpan> highlights, IReadOnlyList<WrappedLine> lines, IList<SelectionSpan> selections)
+        public static Row[] ApplyColorToCharacters(IReadOnlyCollection<FormatSpan> highlights, IReadOnlyList<WrappedLine> lines, SelectionSpan? selection)
         {
-            var selectionStart = selections.Select(s => (s.Start.Row, s.Start.Column)).ToHashSet();
-            var selectionEnd = selections.Select(s => (s.End.Row, s.End.Column)).ToHashSet();
+            var selectionStart = new ConsoleCoordinate(int.MaxValue, int.MaxValue); //invalid
+            var selectionEnd = new ConsoleCoordinate(int.MaxValue, int.MaxValue); //invalid
+            if (selection.TryGet(out var selectionValue))
+            {
+                selectionStart = selectionValue.Start;
+                selectionEnd = selectionValue.End;
+            }
+
             bool selectionHighlight = false;
 
             var highlightsLookup = highlights
@@ -59,17 +66,17 @@ namespace PrettyPrompt.Highlighting
                     }
 
                     // if there's text selected, invert colors to represent the highlight of the selected text.
-                    if (selectionStart.Contains((lineIndex, cellIndex - lineFullWidthCharacterOffset)))
+                    if (selectionStart.Equals(lineIndex, cellIndex - lineFullWidthCharacterOffset)) //start is inclusive
                     {
                         selectionHighlight = true;
                     }
-                    if(selectionHighlight)
-                    {
-                        cell.Formatting = new ConsoleFormat { Inverted = true };
-                    }
-                    if (selectionEnd.Contains((lineIndex, cellIndex - lineFullWidthCharacterOffset)))
+                    if (selectionEnd.Equals(lineIndex, cellIndex - lineFullWidthCharacterOffset)) //end is exclusive
                     {
                         selectionHighlight = false;
+                    }
+                    if (selectionHighlight)
+                    {
+                        cell.Formatting = new ConsoleFormat { Inverted = true };
                     }
                 }
                 highlightedRows[lineIndex] = new Row(cells);
@@ -101,7 +108,7 @@ namespace PrettyPrompt.Highlighting
         public static Row[] ApplyColorToCharacters(IReadOnlyCollection<FormatSpan> highlights, string text, int textWidth)
         {
             var wrapped = WordWrapping.WrapEditableCharacters(new System.Text.StringBuilder(text), 0, textWidth);
-            return ApplyColorToCharacters(highlights, wrapped.WrappedLines, Array.Empty<SelectionSpan>());
+            return ApplyColorToCharacters(highlights, wrapped.WrappedLines, null);
         }
     }
 }

@@ -1,9 +1,5 @@
-﻿using PrettyPrompt.Highlighting;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System;
+using PrettyPrompt.Highlighting;
 using Xunit;
 using static PrettyPrompt.Consoles.AnsiEscapeCodes;
 
@@ -11,6 +7,14 @@ namespace PrettyPrompt.Tests
 {
     public class OutputTests
     {
+        [Fact]
+        public void RenderAnsiOutput_PlainText()
+        {
+            var output = Prompt.RenderAnsiOutput("here is some output", Array.Empty<FormatSpan>(), 100);
+
+            Assert.Equal("here is some output" + MoveCursorLeft(19), output);
+        }
+
         [Fact]
         public void RenderAnsiOutput_GivenFormat_AppliesAnsiEscapeSequences()
         {
