@@ -19,20 +19,30 @@ namespace PrettyPrompt
         public string Prompt { get; }
 
         public ConsoleFormat CompletionBorder { get; }
-
         public ConsoleFormat DocumentationBorder { get; }
+
+        public FormattedString SelectedCompletionItemMarker { get; }
+        public string UnselectedCompletionItemMarker { get; }
+        public AnsiColor? SelectedCompletionItemBackground { get; }
 
         public PromptTheme(
             string prompt = "> ",
             ConsoleFormat? completionBorder = null,
-            ConsoleFormat? documentationBorder = null)
+            ConsoleFormat? documentationBorder = null,
+            FormattedString? selectedCompletionItemMarkSymbol = null,
+            AnsiColor? selectedCompletionItemBackground = null)
         {
             Prompt = prompt;
 
             CompletionBorder = GetFormat(completionBorder ?? new ConsoleFormat(Foreground: AnsiColor.Blue));
             DocumentationBorder = GetFormat(documentationBorder ?? new ConsoleFormat(Foreground: AnsiColor.Cyan));
 
-            static ConsoleFormat GetFormat(ConsoleFormat format) => HasUserOptedOutFromColor ? ConsoleFormat.None : format;
+            SelectedCompletionItemMarker = selectedCompletionItemMarkSymbol ?? new FormattedString(">", new FormatSpan(0, 1, new ConsoleFormat(Foreground: DocumentationBorder.Foreground)));
+            UnselectedCompletionItemMarker = new string(' ', SelectedCompletionItemMarker.Length);
+            SelectedCompletionItemBackground = GetColor(selectedCompletionItemBackground ?? AnsiColor.RGB(40, 30, 30));
+
+            ConsoleFormat GetFormat(ConsoleFormat format) => HasUserOptedOutFromColor ? ConsoleFormat.None : format;
+            AnsiColor? GetColor(AnsiColor color) => HasUserOptedOutFromColor ? null : color;
         }
     }
 }

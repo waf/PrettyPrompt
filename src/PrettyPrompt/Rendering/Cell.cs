@@ -56,6 +56,9 @@ namespace PrettyPrompt
             this.ElementWidth = elementWidth;
         }
 
+        public static List<Cell> FromText(char text, ConsoleFormat formatting)
+            => FromText(new FormattedString(text.ToString(), formatting));
+
         public static List<Cell> FromText(string text, ConsoleFormat formatting)
             => FromText(new FormattedString(text, formatting));
 
