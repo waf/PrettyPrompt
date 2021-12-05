@@ -4,11 +4,8 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using PrettyPrompt.Rendering;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
-using System.Text;
 
 namespace PrettyPrompt
 {
@@ -18,46 +15,6 @@ namespace PrettyPrompt
             Environment.NewLine == "\n"
                 ? text
                 : text.Replace("\n", Environment.NewLine);
-
-        public static IEnumerable<string> EnumerateTextElements(this string text)
-        {
-            var enumerator = StringInfo.GetTextElementEnumerator(text);
-            while(enumerator.MoveNext())
-            {
-                yield return enumerator.GetTextElement();
-            }
-        }
-
-        public static IEnumerable<string> SplitIntoSubstrings(this string str, int maxChunkSize)
-        {
-            var stringWidth = UnicodeWidth.GetWidth(str);
-            if (stringWidth <= maxChunkSize)
-            {
-                yield return str;
-                yield break;
-            }
-
-            var buffer = new StringBuilder();
-
-            int width = 0;
-            foreach (var c in str)
-            {
-                var cWidth = UnicodeWidth.GetWidth(c);
-                if(width + cWidth > maxChunkSize)
-                {
-                    yield return buffer.ToString();
-                    buffer.Clear();
-                    width = 0;
-                }
-                width += cWidth;
-                buffer.Append(c);
-            }
-
-            if(buffer.Length > 0)
-            {
-                yield return buffer.ToString();
-            }
-        }
 
         /// <summary>
         /// Like <see cref="System.Linq.Enumerable.Zip{TFirst, TSecond}(IEnumerable{TFirst}, IEnumerable{TSecond})"/>,

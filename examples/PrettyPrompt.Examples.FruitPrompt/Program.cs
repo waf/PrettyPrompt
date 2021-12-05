@@ -1,10 +1,10 @@
-﻿using PrettyPrompt.Completion;
-using PrettyPrompt.Highlighting;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using PrettyPrompt.Completion;
+using PrettyPrompt.Highlighting;
 
 namespace PrettyPrompt
 {
@@ -44,7 +44,7 @@ namespace PrettyPrompt
         }
 
         // demo data
-        private static readonly (string name, string description, AnsiColor highlight)[] Fruits = new[]
+        private static readonly (string Name, string Description, AnsiColor Highlight)[] Fruits = new[]
         {
             ( "apple", "the round fruit of a tree of the rose family, which typically has thin red or green skin and crisp flesh. Many varieties have been developed as dessert or cooking fruit or for making cider.", AnsiColor.BrightRed ),
             ( "apricot", "a juicy, soft fruit, resembling a small peach, of an orange-yellow color.", AnsiColor.Yellow ),
@@ -62,6 +62,16 @@ namespace PrettyPrompt
             ( "strawberry", "a sweet soft red fruit with a seed-studded surface.", AnsiColor.BrightRed ),
         };
 
+        private static readonly (string Name, AnsiColor Color)[] ColorsToHighlight = new[]
+        {
+            ("red", AnsiColor.Red),
+            ("green", AnsiColor.Green),
+            ("yellow", AnsiColor.Yellow),
+            ("blue", AnsiColor.Blue),
+            ("purple", AnsiColor.RGB(72, 0, 255)),
+            ("orange", AnsiColor.RGB(255, 165, 0) ),
+        };
+
         // demo completion algorithm callback
         private static Task<IReadOnlyList<CompletionItem>> FindCompletions(string typedInput, int caret)
         {
@@ -72,13 +82,18 @@ namespace PrettyPrompt
                 : textUntilCaret.Substring(previousWordStart + 1).ToLower();
             return Task.FromResult<IReadOnlyList<CompletionItem>>(
                 Fruits
-                .Where(fruit => fruit.name.StartsWith(typedWord))
-                .Select(fruit => new CompletionItem
+                .Where(fruit => fruit.Name.StartsWith(typedWord))
+                .Select(fruit =>
                 {
-                    StartIndex = previousWordStart + 1,
-                    ReplacementText = fruit.name,
-                    DisplayText = fruit.name,
-                    ExtendedDescription = new Lazy<Task<string>>(() => Task.FromResult(fruit.description))
+                    var displayText = new FormattedString(fruit.Name, new FormatSpan(0, fruit.Name.Length, new ConsoleFormat(Foreground: fruit.Highlight)));
+                    var description = GetFormattedString(fruit.Description);
+                    return new CompletionItem
+                    {
+                        StartIndex = previousWordStart + 1,
+                        ReplacementText = fruit.Name,
+                        DisplayText = displayText,
+                        ExtendedDescription = new Lazy<Task<FormattedString>>(() => Task.FromResult(description))
+                    };
                 })
                 .ToArray()
             );
@@ -87,28 +102,32 @@ namespace PrettyPrompt
         // demo syntax highlighting callback
         private static Task<IReadOnlyCollection<FormatSpan>> Highlight(string text)
         {
-            var spans = new List<FormatSpan>();
+            IReadOnlyCollection<FormatSpan> spans = EnumerateFormatSpans(text, Fruits.Select(f => (f.Name, f.Highlight))).ToList();
+            return Task.FromResult(spans);
+        }
 
-            for (int i = 0; i < text.Length; i++)
+        private static FormattedString GetFormattedString(string text)
+            => new(text, EnumerateFormatSpans(text, ColorsToHighlight));
+
+        private static IEnumerable<FormatSpan> EnumerateFormatSpans(string text, IEnumerable<(string TextToFormat, AnsiColor Color)> formattingInfo)
+        {
+            foreach (var (textToFormat, color) in formattingInfo)
             {
-                foreach (var fruit in Fruits)
+                int startIndex;
+                int offset = 0;
+                while ((startIndex = text.AsSpan(offset).IndexOf(textToFormat)) != -1)
                 {
-                    if (text.Length >= i + fruit.name.Length && text.Substring(i, fruit.name.Length).ToLower() == fruit.name)
-                    {
-                        spans.Add(new FormatSpan(i, fruit.name.Length, new ConsoleFormat(Foreground: fruit.highlight)));
-                        i += fruit.name.Length;
-                        break;
-                    }
+                    yield return new FormatSpan(offset + startIndex, textToFormat.Length, new ConsoleFormat(Foreground: color));
+                    offset += startIndex + textToFormat.Length;
                 }
             }
-            return Task.FromResult<IReadOnlyCollection<FormatSpan>>(spans);
         }
 
         private static Task<KeyPressCallbackResult> ShowFruitDocumentation(string text, int caret)
         {
             string wordUnderCursor = GetWordAtCaret(text, caret).ToLower();
 
-            if (Fruits.Any(f => f.name.ToLower() == wordUnderCursor))
+            if (Fruits.Any(f => f.Name.ToLower() == wordUnderCursor))
             {
                 // wikipedia is the definitive fruit documentation.
                 LaunchBrowser("https://en.wikipedia.org/wiki/" + Uri.EscapeUriString(wordUnderCursor));

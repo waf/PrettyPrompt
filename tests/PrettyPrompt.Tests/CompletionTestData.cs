@@ -5,6 +5,7 @@
 #endregion
 
 using PrettyPrompt.Completion;
+using PrettyPrompt.Highlighting;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,7 +37,7 @@ namespace PrettyPrompt.Tests
                         StartIndex = previousWordStart + 1,
                         ReplacementText = c,
                         DisplayText = i % 2 == 0 ? c : null, // display text is optional, ReplacementText should be used when this is null.
-                        ExtendedDescription = new Lazy<Task<string>>(() => Task.FromResult("a vivid description of " + c))
+                        ExtendedDescription = new Lazy<Task<FormattedString>>(() => Task.FromResult<FormattedString>("a vivid description of " + c))
                     })
                     .ToArray()
             );

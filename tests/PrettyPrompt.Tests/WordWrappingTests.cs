@@ -1,6 +1,7 @@
-﻿using PrettyPrompt.Consoles;
-using PrettyPrompt.Documents;
+﻿using System.Linq;
 using System.Text;
+using PrettyPrompt.Consoles;
+using PrettyPrompt.Documents;
 using Xunit;
 
 namespace PrettyPrompt.Tests
@@ -69,7 +70,7 @@ namespace PrettyPrompt.Tests
         public void WrapWords_GivenLongText_WrapsWords()
         {
             var text = "Here is some text that should be wrapped word by word. supercalifragilisticexpialidocious";
-            var wrapped = WordWrapping.WrapWords(text, 20);
+            var wrapped = WordWrapping.WrapWords(text, 20).Select(l => l.Text);
 
             Assert.Equal(
                 new[]
@@ -89,7 +90,7 @@ namespace PrettyPrompt.Tests
         public void WrapWords_WithNewLines_SplitsAtNewLines()
         {
             var text = "Here is some\ntext that should be wrapped word by\nword. supercalifragilisticexpialidocious";
-            var wrapped = WordWrapping.WrapWords(text, 20);
+            var wrapped = WordWrapping.WrapWords(text, 20).Select(l => l.Text);
 
             Assert.Equal(
                 new[]
@@ -109,7 +110,7 @@ namespace PrettyPrompt.Tests
         public void WrapWords_DoubleWidthCharacters_UsesUnicodeWidth()
         {
             var text = "每个人都有他的作战策略，直到脸上中了一拳。";
-            var wrapped = WordWrapping.WrapWords(text, 20);
+            var wrapped = WordWrapping.WrapWords(text, 20).Select(l => l.Text);
 
             Assert.Equal(
                 new[]

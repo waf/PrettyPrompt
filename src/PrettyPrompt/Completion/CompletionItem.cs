@@ -6,6 +6,7 @@
 
 using System;
 using System.Threading.Tasks;
+using PrettyPrompt.Highlighting;
 
 namespace PrettyPrompt.Completion
 {
@@ -27,11 +28,11 @@ namespace PrettyPrompt.Completion
         /// <summary>
         /// This text will be displayed in the completion menu. If not specified, the replacement text will be used.
         /// </summary>
-        public string DisplayText { get; init; }
+        public FormattedString DisplayText { get; init; }
 
         /// <summary>
         /// This lazy task will be executed when the item is selected, to display the extended "tool tip" description to the right of the menu.
         /// </summary>
-        public Lazy<Task<string>> ExtendedDescription { get; init; }
+        public Lazy<Task<FormattedString>> ExtendedDescription { get; init; }
     }
 }
