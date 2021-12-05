@@ -18,7 +18,7 @@ namespace PrettyPrompt.Tests
             console.StubInput($"书桌上有一个苹果。{Enter}");
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.Equal("书桌上有一个苹果。", result.Text);
         }
@@ -30,7 +30,7 @@ namespace PrettyPrompt.Tests
             console.StubInput($"世界{LeftArrow}{LeftArrow}你好，{Enter}");
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.Equal("你好，世界", result.Text);
         }
@@ -43,7 +43,7 @@ namespace PrettyPrompt.Tests
 
             var prompt = new Prompt(console: console);
 
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
             Assert.Equal("书桌上有", result.Text);
 
             var output = console.GetAllOutput();
@@ -66,7 +66,7 @@ namespace PrettyPrompt.Tests
             {
                 CompletionCallback = new CompletionTestData(new[] { "书桌上有" }).CompletionHandlerAsync
             });
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.Equal("书桌上有", result.Text);
         }
@@ -80,7 +80,7 @@ namespace PrettyPrompt.Tests
             console.StubInput($"书桌上有{Enter}");
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             var output = console.GetAllOutput();
 

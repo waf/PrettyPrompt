@@ -29,29 +29,20 @@ namespace PrettyPrompt
         private const int BottomPadding = 6;
 
         private readonly IConsole console;
-        private readonly string prompt;
-        private readonly ConsoleFormat completionBorderColor;
-        private readonly ConsoleFormat documentationBorderColor;
+        private readonly PromptTheme theme;
 
-        private Screen previouslyRenderedScreen;
+        private Screen previouslyRenderedScreen = new (0, 0, new ConsoleCoordinate(0, 0));
 
-        public Renderer(IConsole console, string prompt, bool hasUserOptedOutFromColor)
+        public Renderer(IConsole console, PromptTheme theme)
         {
             this.console = console;
-            this.prompt = prompt;
-            this.previouslyRenderedScreen = new Screen(0, 0, new ConsoleCoordinate(0, 0));
-
-            if (!hasUserOptedOutFromColor)
-            {
-                this.completionBorderColor = new ConsoleFormat(Foreground: AnsiColor.Blue);
-                this.documentationBorderColor = new ConsoleFormat(Foreground: AnsiColor.Cyan);
-            }
+            this.theme = theme;
         }
 
         public void RenderPrompt()
         {
             // write some newlines to ensure we have enough room to render the completion pane.
-            console.Write(new string('\n', BottomPadding) + MoveCursorUp(BottomPadding) + MoveCursorToColumn(1) + Reset + prompt);
+            console.Write(new string('\n', BottomPadding) + MoveCursorUp(BottomPadding) + MoveCursorToColumn(1) + Reset + theme.Prompt);
         }
 
         public async Task RenderOutput(PromptResult result, CodePane codePane, CompletionPane completionPane, IReadOnlyCollection<FormatSpan> highlights, KeyPress key)
@@ -73,7 +64,7 @@ namespace PrettyPrompt
                 console.Clear(); // for some reason, using escape codes (ClearEntireScreen and MoveCursorToPosition) leaves
                                  // CursorTop in an old (cached?) state. Using Console.Clear() works around this.
                 RenderPrompt();
-                codePane.MeasureConsole(console, prompt); // our code pane will have more room to render, it now renders at the top of the screen.
+                codePane.MeasureConsole(console, theme.Prompt); // our code pane will have more room to render, it now renders at the top of the screen.
             }
 
             // convert our "view models" into characters, contained in screen areas
@@ -81,7 +72,7 @@ namespace PrettyPrompt
             ScreenArea[] completionWidgets = await BuildCompletionScreenAreas(
                 completionPane,
                 cursor: codePane.Document.Cursor,
-                codeAreaStartColumn: prompt.Length,
+                codeAreaStartColumn: theme.Prompt.Length,
                 codeAreaWidth: codePane.CodeAreaWidth
             ).ConfigureAwait(false);
 
@@ -89,7 +80,7 @@ namespace PrettyPrompt
             var ansiCoordinate = new ConsoleCoordinate
             (
                 row: 1 + codePane.TopCoordinate,
-                column: 1 + prompt.Length
+                column: 1 + theme.Prompt.Length
             );
 
             // draw screen areas to screen representation.
@@ -194,14 +185,14 @@ namespace PrettyPrompt
                     var item = completion.DisplayText.Length > 0 ? completion.DisplayText : completion.ReplacementText;
                     var rightBorder = " " + BoxDrawing.EdgeVertical;
                     return new Row(Cell
-                        .FromText(leftBorder, completionBorderColor)
+                        .FromText(leftBorder, theme.CompletionBorder)
                         .Concat(Cell.FromText(TruncateToWindow(item + new string(' ', wordWidth - item.GetUnicodeWidth()), 4)))
-                        .Concat(Cell.FromText(rightBorder, completionBorderColor))
+                        .Concat(Cell.FromText(rightBorder, theme.CompletionBorder))
                         .ToList()
                     );
                 })
-                .Prepend(new Row(Cell.FromText(BoxDrawing.CornerUpperLeft + horizontalBorder + BoxDrawing.CornerUpperRight, completionBorderColor)))
-                .Append(new Row(Cell.FromText(BoxDrawing.CornerLowerLeft + horizontalBorder + BoxDrawing.CornerLowerRight, completionBorderColor)))
+                .Prepend(new Row(Cell.FromText(BoxDrawing.CornerUpperLeft + horizontalBorder + BoxDrawing.CornerUpperRight, theme.CompletionBorder)))
+                .Append(new Row(Cell.FromText(BoxDrawing.CornerLowerLeft + horizontalBorder + BoxDrawing.CornerLowerRight, theme.CompletionBorder)))
                 .ToArray();
 
             FormattedString TruncateToWindow(FormattedString line, int offset) =>
@@ -226,12 +217,12 @@ namespace PrettyPrompt
                 .Select(line =>
                     new Row(Cell
                         .FromText(" " + line.Trim() + new string(' ', actualTextWidth - line.GetUnicodeWidth()))
-                        .Concat(Cell.FromText(" " + BoxDrawing.EdgeVertical, documentationBorderColor))
+                        .Concat(Cell.FromText(" " + BoxDrawing.EdgeVertical, theme.DocumentationBorder))
                         .ToList()
                     )
                 )
-                .Prepend(new Row(Cell.FromText(boxTop, documentationBorderColor)))
-                .Append(new Row(Cell.FromText(boxBottom, documentationBorderColor)))
+                .Prepend(new Row(Cell.FromText(boxTop, theme.DocumentationBorder)))
+                .Append(new Row(Cell.FromText(boxBottom, theme.DocumentationBorder)))
                 .ToArray();
         }
     }

@@ -29,7 +29,7 @@ namespace PrettyPrompt.Tests
                 console: console
             );
 
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal("red green nocolor blue", result.Text);
@@ -72,7 +72,7 @@ namespace PrettyPrompt.Tests
                 console: console
             );
 
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal("苹果 o 蓝莓 o avocado o", result.Text);

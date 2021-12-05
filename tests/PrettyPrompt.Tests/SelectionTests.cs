@@ -23,7 +23,7 @@ namespace PrettyPrompt.Tests
                 $"{Control}{LeftArrow}{Control}{LeftArrow}{Control | Shift}{RightArrow}enigmatic {Enter}");
             var prompt = new Prompt(console: console);
 
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal("The quick brown fox jumped over the enigmatic giraffe", result.Text);
@@ -36,7 +36,7 @@ namespace PrettyPrompt.Tests
             console.StubInput($"The quick brown fox jumped over the lazy dog{Control}{A}bonk{Enter}");
             var prompt = new Prompt(console: console);
 
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal("bonk", result.Text);
@@ -56,7 +56,7 @@ namespace PrettyPrompt.Tests
                 );
             var prompt = new Prompt(console: console);
 
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal("I am soup!", result.Text);
@@ -81,7 +81,7 @@ namespace PrettyPrompt.Tests
                 );
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal("There once was rain!", result.Text);
@@ -98,7 +98,7 @@ namespace PrettyPrompt.Tests
                 $"{Control}{Z}{Enter}"
             );
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal("It's a small world, after all", result.Text);
@@ -116,7 +116,7 @@ namespace PrettyPrompt.Tests
                 $"{Control}{Y}{Control}{Y}{Enter}"
             );
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal("It's a world, after all", result.Text);
@@ -133,7 +133,7 @@ namespace PrettyPrompt.Tests
             );
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal("baby shark doo doo doo doo", result.Text);
@@ -150,7 +150,7 @@ namespace PrettyPrompt.Tests
             );
 
             var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
 
             Assert.True(result.IsSuccess);
             Assert.Equal("doo doo doo doo baby shark", result.Text);
@@ -166,7 +166,7 @@ namespace PrettyPrompt.Tests
                 $"abcd",
                 $"{Shift}{Home}{Delete}{Enter}"
             );
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal("", result.Text);
 
@@ -176,7 +176,7 @@ namespace PrettyPrompt.Tests
                 $"abcd",
                 $"{LeftArrow}{Shift}{LeftArrow}{Delete}{Enter}"
             );
-            result = await prompt.ReadLineAsync("> ");
+            result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal("abd", result.Text);
 
@@ -186,7 +186,7 @@ namespace PrettyPrompt.Tests
                 $"abcd",
                 $"{LeftArrow}{Shift}{LeftArrow}{Shift}{LeftArrow}{Delete}{Enter}"
             );
-            result = await prompt.ReadLineAsync("> ");
+            result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal("ad", result.Text);
 
@@ -196,7 +196,7 @@ namespace PrettyPrompt.Tests
                 $"abcd",
                 $"{LeftArrow}{Shift}{Home}{Delete}{Enter}"
             );
-            result = await prompt.ReadLineAsync("> ");
+            result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal("d", result.Text);
         }
@@ -211,7 +211,7 @@ namespace PrettyPrompt.Tests
                 $"abcd",
                 $"{Home}{Shift}{End}{Delete}{Enter}"
             );
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal("", result.Text);
 
@@ -221,7 +221,7 @@ namespace PrettyPrompt.Tests
                 $"abcd",
                 $"{Home}{RightArrow}{Shift}{RightArrow}{Delete}{Enter}"
             );
-            result = await prompt.ReadLineAsync("> ");
+            result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal("acd", result.Text);
 
@@ -231,7 +231,7 @@ namespace PrettyPrompt.Tests
                 $"abcd",
                 $"{Home}{RightArrow}{Shift}{RightArrow}{Shift}{RightArrow}{Delete}{Enter}"
             );
-            result = await prompt.ReadLineAsync("> ");
+            result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal("ad", result.Text);
 
@@ -241,7 +241,7 @@ namespace PrettyPrompt.Tests
                 $"abcd",
                 $"{Home}{RightArrow}{Shift}{End}{Delete}{Enter}"
             );
-            result = await prompt.ReadLineAsync("> ");
+            result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal("a", result.Text);
         }
@@ -256,7 +256,7 @@ namespace PrettyPrompt.Tests
                 $"efgh",
                 $"{LeftArrow}{LeftArrow}{Shift}{UpArrow}{Delete}{Enter}"
             );
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal("abgh", result.Text);
         }
@@ -271,7 +271,7 @@ namespace PrettyPrompt.Tests
                 $"efgh",
                 $"{Control}{Home}{RightArrow}{RightArrow}{Shift}{DownArrow}{Delete}{Enter}"
             );
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal("abgh", result.Text);
         }

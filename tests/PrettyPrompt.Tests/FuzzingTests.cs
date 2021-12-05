@@ -87,7 +87,7 @@ namespace PrettyPrompt.Tests
 
             try
             {
-                var result = await prompt.ReadLineAsync("> ");
+                var result = await prompt.ReadLineAsync();
                 Assert.NotNull(result);
             }
             catch (Exception ex)
