@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using PrettyPrompt.Consoles;
+using PrettyPrompt.Highlighting;
 using PrettyPrompt.Rendering;
 
 namespace PrettyPrompt.Documents
@@ -39,7 +40,7 @@ namespace PrettyPrompt.Documents
             int cursorRow = 0;
             foreach (ReadOnlyMemory<char> chunk in input.GetChunks())
             {
-                for(var i = 0; i < chunk.Span.Length; i++)
+                for (var i = 0; i < chunk.Span.Length; i++)
                 {
                     char character = chunk.Span[i];
                     line.Append(character);
@@ -81,46 +82,47 @@ namespace PrettyPrompt.Documents
         /// where possible, otherwise split by character if a single word is
         /// greater than maxLength.
         /// </summary>
-        public static List<string> WrapWords(string text, int maxLength)
+        public static List<FormattedString> WrapWords(FormattedString input, int maxLength)
         {
-            if (text.Length == 0)
+            if (input.Length == 0)
             {
-                return new List<string>();
+                return new List<FormattedString>();
             }
 
-            var lines = new List<string>();
-            foreach (var line in text.Split('\n'))
+            var lines = new List<FormattedString>();
+            foreach (var line in input.Split('\n'))
             {
-                var currentLine = new StringBuilder();
+                var currentLine = new FormattedStringBuilder();
                 int currentLineWidth = 0;
-                foreach (var currentWord in line.Split(' ').SelectMany(word => word.SplitIntoSubstrings(maxLength)))
+                foreach (var currentWord in line.Split(' ').SelectMany(word => word.SplitIntoChunks(maxLength)))
                 {
-                    var wordLength = UnicodeWidth.GetWidth(currentWord);
+                    var wordLength = currentWord.GetUnicodeWidth();
                     var wordWithSpaceLength = currentLineWidth == 0 ? wordLength : wordLength + 1;
 
-                    if (currentLineWidth > maxLength
-                        || currentLineWidth + wordWithSpaceLength > maxLength)
+                    if (currentLineWidth > maxLength ||
+                        currentLineWidth + wordWithSpaceLength > maxLength)
                     {
-                        lines.Add(currentLine.ToString());
+                        lines.Add(currentLine.ToFormattedString());
                         currentLine.Clear();
                         currentLineWidth = 0;
                     }
 
-                    if(currentLineWidth == 0)
+                    if (currentLineWidth == 0)
                     {
                         currentLine.Append(currentWord);
                         currentLineWidth += wordLength;
                     }
                     else
                     {
-                        currentLine.Append(" " + currentWord);
+                        currentLine.Append(" ");
+                        currentLine.Append(currentWord);
                         currentLineWidth += wordLength + 1;
                     }
                 }
 
                 if (currentLineWidth > 0)
                 {
-                    lines.Add(currentLine.ToString());
+                    lines.Add(currentLine.ToFormattedString());
                 }
             }
 
