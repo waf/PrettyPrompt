@@ -42,7 +42,7 @@ namespace PrettyPrompt.Tests
 
             try
             {
-                var result = await prompt.ReadLineAsync("> ");
+                var result = await prompt.ReadLineAsync();
                 Assert.NotNull(result);
             }
             catch (Exception ex)
@@ -60,18 +60,18 @@ namespace PrettyPrompt.Tests
             var r = new Random(seed.Value);
 
             var directions = new[] { Home, End, LeftArrow, RightArrow, UpArrow, DownArrow };
-            var keySet = 
+            var keySet =
                 (
                     from ctrl in new[] { false, true }
                     from shift in new[] { false, true }
                     from key in directions
                     select new ConsoleKeyInfo('\0', key, shift, false, ctrl)
                 )
-                .Concat(new[] 
+                .Concat(new[]
                 {
-                    new ConsoleKeyInfo('a', A, false, false, false), 
-                    new ConsoleKeyInfo('\0', Enter, shift: true, false, false), 
-                    new ConsoleKeyInfo('\0', Delete, false, false, false) 
+                    new ConsoleKeyInfo('a', A, false, false, false),
+                    new ConsoleKeyInfo('\0', Enter, shift: true, false, false),
+                    new ConsoleKeyInfo('\0', Delete, false, false, false)
                 })
                 .ToArray();
 

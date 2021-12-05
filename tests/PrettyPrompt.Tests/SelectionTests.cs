@@ -297,7 +297,7 @@ namespace PrettyPrompt.Tests
             async Task Test(FormattableString input)
             {
                 console.StubInput(input, $"{Delete}{Enter}");
-                var result = await prompt.ReadLineAsync("> ");
+                var result = await prompt.ReadLineAsync();
                 Assert.True(result.IsSuccess);
                 Assert.Equal("", result.Text);
             }
@@ -314,7 +314,7 @@ namespace PrettyPrompt.Tests
                 $"{LeftArrow}{LeftArrow}",
                 $"{Shift}{LeftArrow}{Shift}{RightArrow}X{Enter}"
             );
-            var result = await prompt.ReadLineAsync("> ");
+            var result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal("abXcd", result.Text);
 
@@ -325,7 +325,7 @@ namespace PrettyPrompt.Tests
                 $"{LeftArrow}{LeftArrow}",
                 $"{Shift}{LeftArrow}{Shift}{LeftArrow}{Shift}{RightArrow}{Shift}{RightArrow}X{Enter}"
             );
-            result = await prompt.ReadLineAsync("> ");
+            result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal("abXcd", result.Text);
 
@@ -336,7 +336,7 @@ namespace PrettyPrompt.Tests
                 $"{LeftArrow}{LeftArrow}",
                 $"{Shift}{LeftArrow}{Shift}{RightArrow}{Shift}{RightArrow}{Delete}{Enter}"
             );
-            result = await prompt.ReadLineAsync("> ");
+            result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal("abd", result.Text);
 
@@ -347,7 +347,7 @@ namespace PrettyPrompt.Tests
                 $"{LeftArrow}{LeftArrow}",
                 $"{Shift}{RightArrow}{Shift}{RightArrow}{Shift}{Home}{Delete}{Enter}"
             );
-            result = await prompt.ReadLineAsync("> ");
+            result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal("cd", result.Text);
 
@@ -358,7 +358,7 @@ namespace PrettyPrompt.Tests
                 $"{LeftArrow}{LeftArrow}",
                 $"{Shift}{RightArrow}{Shift}{LeftArrow}{Shift}{LeftArrow}{Delete}{Enter}"
             );
-            result = await prompt.ReadLineAsync("> ");
+            result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal("acd", result.Text);
 
@@ -369,7 +369,7 @@ namespace PrettyPrompt.Tests
                 $"{LeftArrow}{LeftArrow}",
                 $"{Shift}{LeftArrow}{Shift}{LeftArrow}{Shift}{End}{Delete}{Enter}"
             );
-            result = await prompt.ReadLineAsync("> ");
+            result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal("ab", result.Text);
         }
