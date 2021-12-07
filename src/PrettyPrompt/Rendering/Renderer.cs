@@ -1,4 +1,4 @@
-﻿#region License Header
+#region License Header
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
@@ -31,7 +31,7 @@ namespace PrettyPrompt
         private readonly IConsole console;
         private readonly PromptTheme theme;
 
-        private Screen previouslyRenderedScreen = new (0, 0, new ConsoleCoordinate(0, 0));
+        private Screen previouslyRenderedScreen = new(0, 0, new ConsoleCoordinate(0, 0));
 
         public Renderer(IConsole console, PromptTheme theme)
         {
@@ -146,7 +146,7 @@ namespace PrettyPrompt
 
             int wordWidth = completionPane.FilteredView
                 .Max(w => UnicodeWidth.GetWidth(w.DisplayText.Text ?? w.ReplacementText));
-            int boxWidth = wordWidth + 2 + 2; // two border characters, plus two spaces for padding
+            int boxWidth = wordWidth + 3 + theme.SelectedCompletionItemMarker.Length; // 3 = left border + right border + space before right border
 
             var completionStart = new ConsoleCoordinate(
                 row: cursor.Row + 1,
@@ -174,22 +174,42 @@ namespace PrettyPrompt
 
         private Row[] BuildCompletionRows(CompletionPane completionPane, int codeAreaWidth, int wordWidth, ConsoleCoordinate completionBoxStart)
         {
-            var horizontalBorder = TruncateToWindow(new string(BoxDrawing.EdgeHorizontal, wordWidth + 2), 2).Text;
+            var horizontalBorder = TruncateToWindow(new string(BoxDrawing.EdgeHorizontal, wordWidth + theme.SelectedCompletionItemMarker.Length + 1), 2).Text; // +1 = space after item (=space before right border)
 
             var selectedItem = completionPane.FilteredView.SelectedItem;
-
             return completionPane.FilteredView
                 .Select((completion, index) =>
                 {
-                    var leftBorder = BoxDrawing.EdgeVertical + (selectedItem == completion ? "|" : " ");
                     var item = completion.DisplayText.Length > 0 ? completion.DisplayText : completion.ReplacementText;
-                    var rightBorder = " " + BoxDrawing.EdgeVertical;
-                    return new Row(Cell
-                        .FromText(leftBorder, theme.CompletionBorder)
-                        .Concat(Cell.FromText(TruncateToWindow(item + new string(' ', wordWidth - item.GetUnicodeWidth()), 4)))
-                        .Concat(Cell.FromText(rightBorder, theme.CompletionBorder))
-                        .ToList()
-                    );
+                    var isSelected = selectedItem == completion;
+
+                    var rowCells = new List<Cell>();
+
+                    //left border
+                    rowCells.AddRange(Cell.FromText(BoxDrawing.EdgeVertical, theme.CompletionBorder));
+
+                    //(un)selected item marker
+                    if (isSelected)
+                    {
+                        rowCells.AddRange(Cell.FromText(theme.SelectedCompletionItemMarker));
+                    }
+                    else
+                    {
+                        rowCells.AddRange(Cell.FromText(theme.UnselectedCompletionItemMarker));
+                    }
+
+                    //item
+                    var itemCells = Cell.FromText(TruncateToWindow(item + new string(' ', wordWidth - item.GetUnicodeWidth()), 2 + theme.SelectedCompletionItemMarker.Length)); // 2 = left border + right border
+                    if (isSelected)
+                    {
+                        TransformFormattingForSelected(itemCells);
+                    }
+                    rowCells.AddRange(itemCells);
+
+                    //right border
+                    rowCells.AddRange(Cell.FromText(" " + BoxDrawing.EdgeVertical, theme.CompletionBorder));
+
+                    return new Row(rowCells);
                 })
                 .Prepend(new Row(Cell.FromText(BoxDrawing.CornerUpperLeft + horizontalBorder + BoxDrawing.CornerUpperRight, theme.CompletionBorder)))
                 .Append(new Row(Cell.FromText(BoxDrawing.CornerLowerLeft + horizontalBorder + BoxDrawing.CornerLowerRight, theme.CompletionBorder)))
@@ -197,6 +217,19 @@ namespace PrettyPrompt
 
             FormattedString TruncateToWindow(FormattedString line, int offset) =>
                line.Substring(0, Math.Min(line.Length, codeAreaWidth - completionBoxStart.Column - offset));
+
+            void TransformFormattingForSelected(List<Cell> itemCells)
+            {
+                for (int i = 0; i < itemCells.Count; i++)
+                {
+                    var cell = itemCells[i];
+                    if (cell.Formatting.Background is null)
+                    {
+                        var newFormatting = cell.Formatting with { Background = theme.SelectedCompletionItemBackground };
+                        itemCells[i] = cell with { Formatting = newFormatting };
+                    }
+                }
+            }
         }
 
         private Row[] BuildDocumentationRows(FormattedString documentation, int maxWidth)
