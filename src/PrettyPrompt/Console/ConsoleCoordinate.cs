@@ -11,6 +11,8 @@ namespace PrettyPrompt.Consoles
 {
     internal readonly struct ConsoleCoordinate : IEquatable<ConsoleCoordinate>
     {
+        public static ConsoleCoordinate Zero => default;
+
         public readonly int Row;
         public readonly int Column;
 

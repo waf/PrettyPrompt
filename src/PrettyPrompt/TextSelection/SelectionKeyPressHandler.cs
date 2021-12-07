@@ -45,7 +45,7 @@ namespace PrettyPrompt.TextSelection
 
             if (key.Pattern is (Control, A))
             {
-                var start = new ConsoleCoordinate(0, 0);
+                var start = ConsoleCoordinate.Zero;
                 var end = new ConsoleCoordinate(document.WordWrappedLines.Count - 1, document.WordWrappedLines[^1].Content.Length);
                 if (start < end)
                 {

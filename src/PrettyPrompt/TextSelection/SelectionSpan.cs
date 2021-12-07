@@ -27,7 +27,7 @@ namespace PrettyPrompt.TextSelection
 
         public SelectionSpan(ConsoleCoordinate start, ConsoleCoordinate end, SelectionDirection direction)
         {
-            Debug.Assert(start >= new ConsoleCoordinate(0, 0));
+            Debug.Assert(start >= ConsoleCoordinate.Zero);
             Debug.Assert(start < end);
 
             Start = start;

@@ -148,7 +148,7 @@ namespace PrettyPrompt
         public static string RenderAnsiOutput(string text, IReadOnlyCollection<FormatSpan> formatting, int textWidth)
         {
             var rows = CellRenderer.ApplyColorToCharacters(formatting, text, textWidth);
-            var initialCursor = new ConsoleCoordinate(0, 0);
+            var initialCursor = ConsoleCoordinate.Zero;
             var finalCursor = new ConsoleCoordinate(rows.Length - 1, 0);
             var output = IncrementalRendering.CalculateDiff(
                 previousScreen: new Screen(textWidth, rows.Length, initialCursor),

@@ -31,7 +31,7 @@ namespace PrettyPrompt
         private readonly IConsole console;
         private readonly PromptTheme theme;
 
-        private Screen previouslyRenderedScreen = new(0, 0, new ConsoleCoordinate(0, 0));
+        private Screen previouslyRenderedScreen = new(0, 0, ConsoleCoordinate.Zero);
 
         public Renderer(IConsole console, PromptTheme theme)
         {
@@ -60,7 +60,7 @@ namespace PrettyPrompt
             }
             if (key.Pattern is (Control, L))
             {
-                previouslyRenderedScreen = new Screen(0, 0, new ConsoleCoordinate(0, 0));
+                previouslyRenderedScreen = new Screen(0, 0, ConsoleCoordinate.Zero);
                 console.Clear(); // for some reason, using escape codes (ClearEntireScreen and MoveCursorToPosition) leaves
                                  // CursorTop in an old (cached?) state. Using Console.Clear() works around this.
                 RenderPrompt();
@@ -125,7 +125,7 @@ namespace PrettyPrompt
                 Array.Resize(ref highlightedLines, highlightedLines.Length + 1);
                 highlightedLines[^1] = new Row(new List<Cell>());
             }
-            var codeWidget = new ScreenArea(new ConsoleCoordinate(0, 0), highlightedLines, TruncateToScreenHeight: false);
+            var codeWidget = new ScreenArea(ConsoleCoordinate.Zero, highlightedLines, TruncateToScreenHeight: false);
             return codeWidget;
         }
 
