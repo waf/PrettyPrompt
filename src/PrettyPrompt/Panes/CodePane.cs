@@ -5,6 +5,7 @@
 #endregion
 
 using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using PrettyPrompt.Consoles;
@@ -20,6 +21,10 @@ namespace PrettyPrompt.Panes
     {
         private readonly ForceSoftEnterCallbackAsync shouldForceSoftEnterAsync;
         private readonly SelectionKeyPressHandler selectionHandler;
+        private int topCoordinate;
+        private int codeAreaWidth;
+        private int codeAreaHeight;
+        private int windowTop;
 
         /// <summary>
         /// The input text being edited in the pane
@@ -32,11 +37,35 @@ namespace PrettyPrompt.Panes
         /// </summary>
         public PromptResult Result { get; private set; }
 
-        // pane dimensions
-        public int TopCoordinate { get; set; }
-        public int CodeAreaWidth { get; set; }
-        public int CodeAreaHeight { get; private set; }
-        public int WindowTop { get; private set; }
+        public int TopCoordinate
+        {
+            get => topCoordinate;
+            private set
+            {
+                Debug.Assert(value >= 0);
+                topCoordinate = value;
+            }
+        }
+
+        public int CodeAreaWidth
+        {
+            get => codeAreaWidth;
+            private set
+            {
+                Debug.Assert(value >= 0);
+                codeAreaWidth = value;
+            }
+        }
+
+        public int CodeAreaHeight
+        {
+            get => codeAreaHeight;
+            private set
+            {
+                Debug.Assert(value >= 0);
+                codeAreaHeight = value;
+            }
+        }
 
         public CodePane(int topCoordinate, ForceSoftEnterCallbackAsync shouldForceSoftEnterAsync)
         {
@@ -178,11 +207,12 @@ namespace PrettyPrompt.Panes
 
         internal void MeasureConsole(IConsole console, string prompt)
         {
-            this.TopCoordinate -= (console.WindowTop - this.WindowTop);
-            this.WindowTop = console.WindowTop;
+            var windowTopChange = console.WindowTop - this.windowTop;
+            this.TopCoordinate = Math.Max(0, this.TopCoordinate - windowTopChange);
+            this.windowTop = console.WindowTop;
 
-            this.CodeAreaWidth = console.BufferWidth - prompt.Length;
-            this.CodeAreaHeight = console.WindowHeight - this.TopCoordinate;
+            this.CodeAreaWidth = Math.Max(0, console.BufferWidth - prompt.Length);
+            this.CodeAreaHeight = Math.Max(0, console.WindowHeight - this.TopCoordinate);
         }
 
         public async Task OnKeyUp(KeyPress key)
