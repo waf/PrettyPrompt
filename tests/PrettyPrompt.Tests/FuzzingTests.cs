@@ -26,13 +26,13 @@ namespace PrettyPrompt.Tests
                 {
                     var character = (char)r.Next(32, 127);
                     var key = ConsoleStub.CharToConsoleKey(character);
-                    return new ConsoleKeyInfo(character, key,
+                    return key.ToKeyInfo(character,
                         shift: r.NextDouble() > 0.5,
                         alt: r.NextDouble() > 0.5,
                         control: r.NextDouble() > 0.5
                     );
                 })
-                .Concat(Enumerable.Repeat(new ConsoleKeyInfo('\0', Enter, false, false, false), 4)) // hit enter a few times to submit the prompt
+                .Concat(Enumerable.Repeat(Enter.ToKeyInfo('\0'), 4)) // hit enter a few times to submit the prompt
                 .ToList();
 
             var console = ConsoleStub.NewConsole();
@@ -65,19 +65,19 @@ namespace PrettyPrompt.Tests
                     from ctrl in new[] { false, true }
                     from shift in new[] { false, true }
                     from key in directions
-                    select new ConsoleKeyInfo('\0', key, shift, false, ctrl)
+                    select key.ToKeyInfo('\0', shift: shift, control: ctrl)
                 )
                 .Concat(new[]
                 {
-                    new ConsoleKeyInfo('a', A, false, false, false),
-                    new ConsoleKeyInfo('\0', Enter, shift: true, false, false),
-                    new ConsoleKeyInfo('\0', Delete, false, false, false)
+                    A.ToKeyInfo('a'),
+                    Enter.ToKeyInfo('\0', shift: true),
+                    Delete.ToKeyInfo('\0')
                 })
                 .ToArray();
 
             var randomKeys = Enumerable.Range(1, 10_000)
                 .Select(_ => keySet[r.Next(keySet.Length)])
-                .Concat(Enumerable.Repeat(new ConsoleKeyInfo('\0', Enter, false, false, false), 4)) // hit enter a few times to submit the prompt
+                .Concat(Enumerable.Repeat(Enter.ToKeyInfo('\0'), 4)) // hit enter a few times to submit the prompt
                 .ToList();
 
             var console = ConsoleStub.NewConsole();

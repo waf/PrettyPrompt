@@ -75,7 +75,7 @@ namespace PrettyPrompt.Consoles
                 {
                     // we got a bunch of keypresses, send them as a paste event (Shift+Insert)
                     yield return new KeyPress(
-                        new ConsoleKeyInfo('\0', ConsoleKey.Insert, true, false, false),
+                        ConsoleKey.Insert.ToKeyInfo('\0', shift: true),
                         pastedText: new string(keys.Select(k => k.KeyChar).ToArray())
                     );
                 }
@@ -90,18 +90,18 @@ namespace PrettyPrompt.Consoles
             var sequence = new string(keys.Select(key => key.KeyChar).ToArray());
             return sequence switch
             {
-                "\u001b1;5P" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F1, shift: false, alt: false, control: true)),
-                "\u001b1;5Q" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F2, shift: false, alt: false, control: true)),
-                "\u001b1;5R" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F3, shift: false, alt: false, control: true)),
-                "\u001b1;5S" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F4, shift: false, alt: false, control: true)),
-                "\u001b15;5~" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F5, shift: false, alt: false, control: true)),
-                "\u001b17;5~" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F6, shift: false, alt: false, control: true)),
-                "\u001b18;5~" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F7, shift: false, alt: false, control: true)),
-                "\u001b19;5~" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F8, shift: false, alt: false, control: true)),
-                "\u001b20;5~" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F9, shift: false, alt: false, control: true)),
-                "\u001b21;5~" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F10, shift: false, alt: false, control: true)),
-                "\u001b23;5~" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F11, shift: false, alt: false, control: true)),
-                "\u001b24;5~" => new KeyPress(new ConsoleKeyInfo('\0', ConsoleKey.F12, shift: false, alt: false, control: true)),
+                "\u001b1;5P" => new KeyPress(ConsoleKey.F1.ToKeyInfo('\0', control: true)),
+                "\u001b1;5Q" => new KeyPress(ConsoleKey.F2.ToKeyInfo('\0', control: true)),
+                "\u001b1;5R" => new KeyPress(ConsoleKey.F3.ToKeyInfo('\0', control: true)),
+                "\u001b1;5S" => new KeyPress(ConsoleKey.F4.ToKeyInfo('\0', control: true)),
+                "\u001b15;5~" => new KeyPress(ConsoleKey.F5.ToKeyInfo('\0', control: true)),
+                "\u001b17;5~" => new KeyPress(ConsoleKey.F6.ToKeyInfo('\0', control: true)),
+                "\u001b18;5~" => new KeyPress(ConsoleKey.F7.ToKeyInfo('\0', control: true)),
+                "\u001b19;5~" => new KeyPress(ConsoleKey.F8.ToKeyInfo('\0', control: true)),
+                "\u001b20;5~" => new KeyPress(ConsoleKey.F9.ToKeyInfo('\0', control: true)),
+                "\u001b21;5~" => new KeyPress(ConsoleKey.F10.ToKeyInfo('\0', control: true)),
+                "\u001b23;5~" => new KeyPress(ConsoleKey.F11.ToKeyInfo('\0', control: true)),
+                "\u001b24;5~" => new KeyPress(ConsoleKey.F12.ToKeyInfo('\0', control: true)),
                 _ => null
             };
         }

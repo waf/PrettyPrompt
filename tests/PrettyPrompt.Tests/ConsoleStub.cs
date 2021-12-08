@@ -89,7 +89,7 @@ namespace PrettyPrompt.Tests
 
         private static ConsoleModifiers AppendLiteralKey(List<ConsoleKeyInfo> list, char keyChar, ConsoleModifiers modifiersPressed)
         {
-            list.Add(ToConsoleKeyInfo(modifiersPressed, CharToConsoleKey(keyChar), keyChar));
+            list.Add(CharToConsoleKey(keyChar).ToKeyInfo(keyChar, modifiersPressed));
             return 0;
         }
 
@@ -124,7 +124,7 @@ namespace PrettyPrompt.Tests
                     return modifiersPressed | modifier;
                 case ConsoleKey consoleKey:
                     var parsed = char.TryParse(key.Value, out char character);
-                    list.Add(ToConsoleKeyInfo(modifiersPressed, consoleKey, parsed ? character : MapSpecialKey(consoleKey)));
+                    list.Add(consoleKey.ToKeyInfo(parsed ? character : MapSpecialKey(consoleKey), modifiersPressed));
                     return 0;
                 default: throw new ArgumentException("Unknown value: " + formatArgument, nameof(formatArgument));
             }
@@ -139,12 +139,5 @@ namespace PrettyPrompt.Tests
                 ConsoleKey.Spacebar => ' ',
                 _ => '\0' // home, enter, arrow keys, etc
             };
-
-        private static ConsoleKeyInfo ToConsoleKeyInfo(ConsoleModifiers modifiersPressed, ConsoleKey consoleKey, char character) =>
-            new ConsoleKeyInfo(
-                character, consoleKey,
-                modifiersPressed.HasFlag(Shift), modifiersPressed.HasFlag(Alt), modifiersPressed.HasFlag(Control)
-            );
     }
 }
-

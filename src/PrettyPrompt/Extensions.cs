@@ -64,5 +64,15 @@ namespace PrettyPrompt
                 return false;
             }
         }
+
+        public static ConsoleKeyInfo ToKeyInfo(this ConsoleKey consoleKey, char character, ConsoleModifiers modifiersPressed)
+           => consoleKey.ToKeyInfo(
+               character,
+               shift: modifiersPressed.HasFlag(ConsoleModifiers.Shift),
+               alt: modifiersPressed.HasFlag(ConsoleModifiers.Alt),
+               control: modifiersPressed.HasFlag(ConsoleModifiers.Control));
+
+        public static ConsoleKeyInfo ToKeyInfo(this ConsoleKey consoleKey, char character, bool shift = false, bool alt = false, bool control = false)
+           => new(character, consoleKey, shift, alt, control);
     }
 }
