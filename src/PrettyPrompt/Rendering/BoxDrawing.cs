@@ -4,25 +4,24 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-namespace PrettyPrompt.Rendering
+namespace PrettyPrompt.Rendering;
+
+static class BoxDrawing
 {
-    static class BoxDrawing
+    public const char CornerUpperRight = '┐';
+    public const char CornerLowerRight = '┘';
+    public const char CornerUpperLeft = '┌';
+    public const char CornerLowerLeft = '└';
+    public const char EdgeHorizontal = '─';
+    public const char EdgeVertical = '│';
+
+    public static (string top, string bottom) HorizontalBorders(int width, bool leftCorner = true, bool rightCorner = true)
     {
-        public const char CornerUpperRight = '┐';
-        public const char CornerLowerRight = '┘';
-        public const char CornerUpperLeft = '┌';
-        public const char CornerLowerLeft = '└';
-        public const char EdgeHorizontal = '─';
-        public const char EdgeVertical = '│';
+        var boxHorizontalBorder = new string(EdgeHorizontal, width); // -1 to make up for right corner piece
 
-        public static (string top, string bottom) HorizontalBorders(int width, bool leftCorner = true, bool rightCorner = true)
-        {
-            var boxHorizontalBorder = new string(EdgeHorizontal, width); // -1 to make up for right corner piece
-
-            return (
-                top: (leftCorner ? CornerUpperLeft : "") + boxHorizontalBorder + (rightCorner ? CornerUpperRight : ""),
-                bottom: (leftCorner ? CornerLowerLeft : "") + boxHorizontalBorder + (rightCorner ? CornerLowerRight : "")
-            );
-        }
+        return (
+            top: (leftCorner ? CornerUpperLeft : "") + boxHorizontalBorder + (rightCorner ? CornerUpperRight : ""),
+            bottom: (leftCorner ? CornerLowerLeft : "") + boxHorizontalBorder + (rightCorner ? CornerLowerRight : "")
+        );
     }
 }

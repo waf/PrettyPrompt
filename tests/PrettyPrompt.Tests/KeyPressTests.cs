@@ -4,16 +4,16 @@ using System;
 using System.Linq;
 using Xunit;
 
-namespace PrettyPrompt.Tests
+namespace PrettyPrompt.Tests;
+
+public class KeyPressTests
 {
-    public class KeyPressTests
+    [Fact]
+    public void KeyPressKeys()
     {
-        [Fact]
-        public void KeyPressKeys()
+        var console = ConsoleStub.NewConsole();
+        var keys = new (FormattableString input, ConsoleKey expectedKey, ConsoleModifiers expectedModifier)[]
         {
-            var console = ConsoleStub.NewConsole();
-            var keys = new (FormattableString input, ConsoleKey expectedKey, ConsoleModifiers expectedModifier)[]
-            {
                 ($"\u001b1;5P", ConsoleKey.F1, ConsoleModifiers.Control),
                 ($"\u001b1;5Q", ConsoleKey.F2, ConsoleModifiers.Control),
                 ($"\u001b1;5R", ConsoleKey.F3, ConsoleModifiers.Control),
@@ -28,23 +28,22 @@ namespace PrettyPrompt.Tests
                 ($"\u001b24;5~", ConsoleKey.F12, ConsoleModifiers.Control),
                 ($"a", ConsoleKey.A, 0),
                 ($"pasted text", ConsoleKey.Insert, ConsoleModifiers.Shift)
-            };
-            console.StubInput(keys.Select(k => k.input).ToArray());
+        };
+        console.StubInput(keys.Select(k => k.input).ToArray());
 
-            var keyAvailableResult = keys
-                .SelectMany(key => Enumerable.Repeat(true, key.input.ToString().Length - 1).Append(false))
-                .ToArray();
-            console
-                .KeyAvailable
-                .Returns(keyAvailableResult.First(), keyAvailableResult.Skip(1).ToArray());
+        var keyAvailableResult = keys
+            .SelectMany(key => Enumerable.Repeat(true, key.input.ToString().Length - 1).Append(false))
+            .ToArray();
+        console
+            .KeyAvailable
+            .Returns(keyAvailableResult.First(), keyAvailableResult.Skip(1).ToArray());
 
-            var outputKeys = KeyPress.ReadForever(console).Take(keys.Length).ToArray();
-            Assert.Equal(keys.Length, outputKeys.Length);
-            foreach (var (expectedOutput, output) in keys.Zip(outputKeys))
-            {
-                Assert.Equal(expectedOutput.expectedKey, output.ConsoleKeyInfo.Key);
-                Assert.Equal(expectedOutput.expectedModifier, output.ConsoleKeyInfo.Modifiers);
-            }
+        var outputKeys = KeyPress.ReadForever(console).Take(keys.Length).ToArray();
+        Assert.Equal(keys.Length, outputKeys.Length);
+        foreach (var (expectedOutput, output) in keys.Zip(outputKeys))
+        {
+            Assert.Equal(expectedOutput.expectedKey, output.ConsoleKeyInfo.Key);
+            Assert.Equal(expectedOutput.expectedModifier, output.ConsoleKeyInfo.Modifiers);
         }
     }
 }

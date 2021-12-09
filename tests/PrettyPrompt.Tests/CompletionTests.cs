@@ -11,186 +11,185 @@ using static System.ConsoleKey;
 using static System.ConsoleModifiers;
 using static System.Environment;
 
-namespace PrettyPrompt.Tests
+namespace PrettyPrompt.Tests;
+
+public class CompletionTests
 {
-    public class CompletionTests
+    [Fact]
+    public async Task ReadLine_SingleCompletion()
     {
-        [Fact]
-        public async Task ReadLine_SingleCompletion()
-        {
-            var console = ConsoleStub.NewConsole();
-            console.StubInput($"Aa{Enter}{Enter}");
+        var console = ConsoleStub.NewConsole();
+        console.StubInput($"Aa{Enter}{Enter}");
 
-            var prompt = new Prompt(
-                callbacks: new PromptCallbacks
-                {
-                    CompletionCallback = new CompletionTestData().CompletionHandlerAsync
-                },
-                console: console
-            );
+        var prompt = new Prompt(
+            callbacks: new PromptCallbacks
+            {
+                CompletionCallback = new CompletionTestData().CompletionHandlerAsync
+            },
+            console: console
+        );
 
-            var result = await prompt.ReadLineAsync();
+        var result = await prompt.ReadLineAsync();
 
-            Assert.True(result.IsSuccess);
-            Assert.Equal("Aardvark", result.Text);
-        }
-
-        [Fact]
-        public async Task ReadLine_MultipleCompletion()
-        {
-            var console = ConsoleStub.NewConsole();
-            // complete 3 animals. For the third animal, start completing Alligator, but then backspace, navigate the completion menu and complete as Alpaca instead.
-            console.StubInput($"Aa{Enter} Z{Tab} Alli{Backspace}{Backspace}{DownArrow}{UpArrow}{DownArrow}{DownArrow}{RightArrow}{Enter}");
-
-            var prompt = ConfigurePrompt(console);
-
-            var result = await prompt.ReadLineAsync();
-
-            Assert.True(result.IsSuccess);
-            Assert.Equal("Aardvark Zebra Alpaca", result.Text);
-        }
-
-        [Fact]
-        public async Task ReadLine_MultilineCompletion()
-        {
-            var console = ConsoleStub.NewConsole();
-            console.StubInput($"Aa{Enter}{Shift}{Enter}Z{Control}{Spacebar}{Enter}{Enter}");
-
-            var prompt = ConfigurePrompt(console);
-
-            var result = await prompt.ReadLineAsync();
-
-            Assert.True(result.IsSuccess);
-            Assert.Equal($"Aardvark{NewLine}Zebra", result.Text);
-        }
-
-        [Fact]
-        public async Task ReadLine_CompletionMenu_AutoOpens()
-        {
-            var console = ConsoleStub.NewConsole();
-            console.StubInput($"A{Enter}{Shift}{Enter}Z{Enter}{Enter}");
-
-            Prompt prompt = ConfigurePrompt(console);
-
-            var result = await prompt.ReadLineAsync();
-
-            Assert.True(result.IsSuccess);
-            Assert.Equal($"Aardvark{NewLine}Zebra", result.Text);
-        }
-
-        [Fact]
-        public async Task ReadLine_CompletionMenu_Closes()
-        {
-            var console = ConsoleStub.NewConsole();
-            Prompt prompt = ConfigurePrompt(console);
-
-            // Escape should close menu
-            console.StubInput($"A{Escape}{Enter}"); // it will auto-open when we press A (see previous test)
-            var result = await prompt.ReadLineAsync();
-
-            Assert.True(result.IsSuccess);
-            Assert.Equal($"A", result.Text);
-
-            // Home key (among others) should close menu
-            console.StubInput($"A{Home}{Enter}");
-            var result2 = await prompt.ReadLineAsync();
-
-            Assert.True(result2.IsSuccess);
-            Assert.Equal($"A", result2.Text);
-        }
-
-        [Fact]
-        public async Task ReadLine_CompletionMenu_Scrolls()
-        {
-            var console = ConsoleStub.NewConsole();
-            console.StubInput(
-                $"{Control}{Spacebar}{Control}{Spacebar}",
-                $"{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}",
-                $"{Enter}{Enter}"
-            );
-            Prompt prompt = ConfigurePrompt(console);
-
-            var result = await prompt.ReadLineAsync();
-
-            Assert.True(result.IsSuccess);
-            Assert.Equal($"Zebra", result.Text);
-
-            console.StubInput(
-                $"{Control}{Spacebar}{Control}{Spacebar}",
-                $"{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}",
-                $"{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}",
-                $"{Enter}{Enter}"
-            );
-
-            var result2 = await prompt.ReadLineAsync();
-            Assert.True(result2.IsSuccess);
-            Assert.Equal($"Aardvark", result2.Text);
-        }
-
-        [Fact]
-        public async Task ReadLine_FullyTypeCompletion_CanOpenAgain()
-        {
-            var console = ConsoleStub.NewConsole();
-            console.StubInput($"Aardvark {Control}{Spacebar}{Enter}{Enter}");
-
-            var prompt = ConfigurePrompt(console);
-
-            var result = await prompt.ReadLineAsync();
-
-            Assert.True(result.IsSuccess);
-            Assert.Equal($"Aardvark Aardvark", result.Text);
-        }
-
-        [Fact]
-        public async Task ReadLine_EmptyPrompt_AutoOpens()
-        {
-            var console = ConsoleStub.NewConsole();
-            console.StubInput($"{Control}{Spacebar}{Enter}{Enter}");
-
-            var prompt = ConfigurePrompt(console);
-
-            var result = await prompt.ReadLineAsync();
-
-            Assert.True(result.IsSuccess);
-            Assert.Equal($"Aardvark", result.Text);
-        }
-
-        [Fact]
-        public async Task ReadLine_OpenWindowAtBeginningOfPrompt_Opens()
-        {
-            var console = ConsoleStub.NewConsole();
-            console.StubInput($"a{LeftArrow} {LeftArrow}a{Enter}{Enter}");
-
-            var prompt = ConfigurePrompt(console);
-
-            var result = await prompt.ReadLineAsync();
-
-            Assert.True(result.IsSuccess);
-            Assert.Equal($"Aardvark a", result.Text);
-        }
-
-        [Fact]
-        public async Task ReadLine_CompletionWithNoMatches_DoesNotAutoComplete()
-        {
-            var console = ConsoleStub.NewConsole();
-            console.StubInput($"A{Enter} Q{Enter}"); // first {Enter} selects an autocompletion, second {Enter} submits because there are no completions.
-
-            var prompt = ConfigurePrompt(console);
-
-            var result = await prompt.ReadLineAsync();
-
-            Assert.True(result.IsSuccess);
-            Assert.Equal($"Aardvark Q", result.Text);
-        }
-
-        public static Prompt ConfigurePrompt(IConsole console, PromptTheme theme = null) =>
-            new(
-                callbacks: new PromptCallbacks
-                {
-                    CompletionCallback = new CompletionTestData().CompletionHandlerAsync
-                },
-                console: console,
-                theme: theme
-            );
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Aardvark", result.Text);
     }
+
+    [Fact]
+    public async Task ReadLine_MultipleCompletion()
+    {
+        var console = ConsoleStub.NewConsole();
+        // complete 3 animals. For the third animal, start completing Alligator, but then backspace, navigate the completion menu and complete as Alpaca instead.
+        console.StubInput($"Aa{Enter} Z{Tab} Alli{Backspace}{Backspace}{DownArrow}{UpArrow}{DownArrow}{DownArrow}{RightArrow}{Enter}");
+
+        var prompt = ConfigurePrompt(console);
+
+        var result = await prompt.ReadLineAsync();
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("Aardvark Zebra Alpaca", result.Text);
+    }
+
+    [Fact]
+    public async Task ReadLine_MultilineCompletion()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput($"Aa{Enter}{Shift}{Enter}Z{Control}{Spacebar}{Enter}{Enter}");
+
+        var prompt = ConfigurePrompt(console);
+
+        var result = await prompt.ReadLineAsync();
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal($"Aardvark{NewLine}Zebra", result.Text);
+    }
+
+    [Fact]
+    public async Task ReadLine_CompletionMenu_AutoOpens()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput($"A{Enter}{Shift}{Enter}Z{Enter}{Enter}");
+
+        Prompt prompt = ConfigurePrompt(console);
+
+        var result = await prompt.ReadLineAsync();
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal($"Aardvark{NewLine}Zebra", result.Text);
+    }
+
+    [Fact]
+    public async Task ReadLine_CompletionMenu_Closes()
+    {
+        var console = ConsoleStub.NewConsole();
+        Prompt prompt = ConfigurePrompt(console);
+
+        // Escape should close menu
+        console.StubInput($"A{Escape}{Enter}"); // it will auto-open when we press A (see previous test)
+        var result = await prompt.ReadLineAsync();
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal($"A", result.Text);
+
+        // Home key (among others) should close menu
+        console.StubInput($"A{Home}{Enter}");
+        var result2 = await prompt.ReadLineAsync();
+
+        Assert.True(result2.IsSuccess);
+        Assert.Equal($"A", result2.Text);
+    }
+
+    [Fact]
+    public async Task ReadLine_CompletionMenu_Scrolls()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput(
+            $"{Control}{Spacebar}{Control}{Spacebar}",
+            $"{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}",
+            $"{Enter}{Enter}"
+        );
+        Prompt prompt = ConfigurePrompt(console);
+
+        var result = await prompt.ReadLineAsync();
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal($"Zebra", result.Text);
+
+        console.StubInput(
+            $"{Control}{Spacebar}{Control}{Spacebar}",
+            $"{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}",
+            $"{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}",
+            $"{Enter}{Enter}"
+        );
+
+        var result2 = await prompt.ReadLineAsync();
+        Assert.True(result2.IsSuccess);
+        Assert.Equal($"Aardvark", result2.Text);
+    }
+
+    [Fact]
+    public async Task ReadLine_FullyTypeCompletion_CanOpenAgain()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput($"Aardvark {Control}{Spacebar}{Enter}{Enter}");
+
+        var prompt = ConfigurePrompt(console);
+
+        var result = await prompt.ReadLineAsync();
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal($"Aardvark Aardvark", result.Text);
+    }
+
+    [Fact]
+    public async Task ReadLine_EmptyPrompt_AutoOpens()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput($"{Control}{Spacebar}{Enter}{Enter}");
+
+        var prompt = ConfigurePrompt(console);
+
+        var result = await prompt.ReadLineAsync();
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal($"Aardvark", result.Text);
+    }
+
+    [Fact]
+    public async Task ReadLine_OpenWindowAtBeginningOfPrompt_Opens()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput($"a{LeftArrow} {LeftArrow}a{Enter}{Enter}");
+
+        var prompt = ConfigurePrompt(console);
+
+        var result = await prompt.ReadLineAsync();
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal($"Aardvark a", result.Text);
+    }
+
+    [Fact]
+    public async Task ReadLine_CompletionWithNoMatches_DoesNotAutoComplete()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput($"A{Enter} Q{Enter}"); // first {Enter} selects an autocompletion, second {Enter} submits because there are no completions.
+
+        var prompt = ConfigurePrompt(console);
+
+        var result = await prompt.ReadLineAsync();
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal($"Aardvark Q", result.Text);
+    }
+
+    public static Prompt ConfigurePrompt(IConsole console, PromptTheme theme = null) =>
+        new(
+            callbacks: new PromptCallbacks
+            {
+                CompletionCallback = new CompletionTestData().CompletionHandlerAsync
+            },
+            console: console,
+            theme: theme
+        );
 }

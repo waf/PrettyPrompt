@@ -6,11 +6,10 @@
 
 using System.Threading.Tasks;
 
-namespace PrettyPrompt.Consoles
+namespace PrettyPrompt.Consoles;
+
+internal interface IKeyPressHandler
 {
-    internal interface IKeyPressHandler
-    {
-        Task OnKeyDown(KeyPress key);
-        Task OnKeyUp(KeyPress key);
-    }
+    Task OnKeyDown(KeyPress key);
+    Task OnKeyUp(KeyPress key);
 }

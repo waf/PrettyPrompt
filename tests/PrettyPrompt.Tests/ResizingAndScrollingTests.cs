@@ -11,74 +11,73 @@ using static System.ConsoleKey;
 using static System.ConsoleModifiers;
 using static PrettyPrompt.Tests.ConsoleStub;
 
-namespace PrettyPrompt.Tests
+namespace PrettyPrompt.Tests;
+
+public class ResizingAndScrollingTests
 {
-    public class ResizingAndScrollingTests
+    /// <summary>
+    /// Triggered crash: https://github.com/waf/PrettyPrompt/issues/23
+    /// </summary>
+    [Fact]
+    public async Task ScrollDown_PressUp()
     {
-        /// <summary>
-        /// Triggered crash: https://github.com/waf/PrettyPrompt/issues/23
-        /// </summary>
-        [Fact]
-        public async Task ScrollDown_PressUp()
-        {
-            var console = NewConsole();
+        var console = NewConsole();
 
-            console.StubInput(
-                Input($" ", () => console.WindowTop.Returns(10)), //scroll down by 10
-                Input($"{UpArrow}{Enter}"));
+        console.StubInput(
+            Input($" ", () => console.WindowTop.Returns(10)), //scroll down by 10
+            Input($"{UpArrow}{Enter}"));
 
-            var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync();
-        }
+        var prompt = new Prompt(console: console);
+        var result = await prompt.ReadLineAsync();
+    }
 
-        /// <summary>
-        /// Triggered crash mentioned in https://github.com/waf/PrettyPrompt/issues/23.
-        /// </summary>
-        [Fact]
-        public async Task WriteNewLines_ScrollUp_WriteLetter()
-        {
-            var console = NewConsole(height: 3);
+    /// <summary>
+    /// Triggered crash mentioned in https://github.com/waf/PrettyPrompt/issues/23.
+    /// </summary>
+    [Fact]
+    public async Task WriteNewLines_ScrollUp_WriteLetter()
+    {
+        var console = NewConsole(height: 3);
 
-            console.StubInput(
-                Input($"{Shift}{Enter}"),
-                Input($"{Shift}{Enter}"),
-                Input($"{Shift}{Enter}"),
-                Input($"{Shift}{Enter}", () => console.WindowTop.Returns(1)), //new line scrolls down 1 row
-                Input($"{Shift}{Enter}", () => console.WindowTop.Returns(2)), //new line scrolls down 1 row
-                Input($"{Shift}{Enter}", () => console.WindowTop.Returns(3)), //new line scrolls down 1 row
-                Input($"{Shift}{Enter}", () => console.WindowTop.Returns(4)), //new line scrolls down 1 row
-                Input($" ", () => console.WindowTop.Returns(0)), //scroll up to start
-                Input($"{A}{Enter}"));
+        console.StubInput(
+            Input($"{Shift}{Enter}"),
+            Input($"{Shift}{Enter}"),
+            Input($"{Shift}{Enter}"),
+            Input($"{Shift}{Enter}", () => console.WindowTop.Returns(1)), //new line scrolls down 1 row
+            Input($"{Shift}{Enter}", () => console.WindowTop.Returns(2)), //new line scrolls down 1 row
+            Input($"{Shift}{Enter}", () => console.WindowTop.Returns(3)), //new line scrolls down 1 row
+            Input($"{Shift}{Enter}", () => console.WindowTop.Returns(4)), //new line scrolls down 1 row
+            Input($" ", () => console.WindowTop.Returns(0)), //scroll up to start
+            Input($"{A}{Enter}"));
 
-            var prompt = new Prompt(console: console);
-            var result = await prompt.ReadLineAsync();
-        }
+        var prompt = new Prompt(console: console);
+        var result = await prompt.ReadLineAsync();
+    }
 
-        /// <summary>
-        /// Triggered crash: https://github.com/waf/PrettyPrompt/issues/29
-        /// </summary>
-        [Fact]
-        public async Task WindowNarrowerThanPromt()
-        {
-            var console = NewConsole(width: 5);
-            console.StubInput(Input($"{Enter}"));
-            var prompt = new Prompt(console: console, theme: new PromptTheme(prompt: "LOOOONG_PROMPT--->>"));
-            await prompt.ReadLineAsync();
-        }
+    /// <summary>
+    /// Triggered crash: https://github.com/waf/PrettyPrompt/issues/29
+    /// </summary>
+    [Fact]
+    public async Task WindowNarrowerThanPromt()
+    {
+        var console = NewConsole(width: 5);
+        console.StubInput(Input($"{Enter}"));
+        var prompt = new Prompt(console: console, theme: new PromptTheme(prompt: "LOOOONG_PROMPT--->>"));
+        await prompt.ReadLineAsync();
+    }
 
-        /// <summary>
-        /// Triggered crash mentioned in https://github.com/waf/PrettyPrompt/issues/29.
-        /// </summary>
-        [Fact]
-        public async Task WindowNarrowerThanPromt_WriteLetter()
-        {
-            var console =  NewConsole(width: 50);
-            console.StubInput(
-                Input($"a", () => console.BufferWidth.Returns(5)),
-                Input($"a{Enter}"));
+    /// <summary>
+    /// Triggered crash mentioned in https://github.com/waf/PrettyPrompt/issues/29.
+    /// </summary>
+    [Fact]
+    public async Task WindowNarrowerThanPromt_WriteLetter()
+    {
+        var console = NewConsole(width: 50);
+        console.StubInput(
+            Input($"a", () => console.BufferWidth.Returns(5)),
+            Input($"a{Enter}"));
 
-            var prompt = CompletionTests.ConfigurePrompt(console, new PromptTheme(prompt: "LOOOONG_PROMPT--->>"));
-            await prompt.ReadLineAsync();
-        }
+        var prompt = CompletionTests.ConfigurePrompt(console, new PromptTheme(prompt: "LOOOONG_PROMPT--->>"));
+        await prompt.ReadLineAsync();
     }
 }

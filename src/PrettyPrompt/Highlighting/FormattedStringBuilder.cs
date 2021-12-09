@@ -7,41 +7,40 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace PrettyPrompt.Highlighting
+namespace PrettyPrompt.Highlighting;
+
+public sealed class FormattedStringBuilder
 {
-    public sealed class FormattedStringBuilder
+    private readonly StringBuilder stringBuilder = new();
+    private readonly List<FormatSpan> formatSpans = new();
+
+    public int Length => stringBuilder.Length;
+
+    public FormattedStringBuilder Append(FormattedString text)
     {
-        private readonly StringBuilder stringBuilder = new();
-        private readonly List<FormatSpan> formatSpans = new();
-
-        public int Length => stringBuilder.Length;
-
-        public FormattedStringBuilder Append(FormattedString text)
+        foreach (var span in text.FormatSpans)
         {
-            foreach (var span in text.FormatSpans)
-            {
-                formatSpans.Add(span.Offset(stringBuilder.Length));
-            }
-            stringBuilder.Append(text.Text);
-            return this;
+            formatSpans.Add(span.Offset(stringBuilder.Length));
         }
-
-        public FormattedStringBuilder Append(string text)
-        {
-            stringBuilder.Append(text);
-            return this;
-        }
-
-        public FormattedStringBuilder Append(string text, params FormatSpan[] formatSpans) 
-            => Append(new FormattedString(text, formatSpans));
-
-        public void Clear()
-        {
-            stringBuilder.Clear();
-            formatSpans.Clear();
-        }
-
-        public FormattedString ToFormattedString()
-            => new(stringBuilder.ToString(), formatSpans);
+        stringBuilder.Append(text.Text);
+        return this;
     }
+
+    public FormattedStringBuilder Append(string text)
+    {
+        stringBuilder.Append(text);
+        return this;
+    }
+
+    public FormattedStringBuilder Append(string text, params FormatSpan[] formatSpans)
+        => Append(new FormattedString(text, formatSpans));
+
+    public void Clear()
+    {
+        stringBuilder.Clear();
+        formatSpans.Clear();
+    }
+
+    public FormattedString ToFormattedString()
+        => new(stringBuilder.ToString(), formatSpans);
 }

@@ -8,39 +8,38 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace PrettyPrompt.Highlighting
+namespace PrettyPrompt.Highlighting;
+
+class SyntaxHighlighter
 {
-    class SyntaxHighlighter
+    private readonly HighlightCallbackAsync highlightCallbackAsync;
+    private readonly bool hasUserOptedOutFromColor;
+
+    // quick and dirty caching, mainly to handle cases where the user enters control
+    // characters (e.g. arrow keys, intellisense) that don't actually change the highlighted input
+    private string previousInput;
+    private IReadOnlyCollection<FormatSpan> previousOutput;
+
+    public SyntaxHighlighter(HighlightCallbackAsync highlightCallbackAsync, bool hasUserOptedOutFromColor)
     {
-        private readonly HighlightCallbackAsync highlightCallbackAsync;
-        private readonly bool hasUserOptedOutFromColor;
+        this.highlightCallbackAsync = highlightCallbackAsync;
+        this.hasUserOptedOutFromColor = hasUserOptedOutFromColor;
+        this.previousInput = string.Empty;
+        this.previousOutput = Array.Empty<FormatSpan>();
+    }
 
-        // quick and dirty caching, mainly to handle cases where the user enters control
-        // characters (e.g. arrow keys, intellisense) that don't actually change the highlighted input
-        private string previousInput;
-        private IReadOnlyCollection<FormatSpan> previousOutput;
+    public async Task<IReadOnlyCollection<FormatSpan>> HighlightAsync(string input)
+    {
+        if (hasUserOptedOutFromColor) return Array.Empty<FormatSpan>();
 
-        public SyntaxHighlighter(HighlightCallbackAsync highlightCallbackAsync, bool hasUserOptedOutFromColor)
+        if (input.Equals(previousInput))
         {
-            this.highlightCallbackAsync = highlightCallbackAsync;
-            this.hasUserOptedOutFromColor = hasUserOptedOutFromColor;
-            this.previousInput = string.Empty;
-            this.previousOutput = Array.Empty<FormatSpan>();
+            return previousOutput;
         }
 
-        public async Task<IReadOnlyCollection<FormatSpan>> HighlightAsync(string input)
-        {
-            if (hasUserOptedOutFromColor) return Array.Empty<FormatSpan>();
-
-            if (input.Equals(previousInput))
-            {
-                return previousOutput;
-            }
-
-            var highlights = await highlightCallbackAsync.Invoke(input).ConfigureAwait(false);
-            previousInput = input;
-            previousOutput = highlights;
-            return highlights;
-        }
+        var highlights = await highlightCallbackAsync.Invoke(input).ConfigureAwait(false);
+        previousInput = input;
+        previousOutput = highlights;
+        return highlights;
     }
 }

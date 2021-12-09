@@ -15,186 +15,185 @@ using System.Text;
 using System.Threading.Tasks;
 using static System.ConsoleKey;
 
-namespace PrettyPrompt.History
+namespace PrettyPrompt.History;
+
+sealed class HistoryLog : IKeyPressHandler
 {
-    sealed class HistoryLog : IKeyPressHandler
+    private const int MaxHistoryEntries = 500;
+    private const int HistoryTrimInterval = 100;
+
+    /// <summary>
+    /// The actual history, stored as a linked list so we can efficiently go next/prev
+    /// </summary>
+    private readonly LinkedList<Document> history = new();
+
+    /// <summary>
+    /// The currently active history item. Usually, it's the last element of <see cref="history"/>, unless
+    /// the user is navigating next/prev in history.
+    /// </summary>
+    private LinkedListNode<Document> current;
+
+    /// <summary>
+    /// The currently code pane being edited. The contents of this pane will be changed when
+    /// navigating through the history.
+    /// </summary>
+    private CodePane latestCodePane;
+
+    /// <summary>
+    /// In the case where the user leaves some unsubmitted text on their prompt (the latestCodePane), we capture
+    /// it so we can restore it when the user stops navigating through history (i.e. they press Down Arrow until
+    /// they're back to their current prompt).
+    /// </summary>
+    private Document unsubmittedBuffer;
+
+    /// <summary>
+    /// Filepath of the history storage file. If null, history is not saved. History is stored as base64 encoded lines,
+    /// so we can efficiently append to the file, and not have to worry about newlines in the history entries.
+    /// </summary>
+    private readonly string persistentHistoryFilepath;
+    private readonly Task loadPersistentHistoryTask;
+
+    public HistoryLog(string persistentHistoryFilepath)
     {
-        private const int MaxHistoryEntries = 500;
-        private const int HistoryTrimInterval = 100;
+        this.persistentHistoryFilepath = persistentHistoryFilepath;
 
-        /// <summary>
-        /// The actual history, stored as a linked list so we can efficiently go next/prev
-        /// </summary>
-        private readonly LinkedList<Document> history = new();
+        this.loadPersistentHistoryTask = !string.IsNullOrEmpty(persistentHistoryFilepath)
+            ? LoadTrimmedHistoryAsync(persistentHistoryFilepath)
+            : Task.CompletedTask;
+    }
 
-        /// <summary>
-        /// The currently active history item. Usually, it's the last element of <see cref="history"/>, unless
-        /// the user is navigating next/prev in history.
-        /// </summary>
-        private LinkedListNode<Document> current;
+    private async Task LoadTrimmedHistoryAsync(string persistentHistoryFilepath)
+    {
+        if (!File.Exists(persistentHistoryFilepath)) return;
 
-        /// <summary>
-        /// The currently code pane being edited. The contents of this pane will be changed when
-        /// navigating through the history.
-        /// </summary>
-        private CodePane latestCodePane;
+        var allHistoryLines = await File.ReadAllLinesAsync(persistentHistoryFilepath).ConfigureAwait(false);
+        var loadedHistoryLines = allHistoryLines.TakeLast(MaxHistoryEntries).ToArray();
 
-        /// <summary>
-        /// In the case where the user leaves some unsubmitted text on their prompt (the latestCodePane), we capture
-        /// it so we can restore it when the user stops navigating through history (i.e. they press Down Arrow until
-        /// they're back to their current prompt).
-        /// </summary>
-        private Document unsubmittedBuffer;
-
-        /// <summary>
-        /// Filepath of the history storage file. If null, history is not saved. History is stored as base64 encoded lines,
-        /// so we can efficiently append to the file, and not have to worry about newlines in the history entries.
-        /// </summary>
-        private readonly string persistentHistoryFilepath;
-        private readonly Task loadPersistentHistoryTask;
-
-        public HistoryLog(string persistentHistoryFilepath)
+        // populate history
+        for (int i = loadedHistoryLines.Length - 1; i >= 0; i--)
         {
-            this.persistentHistoryFilepath = persistentHistoryFilepath;
-
-            this.loadPersistentHistoryTask = !string.IsNullOrEmpty(persistentHistoryFilepath)
-                ? LoadTrimmedHistoryAsync(persistentHistoryFilepath)
-                : Task.CompletedTask;
+            var entry = Encoding.UTF8.GetString(Convert.FromBase64String(loadedHistoryLines[i]));
+            history.AddFirst(new Document(entry, 0));
         }
 
-        private async Task LoadTrimmedHistoryAsync(string persistentHistoryFilepath)
+        // trim history.
+        // when we have a lot of history, we don't want to constantly trim the history every launch.
+        // instead, use the trim interval to only periodically trim the history.
+        if (allHistoryLines.Length > MaxHistoryEntries + HistoryTrimInterval)
         {
-            if (!File.Exists(persistentHistoryFilepath)) return;
+            await File.WriteAllLinesAsync(persistentHistoryFilepath, loadedHistoryLines).ConfigureAwait(false);
+        }
+    }
 
-            var allHistoryLines = await File.ReadAllLinesAsync(persistentHistoryFilepath).ConfigureAwait(false);
-            var loadedHistoryLines = allHistoryLines.TakeLast(MaxHistoryEntries).ToArray();
+    public Task OnKeyDown(KeyPress key) => Task.CompletedTask;
 
-            // populate history
-            for (int i = loadedHistoryLines.Length - 1; i >= 0; i--)
-            {
-                var entry = Encoding.UTF8.GetString(Convert.FromBase64String(loadedHistoryLines[i]));
-                history.AddFirst(new Document(entry, 0));
-            }
+    public async Task OnKeyUp(KeyPress key)
+    {
+        await loadPersistentHistoryTask.ConfigureAwait(false);
 
-            // trim history.
-            // when we have a lot of history, we don't want to constantly trim the history every launch.
-            // instead, use the trim interval to only periodically trim the history.
-            if (allHistoryLines.Length > MaxHistoryEntries + HistoryTrimInterval)
-            {
-                await File.WriteAllLinesAsync(persistentHistoryFilepath, loadedHistoryLines).ConfigureAwait(false);
-            }
+        if (history.Count == 0 || key.Handled) return;
+
+        switch (key.Pattern)
+        {
+            case UpArrow when current.Previous is not null:
+                if (current == history.Last)
+                {
+                    unsubmittedBuffer = history.Last.Value?.Clone() ?? new Document();
+                }
+                var matchingPreviousEntry = FindPreviousMatchingEntry(unsubmittedBuffer, current);
+                SetContents(latestCodePane, matchingPreviousEntry.Value);
+                current = matchingPreviousEntry;
+                key.Handled = true;
+                break;
+            case DownArrow when current.Next is not null:
+                SetContents(
+                    latestCodePane,
+                    current.Next == history.Last && unsubmittedBuffer is not null
+                        ? unsubmittedBuffer
+                        : current.Next.Value
+                );
+                current = current.Next;
+                key.Handled = true;
+                break;
+            case UpArrow:
+            case DownArrow:
+                break;
+            default:
+                unsubmittedBuffer = null;
+                current = history.Last;
+                key.Handled = false;
+                break;
         }
 
-        public Task OnKeyDown(KeyPress key) => Task.CompletedTask;
+        return;
+    }
 
-        public async Task OnKeyUp(KeyPress key)
+    /// <summary>
+    /// Starting at the <paramref name="currentEntry"/> node, search backwards for a node
+    /// that starts with <paramref name="prefix"/>
+    /// </summary>
+    private static LinkedListNode<Document> FindPreviousMatchingEntry(Document prefix, LinkedListNode<Document> currentEntry)
+    {
+        if (prefix.Length == 0) return currentEntry.Previous;
+
+        string prefixText = prefix.GetText();
+
+        for (var node = currentEntry.Previous; node is not null; node = node.Previous)
         {
-            await loadPersistentHistoryTask.ConfigureAwait(false);
-
-            if (history.Count == 0 || key.Handled) return;
-
-            switch (key.Pattern)
+            if (node.Value.StartsWith(prefixText))
             {
-                case UpArrow when current.Previous is not null:
-                    if (current == history.Last)
-                    {
-                        unsubmittedBuffer = history.Last.Value?.Clone() ?? new Document();
-                    }
-                    var matchingPreviousEntry = FindPreviousMatchingEntry(unsubmittedBuffer, current);
-                    SetContents(latestCodePane, matchingPreviousEntry.Value);
-                    current = matchingPreviousEntry;
-                    key.Handled = true;
-                    break;
-                case DownArrow when current.Next is not null:
-                    SetContents(
-                        latestCodePane,
-                        current.Next == history.Last && unsubmittedBuffer is not null
-                            ? unsubmittedBuffer
-                            : current.Next.Value
-                    );
-                    current = current.Next;
-                    key.Handled = true;
-                    break;
-                case UpArrow:
-                case DownArrow:
-                    break;
-                default:
-                    unsubmittedBuffer = null;
-                    current = history.Last;
-                    key.Handled = false;
-                    break;
+                return node;
             }
+        }
+        return currentEntry;
+    }
 
+    private static void SetContents(CodePane codepane, Document contents)
+    {
+        if (codepane.Document.Equals(contents)) return;
+
+        codepane.Document.Clear();
+        codepane.Document.InsertAtCaret(contents.GetText());
+        codepane.WordWrap();
+    }
+
+    internal void Track(CodePane codePane)
+    {
+        PruneHistory(history);
+        current = history.AddLast(codePane.Document);
+        latestCodePane = codePane;
+    }
+
+    /// <summary>
+    /// Remove the latest history entry, if it's empty or duplicate.
+    /// </summary>
+    private static void PruneHistory(LinkedList<Document> history)
+    {
+        if (!history.Any())
+        {
             return;
         }
 
-        /// <summary>
-        /// Starting at the <paramref name="currentEntry"/> node, search backwards for a node
-        /// that starts with <paramref name="prefix"/>
-        /// </summary>
-        private static LinkedListNode<Document> FindPreviousMatchingEntry(Document prefix, LinkedListNode<Document> currentEntry)
+        var previousEntry = history.Last?.Value.GetText();
+        var penultimateEntry = history.Last?.Previous?.Value.GetText();
+        if (string.IsNullOrEmpty(previousEntry) || previousEntry == penultimateEntry)
         {
-            if (prefix.Length == 0) return currentEntry.Previous;
-
-            string prefixText = prefix.GetText();
-
-            for(var node = currentEntry.Previous; node is not null; node = node.Previous)
-            {
-                if (node.Value.StartsWith(prefixText))
-                {
-                    return node;
-                }
-            }
-            return currentEntry;
+            // Remove last empty/duplicate history.
+            history.RemoveLast();
         }
 
-        private static void SetContents(CodePane codepane, Document contents)
+        // discard undo/redo history to reduce memory usage
+        if (history.Last is not null)
         {
-            if (codepane.Document.Equals(contents)) return;
-
-            codepane.Document.Clear();
-            codepane.Document.InsertAtCaret(contents.GetText());
-            codepane.WordWrap();
+            history.Last.Value.ClearUndoRedoHistory();
         }
+    }
 
-        internal void Track(CodePane codePane)
-        {
-            PruneHistory(history);
-            current = history.AddLast(codePane.Document);
-            latestCodePane = codePane;
-        }
+    internal async Task SavePersistentHistoryAsync(string input)
+    {
+        if (input.Length == 0 || string.IsNullOrEmpty(persistentHistoryFilepath)) return;
 
-        /// <summary>
-        /// Remove the latest history entry, if it's empty or duplicate.
-        /// </summary>
-        private static void PruneHistory(LinkedList<Document> history)
-        {
-            if (!history.Any())
-            {
-                return;
-            }
-
-            var previousEntry = history.Last?.Value.GetText();
-            var penultimateEntry = history.Last?.Previous?.Value.GetText();
-            if (string.IsNullOrEmpty(previousEntry) || previousEntry == penultimateEntry)
-            {
-                // Remove last empty/duplicate history.
-                history.RemoveLast();
-            }
-
-            // discard undo/redo history to reduce memory usage
-            if(history.Last is not null)
-            {
-                history.Last.Value.ClearUndoRedoHistory();
-            }
-        }
-
-        internal async Task SavePersistentHistoryAsync(string input)
-        {
-            if (input.Length == 0 || string.IsNullOrEmpty(persistentHistoryFilepath)) return;
-
-            var entry = Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
-            await File.AppendAllLinesAsync(persistentHistoryFilepath, new[] { entry }).ConfigureAwait(false);
-        }
+        var entry = Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
+        await File.AppendAllLinesAsync(persistentHistoryFilepath, new[] { entry }).ConfigureAwait(false);
     }
 }
