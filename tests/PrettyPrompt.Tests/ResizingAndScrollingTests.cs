@@ -32,7 +32,7 @@ namespace PrettyPrompt.Tests
         }
 
         /// <summary>
-        /// Triggered crash (mentioned in https://github.com/waf/PrettyPrompt/issues/23).
+        /// Triggered crash mentioned in https://github.com/waf/PrettyPrompt/issues/23.
         /// </summary>
         [Fact]
         public async Task WriteNewLines_ScrollUp_WriteLetter()
@@ -63,6 +63,21 @@ namespace PrettyPrompt.Tests
             var console = NewConsole(width: 5);
             console.StubInput(Input($"{Enter}"));
             var prompt = new Prompt(console: console, theme: new PromptTheme(prompt: "LOOOONG_PROMPT--->>"));
+            await prompt.ReadLineAsync();
+        }
+
+        /// <summary>
+        /// Triggered crash mentioned in https://github.com/waf/PrettyPrompt/issues/29.
+        /// </summary>
+        [Fact]
+        public async Task WindowNarrowerThanPromt_WriteLetter()
+        {
+            var console =  NewConsole(width: 50);
+            console.StubInput(
+                Input($"a", () => console.BufferWidth.Returns(5)),
+                Input($"a{Enter}"));
+
+            var prompt = CompletionTests.ConfigurePrompt(console, new PromptTheme(prompt: "LOOOONG_PROMPT--->>"));
             await prompt.ReadLineAsync();
         }
     }

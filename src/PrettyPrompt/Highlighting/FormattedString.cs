@@ -93,7 +93,11 @@ namespace PrettyPrompt.Highlighting
         /// </summary>
         public FormattedString Substring(int startIndex, int length)
         {
-            if (Text is null) return Empty;
+            //formal argument validation will be done in Text.Substring(...)
+            Debug.Assert(startIndex >= 0 && startIndex <= Length);
+            Debug.Assert(length >= 0 && length - startIndex <= Length);
+
+            if (Text is null || length == 0) return Empty;
 
             var substring = Text.Substring(startIndex, length);
             if (FormatSpansOrEmpty.Length == 0) return substring;

@@ -183,13 +183,14 @@ namespace PrettyPrompt.Tests
             Assert.Equal($"Aardvark Q", result.Text);
         }
 
-        private static Prompt ConfigurePrompt(IConsole console) =>
-            new Prompt(
+        public static Prompt ConfigurePrompt(IConsole console, PromptTheme theme = null) =>
+            new(
                 callbacks: new PromptCallbacks
                 {
                     CompletionCallback = new CompletionTestData().CompletionHandlerAsync
                 },
-                console: console
+                console: console,
+                theme: theme
             );
     }
 }
