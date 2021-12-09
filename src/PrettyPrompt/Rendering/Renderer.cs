@@ -215,8 +215,11 @@ namespace PrettyPrompt
                 .Append(new Row(Cell.FromText(BoxDrawing.CornerLowerLeft + horizontalBorder + BoxDrawing.CornerLowerRight, theme.CompletionBorder)))
                 .ToArray();
 
-            FormattedString TruncateToWindow(FormattedString line, int offset) =>
-               line.Substring(0, Math.Min(line.Length, codeAreaWidth - completionBoxStart.Column - offset));
+            FormattedString TruncateToWindow(FormattedString line, int offset)
+            {
+                var availableWidth = Math.Max(0, codeAreaWidth - completionBoxStart.Column - offset);
+                return line.Substring(0, Math.Min(line.Length, availableWidth));
+            }
 
             void TransformFormattingForSelected(List<Cell> itemCells)
             {
