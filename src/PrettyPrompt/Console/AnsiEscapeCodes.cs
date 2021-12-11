@@ -31,8 +31,8 @@ public static class AnsiEscapeCodes
     public static string MoveCursorRight(int count) => count == 0 ? "" : $"{Escape}[{count}C";
     public static string MoveCursorLeft(int count) => count == 0 ? "" : $"{Escape}[{count}D";
 
-    public static string ForegroundColor(byte r, byte g, byte b) => ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.RGB(r, g, b)));
-    public static string BackgroundColor(byte r, byte g, byte b) => ToAnsiEscapeSequence(new ConsoleFormat(Background: AnsiColor.RGB(r, g, b)));
+    public static string ForegroundColor(byte r, byte g, byte b) => ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.ForegroundRgb(r, g, b)));
+    public static string BackgroundColor(byte r, byte g, byte b) => ToAnsiEscapeSequence(new ConsoleFormat(Background: AnsiColor.BackgroundRgb(r, g, b)));
 
     public static readonly string Black = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.Black));
     public static readonly string Red = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.Red));

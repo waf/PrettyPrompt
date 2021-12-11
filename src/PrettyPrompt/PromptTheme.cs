@@ -39,7 +39,7 @@ public class PromptTheme
 
         SelectedCompletionItemMarker = selectedCompletionItemMarkSymbol ?? new FormattedString(">", new FormatSpan(0, 1, new ConsoleFormat(Foreground: DocumentationBorder.Foreground)));
         UnselectedCompletionItemMarker = new string(' ', SelectedCompletionItemMarker.Length);
-        SelectedCompletionItemBackground = GetColor(selectedCompletionItemBackground ?? AnsiColor.RGB(40, 30, 30));
+        SelectedCompletionItemBackground = GetColor(selectedCompletionItemBackground ?? AnsiColor.BackgroundRgb(40, 30, 30));
 
         ConsoleFormat GetFormat(ConsoleFormat format) => HasUserOptedOutFromColor ? ConsoleFormat.None : format;
         AnsiColor? GetColor(AnsiColor color) => HasUserOptedOutFromColor ? null : color;

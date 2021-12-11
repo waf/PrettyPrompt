@@ -44,7 +44,12 @@ public sealed class AnsiColor : IEquatable<AnsiColor>
     public static readonly AnsiColor BrightCyan = new("96", "106", nameof(BrightCyan));
     public static readonly AnsiColor BrightWhite = new("97", "107", nameof(BrightWhite));
 
-    public static AnsiColor RGB(byte r, byte g, byte b) => new($"38;2;{r};{g};{b}", $"48;2;{r};{g};{b}", "RGB");
+    public static AnsiColor ForegroundRgb(byte r, byte g, byte b) => new($"38;2;{r};{g};{b}", null, "RGB foreground");
+    public static AnsiColor BackgroundRgb(byte r, byte g, byte b) => new(null, $"48;2;{r};{g};{b}", "RGB background");
+    public static AnsiColor Rgb(
+        byte foregroundR, byte foregroundG, byte foregroundB,
+        byte backgroundR, byte backgroundG, byte backgroundB)
+        => new($"38;2;{foregroundR};{foregroundG};{foregroundB}", $"48;2;{backgroundR};{backgroundG};{backgroundB}", "RGB");
 
     public override bool Equals(object obj)
     {
