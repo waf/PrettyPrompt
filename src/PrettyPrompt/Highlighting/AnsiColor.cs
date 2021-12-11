@@ -18,10 +18,13 @@ public sealed class AnsiColor : IEquatable<AnsiColor>
 {
     private readonly string friendlyName;
     public string Code { get; }
+    public bool IsForeground { get; }
+    public bool IsBackground => !IsForeground;
 
-    private AnsiColor(string code, string friendlyName)
+    private AnsiColor(string code, bool isForeground, string friendlyName)
     {
         this.Code = code;
+        this.IsForeground = isForeground;
         this.friendlyName = friendlyName;
     }
 
@@ -42,8 +45,8 @@ public sealed class AnsiColor : IEquatable<AnsiColor>
     public static readonly PredefinedAnsiColor BrightCyan = new("96", "106", nameof(BrightCyan));
     public static readonly PredefinedAnsiColor BrightWhite = new("97", "107", nameof(BrightWhite));
 
-    public static AnsiColor ForegroundRgb(byte r, byte g, byte b) => new($"38;2;{r};{g};{b}", "RGB foreground");
-    public static AnsiColor BackgroundRgb(byte r, byte g, byte b) => new($"48;2;{r};{g};{b}", "RGB background");
+    public static AnsiColor ForegroundRgb(byte r, byte g, byte b) => new($"38;2;{r};{g};{b}", isForeground: true, "RGB foreground");
+    public static AnsiColor BackgroundRgb(byte r, byte g, byte b) => new($"48;2;{r};{g};{b}", isForeground: false, "RGB background");
 
     public override bool Equals(object obj) => Equals(obj as AnsiColor);
     public bool Equals(AnsiColor other) => other != null && Code == other.Code;
@@ -61,8 +64,8 @@ public sealed class AnsiColor : IEquatable<AnsiColor>
 
         public PredefinedAnsiColor(string foregroundCode, string backgroundCode, string name)
         {
-            Foreground = new AnsiColor(foregroundCode, $"{name} foreground");
-            Background = new AnsiColor(backgroundCode, $"{name} background");
+            Foreground = new AnsiColor(foregroundCode, isForeground: true, $"{name} foreground");
+            Background = new AnsiColor(backgroundCode, isForeground: false, $"{name} background");
         }
     }
 }
