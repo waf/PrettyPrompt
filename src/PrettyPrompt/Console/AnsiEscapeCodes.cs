@@ -4,8 +4,8 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using PrettyPrompt.Highlighting;
 using System.Linq;
+using PrettyPrompt.Highlighting;
 
 namespace PrettyPrompt.Consoles;
 
@@ -34,22 +34,23 @@ public static class AnsiEscapeCodes
     public static string ForegroundColor(byte r, byte g, byte b) => ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.ForegroundRgb(r, g, b)));
     public static string BackgroundColor(byte r, byte g, byte b) => ToAnsiEscapeSequence(new ConsoleFormat(Background: AnsiColor.BackgroundRgb(r, g, b)));
 
-    public static readonly string Black = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.Black));
-    public static readonly string Red = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.Red));
-    public static readonly string Green = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.Green));
-    public static readonly string Yellow = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.Yellow));
-    public static readonly string Blue = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.Blue));
-    public static readonly string Magenta = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.Magenta));
-    public static readonly string Cyan = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.Cyan));
-    public static readonly string White = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.White));
-    public static readonly string BrightBlack = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.BrightBlack));
-    public static readonly string BrightRed = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.BrightRed));
-    public static readonly string BrightGreen = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.BrightGreen));
-    public static readonly string BrightYellow = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.BrightYellow));
-    public static readonly string BrightBlue = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.BrightBlue));
-    public static readonly string BrightMagenta = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.BrightMagenta));
-    public static readonly string BrightCyan = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.BrightCyan));
-    public static readonly string BrightWhite = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: AnsiColor.BrightWhite));
+    public static readonly PredefinedAnsiEscapeCode Black = new(AnsiColor.Black);
+    public static readonly PredefinedAnsiEscapeCode Red = new(AnsiColor.Red);
+    public static readonly PredefinedAnsiEscapeCode Green = new(AnsiColor.Green);
+    public static readonly PredefinedAnsiEscapeCode Yellow = new(AnsiColor.Yellow);
+    public static readonly PredefinedAnsiEscapeCode Blue = new(AnsiColor.Blue);
+    public static readonly PredefinedAnsiEscapeCode Magenta = new(AnsiColor.Magenta);
+    public static readonly PredefinedAnsiEscapeCode Cyan = new(AnsiColor.Cyan);
+    public static readonly PredefinedAnsiEscapeCode White = new(AnsiColor.White);
+    public static readonly PredefinedAnsiEscapeCode BrightBlack = new(AnsiColor.BrightBlack);
+    public static readonly PredefinedAnsiEscapeCode BrightRed = new(AnsiColor.BrightRed);
+    public static readonly PredefinedAnsiEscapeCode BrightGreen = new(AnsiColor.BrightGreen);
+    public static readonly PredefinedAnsiEscapeCode BrightYellow = new(AnsiColor.BrightYellow);
+    public static readonly PredefinedAnsiEscapeCode BrightBlue = new(AnsiColor.BrightBlue);
+    public static readonly PredefinedAnsiEscapeCode BrightMagenta = new(AnsiColor.BrightMagenta);
+    public static readonly PredefinedAnsiEscapeCode BrightCyan = new(AnsiColor.BrightCyan);
+    public static readonly PredefinedAnsiEscapeCode BrightWhite = new(AnsiColor.BrightWhite);
+
     public static readonly string Reset = $"{Escape}[0m";
 
     public static string SetColors(AnsiColor fg, AnsiColor bg) =>
@@ -60,21 +61,35 @@ public static class AnsiEscapeCodes
         + "["
         + string.Join(
             separator: ";",
-            values: (formatting.Inverted
-                ? new[]
+            values:
+            (
+                formatting.Inverted ?
+                new[]
                 {
                         ResetForegroundColor,
                         ResetBackgroundColor,
                         Reverse
-                }
-                : new[]
+                } :
+                new[]
                 {
-                        formatting.Foreground?.Foreground ?? ResetForegroundColor,
-                        formatting.Background?.Background ?? ResetBackgroundColor,
+                        formatting.Foreground?.Code?? ResetForegroundColor,
+                        formatting.Background?.Code ?? ResetBackgroundColor,
                         formatting.Bold ? Bold : null,
                         formatting.Underline ? Underline : null,
                 }
             ).Where(format => format is not null)
           )
         + "m";
+
+    public readonly struct PredefinedAnsiEscapeCode
+    {
+        public readonly string Foreground;
+        public readonly string Background;
+
+        public PredefinedAnsiEscapeCode(AnsiColor.PredefinedAnsiColor color)
+        {
+            Foreground = ToAnsiEscapeSequence(new ConsoleFormat(Foreground: color.Foreground));
+            Background = ToAnsiEscapeSequence(new ConsoleFormat(Background: color.Background));
+        }
+    }
 }

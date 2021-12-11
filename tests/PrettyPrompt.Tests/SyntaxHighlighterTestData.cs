@@ -18,9 +18,9 @@ public class SyntaxHighlighterTestData
     {
         this.highlights = colors ?? new Dictionary<string, AnsiColor>()
             {
-                { "red", AnsiColor.BrightRed },
-                { "green", AnsiColor.BrightGreen },
-                { "blue", AnsiColor.BrightBlue },
+                { "red", AnsiColor.BrightRed.Foreground },
+                { "green", AnsiColor.BrightGreen.Foreground },
+                { "blue", AnsiColor.BrightBlue.Foreground },
             };
     }
 

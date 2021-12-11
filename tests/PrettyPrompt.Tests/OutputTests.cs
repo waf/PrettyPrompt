@@ -20,12 +20,12 @@ public class OutputTests
     {
         var output = Prompt.RenderAnsiOutput("here is some output", new[]
         {
-                new FormatSpan(0, 4, new ConsoleFormat { Foreground = AnsiColor.Red }),
-                new FormatSpan(8, 4, new ConsoleFormat { Foreground = AnsiColor.Green }),
+                new FormatSpan(0, 4, new ConsoleFormat { Foreground = AnsiColor.Red.Foreground }),
+                new FormatSpan(8, 4, new ConsoleFormat { Foreground = AnsiColor.Green.Foreground }),
             }, 100);
 
         Assert.Equal(
-            Red + "here" + Reset + " is " + Green + "some" + Reset + " output" + MoveCursorLeft(19),
+            Red.Foreground + "here" + Reset + " is " + Green.Foreground + "some" + Reset + " output" + MoveCursorLeft(19),
             output
         );
     }
@@ -35,15 +35,15 @@ public class OutputTests
     {
         var output = Prompt.RenderAnsiOutput("here is some output", new[]
         {
-                new FormatSpan(0, 4, new ConsoleFormat { Foreground = AnsiColor.Red }),
-                new FormatSpan(8, 4, new ConsoleFormat { Foreground = AnsiColor.Green }),
+                new FormatSpan(0, 4, new ConsoleFormat { Foreground = AnsiColor.Red.Foreground }),
+                new FormatSpan(8, 4, new ConsoleFormat { Foreground = AnsiColor.Green.Foreground }),
             }, 4);
 
         Assert.Equal(
             expected:
-                Red + "here\n" + MoveCursorLeft(3) +
+                Red.Foreground + "here\n" + MoveCursorLeft(3) +
                 Reset + " is \n" + MoveCursorLeft(3) +
-                Green + "some\n" + MoveCursorLeft(3) +
+                Green.Foreground + "some\n" + MoveCursorLeft(3) +
                 Reset + " out\n" + MoveCursorLeft(3) +
                 "put" + MoveCursorLeft(3),
             actual: output

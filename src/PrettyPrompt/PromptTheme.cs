@@ -34,8 +34,8 @@ public class PromptTheme
     {
         Prompt = prompt;
 
-        CompletionBorder = GetFormat(completionBorder ?? new ConsoleFormat(Foreground: AnsiColor.Blue));
-        DocumentationBorder = GetFormat(documentationBorder ?? new ConsoleFormat(Foreground: AnsiColor.Cyan));
+        CompletionBorder = GetFormat(completionBorder ?? new ConsoleFormat(Foreground: AnsiColor.Blue.Foreground));
+        DocumentationBorder = GetFormat(documentationBorder ?? new ConsoleFormat(Foreground: AnsiColor.Cyan.Foreground));
 
         SelectedCompletionItemMarker = selectedCompletionItemMarkSymbol ?? new FormattedString(">", new FormatSpan(0, 1, new ConsoleFormat(Foreground: DocumentationBorder.Foreground)));
         UnselectedCompletionItemMarker = new string(' ', SelectedCompletionItemMarker.Length);

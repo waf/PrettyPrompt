@@ -38,15 +38,15 @@ public class SyntaxHighlightingTests
         // although the words are typed character-by-character, we should still "go back" and redraw
         // it once we know the word should be drawn in a syntax-highlighted color.
         Assert.Contains(
-            MoveCursorLeft("red".Length - 1) + BrightRed + "red" + Reset, // when we press 'd' go back two chars and to rewrite the word "red"
+            MoveCursorLeft("red".Length - 1) + BrightRed.Foreground + "red" + Reset, // when we press 'd' go back two chars and to rewrite the word "red"
             output
         );
         Assert.Contains(
-            MoveCursorLeft("green".Length - 1) + BrightGreen + "green" + Reset,
+            MoveCursorLeft("green".Length - 1) + BrightGreen.Foreground + "green" + Reset,
             output
         );
         Assert.Contains(
-            MoveCursorLeft("blue".Length - 1) + BrightBlue + "blue" + Reset,
+            MoveCursorLeft("blue".Length - 1) + BrightBlue.Foreground + "blue" + Reset,
             output
         );
 
@@ -64,9 +64,9 @@ public class SyntaxHighlightingTests
             {
                 HighlightCallback = new SyntaxHighlighterTestData(new Dictionary<string, AnsiColor>
                 {
-                        { "苹果", AnsiColor.Red },
-                        { "蓝莓", AnsiColor.Blue },
-                        { "avocado", AnsiColor.Green }
+                        { "苹果", AnsiColor.Red.Foreground },
+                        { "蓝莓", AnsiColor.Blue.Foreground },
+                        { "avocado", AnsiColor.Green.Foreground }
                 }).HighlightHandlerAsync
             },
             console: console
@@ -81,19 +81,19 @@ public class SyntaxHighlightingTests
         // although the words are typed character-by-character, we should still "go back" and redraw
         // it once we know the word should be drawn in a syntax-highlighted color.
         Assert.Contains(
-            MoveCursorLeft(2) + Red + "苹果" + Reset,
+            MoveCursorLeft(2) + Red.Foreground + "苹果" + Reset,
             output
         );
 
         Assert.Contains(
-            MoveCursorLeft(2) + Blue + "蓝莓" + Reset,
+            MoveCursorLeft(2) + Blue.Foreground + "蓝莓" + Reset,
             output
         );
 
         // avocado is green, but wrapped because the console width is narrow.
         Assert.Contains(
             output,
-            str => str.Contains(Green + "avoc\n")
+            str => str.Contains(Green.Foreground + "avoc\n")
         );
 
         Assert.Contains(

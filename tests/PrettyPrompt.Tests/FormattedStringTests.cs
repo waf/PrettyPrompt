@@ -6,9 +6,9 @@ namespace PrettyPrompt.Tests;
 
 public class FormattedStringTests
 {
-    private static readonly ConsoleFormat Red = new(Foreground: AnsiColor.Red);
-    private static readonly ConsoleFormat Green = new(Foreground: AnsiColor.Green);
-    private static readonly ConsoleFormat Yellow = new(Foreground: AnsiColor.Yellow);
+    private static readonly ConsoleFormat Red = new(Foreground: AnsiColor.Red.Foreground);
+    private static readonly ConsoleFormat Green = new(Foreground: AnsiColor.Green.Foreground);
+    private static readonly ConsoleFormat Yellow = new(Foreground: AnsiColor.Yellow.Foreground);
 
     [Fact]
     public void Concatenation_PreservesFormatting()
