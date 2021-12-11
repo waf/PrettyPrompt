@@ -80,4 +80,18 @@ public class ResizingAndScrollingTests
         var prompt = CompletionTests.ConfigurePrompt(console, new PromptTheme(prompt: "LOOOONG_PROMPT--->>"));
         await prompt.ReadLineAsync();
     }
+
+    /// <summary>
+    /// Triggered crash: https://github.com/waf/PrettyPrompt/issues/28
+    /// </summary>
+    [Fact]
+    public async Task LongInput_NarrowWindowWidth_WriteLetter()
+    {
+        var console = NewConsole(width: 20);
+        console.StubInput(
+            Input($"aaaaaaaaaaaaaaa", () => console.BufferWidth.Returns(10)),
+            Input($"{Enter}"));
+        var prompt = new Prompt(console: console);
+        await prompt.ReadLineAsync();
+    }
 }

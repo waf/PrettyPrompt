@@ -4,9 +4,9 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using PrettyPrompt.Consoles;
 using System;
 using System.Linq;
+using PrettyPrompt.Consoles;
 
 namespace PrettyPrompt.Rendering;
 
@@ -75,11 +75,12 @@ sealed class Screen
     {
         if (screen.CellBuffer.Length == 0) return cursor;
 
-        int row = Math.Min(cursor.Row, screen.Height);
-        int column = Math.Min(cursor.Column, screen.Width);
+        int row = Math.Min(cursor.Row, screen.Height - 1);
+        int column = Math.Min(cursor.Column, screen.Width - 1);
         int rowStartIndex = row * screen.Width;
+        int rowCursorIndex = rowStartIndex + column;
         int foundFullWidthCharacters = 0;
-        for (int i = row * screen.Width; i <= rowStartIndex + column + foundFullWidthCharacters; i++)
+        for (int i = row * screen.Width; i <= rowCursorIndex + foundFullWidthCharacters; i++)
         {
             var cell = screen.CellBuffer[i];
             if (cell is not null && cell.IsContinuationOfPreviousCharacter)
@@ -94,6 +95,5 @@ sealed class Screen
             : new ConsoleCoordinate(row, newColumn);
     }
 
-    public Screen Resize(int width, int height) =>
-        new Screen(width, height, Cursor, screenAreas);
+    public Screen Resize(int width, int height) => new(width, height, Cursor, screenAreas);
 }
