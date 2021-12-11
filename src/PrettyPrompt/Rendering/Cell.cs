@@ -4,13 +4,12 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Highlighting;
 using PrettyPrompt.Rendering;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.Globalization;
-using System.Linq;
 
 namespace PrettyPrompt;
 
@@ -83,9 +82,7 @@ internal sealed record Cell
         return cells;
     }
 
-    public static List<Cell> FromText(string text) =>
-        FromText(text, null);
+    public static List<Cell> FromText(string text) => FromText(text, ConsoleFormat.None);
 
-    private string GetDebuggerDisplay() =>
-        Text + " " + Formatting?.ToString();
+    private string GetDebuggerDisplay() => Text + " " + Formatting.ToString();
 }

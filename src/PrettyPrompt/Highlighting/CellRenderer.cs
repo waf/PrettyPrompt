@@ -91,7 +91,7 @@ static class CellRenderer
         for (i = cellIndex; i < Math.Min(endPosition + currentHighlight.Length + highlightedFullWidthOffset, cells.Count); i++)
         {
             highlightedFullWidthOffset += cells[i].ElementWidth - 1;
-            cells[i].Formatting = currentHighlight?.Formatting;
+            cells[i].Formatting = currentHighlight?.Formatting ?? ConsoleFormat.None;
         }
         if (i != cells.Count)
         {
