@@ -4,12 +4,13 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using PrettyPrompt.Highlighting;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using PrettyPrompt.Highlighting;
 using Xunit;
-using static PrettyPrompt.Consoles.AnsiEscapeCodes;
 using static System.ConsoleKey;
+using static PrettyPrompt.Consoles.AnsiEscapeCodes;
+using static PrettyPrompt.Highlighting.AnsiColor;
 
 namespace PrettyPrompt.Tests;
 
@@ -38,15 +39,15 @@ public class SyntaxHighlightingTests
         // although the words are typed character-by-character, we should still "go back" and redraw
         // it once we know the word should be drawn in a syntax-highlighted color.
         Assert.Contains(
-            MoveCursorLeft("red".Length - 1) + BrightRed + "red" + Reset, // when we press 'd' go back two chars and to rewrite the word "red"
+            MoveCursorLeft("red".Length - 1) + ToAnsiEscapeSequence(SyntaxHighlighterTestData.RedFormat) + "red" + Reset, // when we press 'd' go back two chars and to rewrite the word "red"
             output
         );
         Assert.Contains(
-            MoveCursorLeft("green".Length - 1) + BrightGreen + "green" + Reset,
+            MoveCursorLeft("green".Length - 1) + ToAnsiEscapeSequence(SyntaxHighlighterTestData.GreenFormat) + "green" + Reset,
             output
         );
         Assert.Contains(
-            MoveCursorLeft("blue".Length - 1) + BrightBlue + "blue" + Reset,
+            MoveCursorLeft("blue".Length - 1) + ToAnsiEscapeSequence(SyntaxHighlighterTestData.BlueFormat) + "blue" + Reset,
             output
         );
 
@@ -56,6 +57,10 @@ public class SyntaxHighlightingTests
     [Fact]
     public async Task ReadLine_CJKCharacters_SyntaxHighlight()
     {
+        var format1 = new ConsoleFormat(Foreground: Red);
+        var format2 = new ConsoleFormat(Foreground: Blue);
+        var format3 = new ConsoleFormat(Foreground: Green);
+
         var console = ConsoleStub.NewConsole(width: 20);
         console.StubInput($"苹果 o 蓝莓 o avocado o{Enter}");
 
@@ -64,9 +69,9 @@ public class SyntaxHighlightingTests
             {
                 HighlightCallback = new SyntaxHighlighterTestData(new Dictionary<string, AnsiColor>
                 {
-                        { "苹果", AnsiColor.Red },
-                        { "蓝莓", AnsiColor.Blue },
-                        { "avocado", AnsiColor.Green }
+                        { "苹果", format1.Foreground },
+                        { "蓝莓", format2.Foreground },
+                        { "avocado", format3.Foreground }
                 }).HighlightHandlerAsync
             },
             console: console
@@ -81,19 +86,19 @@ public class SyntaxHighlightingTests
         // although the words are typed character-by-character, we should still "go back" and redraw
         // it once we know the word should be drawn in a syntax-highlighted color.
         Assert.Contains(
-            MoveCursorLeft(2) + Red + "苹果" + Reset,
+            MoveCursorLeft(2) + ToAnsiEscapeSequence(format1) + "苹果" + Reset,
             output
         );
 
         Assert.Contains(
-            MoveCursorLeft(2) + Blue + "蓝莓" + Reset,
+            MoveCursorLeft(2) + ToAnsiEscapeSequence(format2) + "蓝莓" + Reset,
             output
         );
 
         // avocado is green, but wrapped because the console width is narrow.
         Assert.Contains(
             output,
-            str => str.Contains(Green + "avoc\n")
+            str => str.Contains(ToAnsiEscapeSequence(format3) + "avoc\n")
         );
 
         Assert.Contains(

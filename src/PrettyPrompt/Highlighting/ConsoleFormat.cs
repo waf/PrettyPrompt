@@ -4,14 +4,19 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+#nullable enable
+
 namespace PrettyPrompt.Highlighting;
 
 public readonly record struct ConsoleFormat(
-    AnsiColor Foreground = null,
-    AnsiColor Background = null,
+    AnsiColor? Foreground = null,
+    AnsiColor? Background = null,
     bool Bold = false,
     bool Underline = false,
     bool Inverted = false)
 {
     public static ConsoleFormat None => default;
+
+    public string? ForegroundCode => Foreground?.GetCode(AnsiColor.Type.Foreground);
+    public string? BackgroundCode => Background?.GetCode(AnsiColor.Type.Background);
 }

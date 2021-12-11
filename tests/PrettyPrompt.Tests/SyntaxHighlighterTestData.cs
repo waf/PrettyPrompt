@@ -4,23 +4,27 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using PrettyPrompt.Highlighting;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using PrettyPrompt.Highlighting;
 
 namespace PrettyPrompt.Tests;
 
 public class SyntaxHighlighterTestData
 {
+    public static readonly ConsoleFormat RedFormat = new(Foreground: AnsiColor.BrightRed);
+    public static readonly ConsoleFormat GreenFormat = new(Foreground: AnsiColor.BrightGreen);
+    public static readonly ConsoleFormat BlueFormat = new(Foreground: AnsiColor.BrightBlue);
+
     private readonly IReadOnlyDictionary<string, AnsiColor> highlights;
 
     public SyntaxHighlighterTestData(IReadOnlyDictionary<string, AnsiColor> colors = null)
     {
         this.highlights = colors ?? new Dictionary<string, AnsiColor>()
             {
-                { "red", AnsiColor.BrightRed },
-                { "green", AnsiColor.BrightGreen },
-                { "blue", AnsiColor.BrightBlue },
+                { "red", RedFormat.Foreground},
+                { "green", GreenFormat.Foreground},
+                { "blue", BlueFormat.Foreground },
             };
     }
 
