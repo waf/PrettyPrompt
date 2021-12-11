@@ -14,9 +14,9 @@ using PrettyPrompt.Rendering;
 
 namespace PrettyPrompt.Documents;
 
-record WordWrappedText(IReadOnlyList<WrappedLine> WrappedLines, ConsoleCoordinate Cursor);
+internal readonly record struct WordWrappedText(IReadOnlyList<WrappedLine> WrappedLines, ConsoleCoordinate Cursor);
 
-static class WordWrapping
+internal static class WordWrapping
 {
     /// <summary>
     /// Wraps editable input, contained in the string builder, to the supplied width.

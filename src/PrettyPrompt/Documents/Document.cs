@@ -203,4 +203,16 @@ internal class Document : IEquatable<Document>
     private string GetDebuggerDisplay() => this.text.ToString().Insert(this.Caret, "|");
 }
 
-public record WrappedLine(int StartIndex, string Content);
+internal readonly struct WrappedLine
+{
+    public readonly int StartIndex;
+    public readonly string Content;
+
+    public WrappedLine(int startIndex, string content)
+    {
+        Debug.Assert(startIndex >= 0);
+
+        StartIndex = startIndex;
+        Content = content;
+    }
+}
