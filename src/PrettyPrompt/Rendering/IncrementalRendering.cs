@@ -30,7 +30,7 @@ static class IncrementalRendering
         // if there are multiple characters with the same formatting, don't output formatting
         // instructions per character; instead output one instruction at the beginning for all
         // characters that share the same formatting.
-        ConsoleFormat currentFormatRun = null;
+        var currentFormatRun = ConsoleFormat.None;
         var previousCoordinate = new ConsoleCoordinate(
             row: ansiCoordinate.Row + previousScreen.Cursor.Row,
             column: ansiCoordinate.Column + previousScreen.Cursor.Column
@@ -54,12 +54,12 @@ static class IncrementalRendering
             previousCoordinate = cellCoordinate;
 
             // handle when we're erasing characters/formatting from the previously rendered screen.
-            if (currentCell?.Formatting == null)
+            if (currentCell is null || currentCell.Formatting == ConsoleFormat.None)
             {
-                if (currentFormatRun is not null)
+                if (currentFormatRun != ConsoleFormat.None)
                 {
                     diff.Append(Reset);
-                    currentFormatRun = null;
+                    currentFormatRun = ConsoleFormat.None;
                 }
 
                 if (currentCell?.Text is null || currentCell.Text == "\n")
@@ -78,7 +78,7 @@ static class IncrementalRendering
             if (currentCell.Formatting != currentFormatRun)
             {
                 // text selection is implemented by inverting colors. Reset inverted colors if required.
-                if (currentFormatRun is not null && currentCell.Formatting.Inverted != currentFormatRun.Inverted)
+                if (currentFormatRun != ConsoleFormat.None && currentCell.Formatting.Inverted != currentFormatRun.Inverted)
                 {
                     diff.Append(Reset);
                 }
@@ -106,7 +106,7 @@ static class IncrementalRendering
             }
         }
 
-        if (currentFormatRun is not null)
+        if (currentFormatRun != ConsoleFormat.None)
         {
             diff.Append(Reset);
         }
