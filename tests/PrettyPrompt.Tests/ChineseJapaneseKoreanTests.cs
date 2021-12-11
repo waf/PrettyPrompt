@@ -85,9 +85,10 @@ public class ChineseJapaneseKoreanTests
         var output = console.GetAllOutput();
 
         Assert.Equal("书桌上有", result.Text);
-        Assert.Contains("书", output);
-        Assert.Contains("桌", output);
-        Assert.Contains("上" + "\n" + AnsiEscapeCodes.MoveCursorLeft(5), output);
-        Assert.Contains("有", output);
+        Assert.EndsWith("> ", output[0]);
+        Assert.Equal("书", output[1]);
+        Assert.Equal("桌", output[2]);
+        Assert.Equal("上\n" + AnsiEscapeCodes.MoveCursorLeft(5), output[3]);
+        Assert.Equal("有", output[4]);
     }
 }
