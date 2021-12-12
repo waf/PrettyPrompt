@@ -17,11 +17,11 @@ namespace PrettyPrompt.Highlighting;
 /// <summary>
 /// Represents text with associated non-overlapping formating spans.
 /// </summary>
-public struct FormattedString : IEquatable<FormattedString>
+public readonly struct FormattedString : IEquatable<FormattedString>
 {
     public static FormattedString Empty => string.Empty;
 
-    public string Text { get; private set; }
+    public string Text { get; }
     private readonly FormatSpan[] formatSpans;
 
     public IReadOnlyList<FormatSpan> FormatSpans => formatSpans ?? Array.Empty<FormatSpan>();
