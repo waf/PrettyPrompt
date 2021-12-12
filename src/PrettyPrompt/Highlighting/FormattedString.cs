@@ -105,8 +105,7 @@ public struct FormattedString : IEquatable<FormattedString>
         var resultFormatSpans = new List<FormatSpan>(formatSpans.Length);
         foreach (var formatSpan in formatSpans)
         {
-            var newSpan = formatSpan.Overlap(startIndex, length);
-            if (newSpan is not null)
+            if (formatSpan.Overlap(startIndex, length).TryGet(out var newSpan))
             {
                 resultFormatSpans.Add(newSpan.Offset(-startIndex));
             }
@@ -280,12 +279,13 @@ public struct FormattedString : IEquatable<FormattedString>
             }
 
             var offset = -Math.Min(formatting.Start, partStart);
-            var newFormatting = formatting
+            var hasValue = formatting
                 .Offset(offset) //has to be relative to strat of current part
                 .WithLength(formatting.Length - previousFormattingCharsUsed) //some chars could be already used by previous parts
-                .Overlap(0, partLength);
+                .Overlap(0, partLength)
+                .TryGet(out var newFormatting);
 
-            Debug.Assert(newFormatting is not null, "formatting has to overlap due to prior conditions");
+            Debug.Assert(hasValue, "formatting has to overlap due to prior conditions");
             formattingList.Add(newFormatting);
 
             if (formatting.End <= partEnd + partSeparatorLength)
