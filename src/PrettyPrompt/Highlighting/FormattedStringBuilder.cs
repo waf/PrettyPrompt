@@ -9,7 +9,7 @@ using System.Text;
 
 namespace PrettyPrompt.Highlighting;
 
-public sealed class FormattedStringBuilder
+public readonly struct FormattedStringBuilder
 {
     private readonly StringBuilder stringBuilder = new();
     private readonly List<FormatSpan> formatSpans = new();
