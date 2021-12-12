@@ -8,7 +8,7 @@ using System;
 
 namespace PrettyPrompt.Highlighting;
 
-public sealed record FormatSpan
+public readonly record struct FormatSpan
 {
     public static readonly FormatSpan Empty = new(0, 0, ConsoleFormat.None);
 
@@ -64,13 +64,13 @@ public sealed record FormatSpan
     /// <summary>
     /// Returns the overlap with the given span, or null if there is no overlap.
     /// </summary>
-    public FormatSpan Overlap(int start, int length)
+    public FormatSpan? Overlap(int start, int length)
     {
         int resultStart = Math.Max(Start, start);
         int resultEnd = Math.Min(End, start + length);
         if (resultStart < resultEnd)
         {
-            return new FormatSpan(FromBounds(resultStart, resultEnd, Formatting));
+            return FromBounds(resultStart, resultEnd, Formatting);
         }
         return null;
     }

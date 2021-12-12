@@ -33,9 +33,8 @@ static class CellRenderer
         var highlightsLookup = highlights
             .ToLookup(h => h.Start)
             .ToDictionary(h => h.Key, conflictingHighlights => conflictingHighlights.OrderByDescending(h => h.Length).First());
-        Row[] highlightedRows = new Row[lines.Count];
-        FormatSpan currentHighlight = null;
-
+        var highlightedRows = new Row[lines.Count];
+        FormatSpan? currentHighlight = null;
         for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
         {
             WrappedLine line = lines[lineIndex];
@@ -48,21 +47,21 @@ static class CellRenderer
                     lineFullWidthCharacterOffset++;
 
                 // syntax highlight wrapped lines
-                if (currentHighlight is not null && cellIndex == 0)
+                if (currentHighlight.TryGet(out var previousLineHighlight) &&
+                    cellIndex == 0)
                 {
-                    currentHighlight = HighlightSpan(currentHighlight, cells, cellIndex, currentHighlight.Start - line.StartIndex);
+                    currentHighlight = HighlightSpan(previousLineHighlight, cells, cellIndex, previousLineHighlight.Start - line.StartIndex);
                 }
 
                 // get current syntaxt highlight start
                 int characterPosition = line.StartIndex + cellIndex - lineFullWidthCharacterOffset;
-                currentHighlight ??= highlightsLookup.GetValueOrDefault(characterPosition);
+                currentHighlight ??= highlightsLookup.TryGetValue(characterPosition, out var lookupHighlight) ? lookupHighlight : null;
 
                 // syntax highlight based on start
-                if (currentHighlight is not null
-                    && characterPosition >= currentHighlight.Start
-                    && characterPosition < currentHighlight.Start + currentHighlight.Length)
+                if (currentHighlight.TryGet(out var highlight) &&
+                    highlight.Contains(characterPosition))
                 {
-                    currentHighlight = HighlightSpan(currentHighlight, cells, cellIndex, cellIndex);
+                    currentHighlight = HighlightSpan(highlight, cells, cellIndex, cellIndex);
                 }
 
                 // if there's text selected, invert colors to represent the highlight of the selected text.
@@ -84,18 +83,18 @@ static class CellRenderer
         return highlightedRows;
     }
 
-    private static FormatSpan HighlightSpan(FormatSpan currentHighlight, List<Cell> cells, int cellIndex, int endPosition)
+    private static FormatSpan? HighlightSpan(FormatSpan currentHighlight, List<Cell> cells, int cellIndex, int endPosition)
     {
         var highlightedFullWidthOffset = 0;
         int i;
         for (i = cellIndex; i < Math.Min(endPosition + currentHighlight.Length + highlightedFullWidthOffset, cells.Count); i++)
         {
             highlightedFullWidthOffset += cells[i].ElementWidth - 1;
-            cells[i].Formatting = currentHighlight?.Formatting ?? ConsoleFormat.None;
+            cells[i].Formatting = currentHighlight.Formatting;
         }
         if (i != cells.Count)
         {
-            currentHighlight = null;
+            return null;
         }
 
         return currentHighlight;
