@@ -22,11 +22,20 @@ internal class Document : IEquatable<Document>
 {
     private readonly StringBuilder text;
     private readonly UndoRedoHistory undoRedoHistory;
+    private int caret;
 
     /// <summary>
     /// The one-dimensional index of the text caret in the document text
     /// </summary>
-    public int Caret { get; set; }
+    public int Caret
+    {
+        get => caret;
+        set
+        {
+            Debug.Assert(caret >= 0);
+            caret = value;
+        }
+    }
 
     /// <summary>
     /// The two-dimensional coordinate of the text cursor in the document,
@@ -147,27 +156,60 @@ internal class Document : IEquatable<Document>
         }
     }
 
-    public void MoveToLineBoundary(int direction) =>
+    public void MoveToLineBoundary(int direction)
+    {
+        Debug.Assert(direction is -1 or 1);
+
         Caret = CalculateLineBoundaryIndexNearCaret(direction);
 
-    public int CalculateLineBoundaryIndexNearCaret(int direction)
-    {
-        if (text.Length == 0) return Caret;
-
-        if (direction == +1 && Caret < text.Length && text[Caret] == '\n') return Caret;
-
-        int bound = direction > 0 ? text.Length : 0;
-
-        for (var i = Caret + direction; bound == 0 ? i > 0 : i < bound; i += direction)
+        int CalculateLineBoundaryIndexNearCaret(int direction)
         {
-            if (text[i] == '\n')
-                return i + (direction == -1 ? 1 : 0);
-        }
+            if (text.Length == 0) return Caret;
 
-        return bound;
+            if (direction > 0)
+            {
+                for (var i = Caret; i < text.Length; i++)
+                {
+                    if (text[i] == '\n') return i;
+                }
+                return text.Length;
+            }
+            else
+            {
+                //smart Home implementation (repeating Home presses switch between 'non-white-space start of line' and 'start of line')
+                
+                int lineStart = 0;
+                var beforeCaretIndex = (Caret - 1).Clamp(0, Length - 1);
+                for (int i = beforeCaretIndex; i >= 0; i--)
+                {
+                    if (text[i] == '\n')
+                    {
+                        lineStart = Math.Min(i + 1, Length - 1);
+                        break;
+                    }
+                }
+
+                int lineStartNonWhiteSpace = lineStart;
+                for (int i = lineStart; i < Length; i++)
+                {
+                    var c = text[i];
+                    if (c == '\n')
+                    {
+                        return lineStart;
+                    }
+                    if (!char.IsWhiteSpace(c))
+                    {
+                        lineStartNonWhiteSpace = i;
+                        break;
+                    }
+                }
+
+                return lineStartNonWhiteSpace == beforeCaretIndex + 1 ? lineStart : lineStartNonWhiteSpace;
+            }
+        }
     }
 
-    public Document Clone() => new Document(text.ToString(), Caret);
+    public Document Clone() => new(text.ToString(), Caret);
 
     public void Undo()
     {

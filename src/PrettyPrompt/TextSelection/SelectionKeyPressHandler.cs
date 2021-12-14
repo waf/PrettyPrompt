@@ -57,28 +57,30 @@ class SelectionKeyPressHandler : IKeyPressHandler
         var cursor = document.Cursor;
         switch (key.Pattern)
         {
-            case (Shift, End) or
+            case
+                (Shift, End) or
+                (Shift, Home) or
+
                 (Control | Shift, End) or
+                (Control | Shift, Home) or
+
                 (Shift, RightArrow) or
+                (Shift, UpArrow) or
+
                 (Control | Shift, RightArrow) or
+                (Control | Shift, UpArrow) or
+
                 (Shift, DownArrow) or
-                (Control | Shift, DownArrow):
+                (Shift, LeftArrow) or
+
+                (Control | Shift, DownArrow) or
+                (Control | Shift, LeftArrow):
                 {
                     if (previousCursorLocation < cursor)
                     {
                         UpdateSelection(new SelectionSpan(previousCursorLocation, cursor, SelectionDirection.FromLeftToRight));
                     }
-                    break;
-                }
-
-            case (Shift, Home) or
-                (Control | Shift, Home) or
-                (Shift, UpArrow) or
-                (Control | Shift, UpArrow) or
-                (Shift, LeftArrow) or
-                (Control | Shift, LeftArrow):
-                {
-                    if (cursor < previousCursorLocation)
+                    else if (previousCursorLocation > cursor)
                     {
                         UpdateSelection(new SelectionSpan(cursor, previousCursorLocation, SelectionDirection.FromRightToLeft));
                     }
