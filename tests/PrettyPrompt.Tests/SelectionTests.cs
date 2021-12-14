@@ -373,4 +373,18 @@ public class SelectionTests
         Assert.True(result.IsSuccess);
         Assert.Equal("ab", result.Text);
     }
+
+    [Fact]
+    public async Task ReadLine_Delete_SmartHomeSelection()
+    {
+        var console = ConsoleStub.NewConsole();
+        var prompt = new Prompt(console: console);
+        console.StubInput(
+            $"    abcd{Home}{Home}", //get caret at location 0
+            $"{Shift}{Home}{Delete}{Enter}" //select first 4 spaces and delete them
+        );
+        var result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal("abcd", result.Text);
+    }
 }

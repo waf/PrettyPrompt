@@ -168,4 +168,27 @@ public class DocumentTests
             Assert.Equal(3, document.CalculateWordBoundaryIndexNearCaret(-1));
         }
     }
+
+    [Fact]
+    public void MoveToLineBoundary_SmartHomeTest()
+    {
+        var document = new Document("    abcd", caret: 0);
+        for (int i = 0; i <= 3; i++)
+        {
+            document.Caret = i;
+            document.MoveToLineBoundary(-1);
+            Assert.Equal(4, document.Caret);
+        }
+
+        document.Caret = 4;
+        document.MoveToLineBoundary(-1);
+        Assert.Equal(0, document.Caret);
+
+        for (int i = 5; i < document.Length; i++)
+        {
+            document.Caret = i;
+            document.MoveToLineBoundary(-1);
+            Assert.Equal(4, document.Caret);
+        }
+    }
 }
