@@ -77,7 +77,8 @@ public static class ConsoleStub
             {
                 for (int i = 0; i < keyPresses.Count - 1; i++)
                 {
-                    yield return _ => keyPresses[i];
+                    int index = i; //copy for closure (important!)
+                    yield return _ => keyPresses[index];
                 }
                 yield return _ =>
                 {
@@ -176,7 +177,7 @@ public static class ConsoleStub
             ConsoleKey.Oem7 => '\'',
             ConsoleKey.Spacebar => ' ',
             _ => '\0' // home, enter, arrow keys, etc
-            };
+        };
 
     public static FormattableStringWithAction Input(FormattableString input) => new(input);
     public static FormattableStringWithAction Input(FormattableString input, Action actionAfter) => new(input, actionAfter);
