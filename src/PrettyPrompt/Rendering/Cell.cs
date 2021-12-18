@@ -6,7 +6,6 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Highlighting;
 using PrettyPrompt.Rendering;
@@ -69,14 +68,9 @@ internal sealed record Cell
         {
             var elementWidth = UnicodeWidth.GetWidth(element);
             cells.Add(new Cell(element, formatting, elementWidth));
-            if (elementWidth > 1)
+            for (int i = 1; i < elementWidth; i++)
             {
-                cells.AddRange(
-                    Enumerable.Repeat(
-                        new Cell(null, formatting, isContinuationOfPreviousCharacter: true),
-                        elementWidth - 1
-                    )
-                );
+                cells.Add(new Cell(null, formatting, isContinuationOfPreviousCharacter: true));
             }
         }
         return cells;
