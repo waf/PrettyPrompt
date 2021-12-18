@@ -49,6 +49,12 @@ internal class Renderer
     {
         if (result is not null)
         {
+            if (completionPane.IsOpen)
+            {
+                completionPane.IsOpen = false;
+                await Redraw();
+            }
+
             Write(
                 MoveCursorDown(codePane.Document.WordWrappedLines.Count - codePane.Document.Cursor.Row - 1)
                 + MoveCursorToColumn(1)
@@ -67,39 +73,44 @@ internal class Renderer
             codePane.MeasureConsole(console, theme.Prompt); // our code pane will have more room to render, it now renders at the top of the screen.
         }
 
-        // convert our "view models" into characters, contained in screen areas
-        ScreenArea codeWidget = BuildCodeScreenArea(codePane, highlights);
-        ScreenArea[] completionWidgets = await BuildCompletionScreenAreas(
-            completionPane,
-            cursor: codePane.Document.Cursor,
-            codeAreaStartColumn: theme.Prompt.Length,
-            codeAreaWidth: codePane.CodeAreaWidth
-        ).ConfigureAwait(false);
+        await Redraw();
 
-        // ansi escape sequence row/column values are 1-indexed.
-        var ansiCoordinate = new ConsoleCoordinate
-        (
-            row: 1 + codePane.TopCoordinate,
-            column: 1 + theme.Prompt.Length
-        );
-
-        // draw screen areas to screen representation.
-        // later screen areas can overlap earlier screen areas.
-        var screen = new Screen(
-            codePane.CodeAreaWidth, codePane.CodeAreaHeight, codePane.Document.Cursor, screenAreas: new[] { codeWidget }.Concat(completionWidgets).ToArray()
-        );
-
-        if (DidCodeAreaResize(previouslyRenderedScreen, screen))
+        async Task Redraw()
         {
-            previouslyRenderedScreen = previouslyRenderedScreen.Resize(screen.Width, screen.Height);
+            // convert our "view models" into characters, contained in screen areas
+            ScreenArea codeWidget = BuildCodeScreenArea(codePane, highlights);
+            ScreenArea[] completionWidgets = await BuildCompletionScreenAreas(
+                completionPane,
+                cursor: codePane.Document.Cursor,
+                codeAreaStartColumn: theme.Prompt.Length,
+                codeAreaWidth: codePane.CodeAreaWidth
+            ).ConfigureAwait(false);
+
+            // ansi escape sequence row/column values are 1-indexed.
+            var ansiCoordinate = new ConsoleCoordinate
+            (
+                row: 1 + codePane.TopCoordinate,
+                column: 1 + theme.Prompt.Length
+            );
+
+            // draw screen areas to screen representation.
+            // later screen areas can overlap earlier screen areas.
+            var screen = new Screen(
+                codePane.CodeAreaWidth, codePane.CodeAreaHeight, codePane.Document.Cursor, screenAreas: new[] { codeWidget }.Concat(completionWidgets).ToArray()
+            );
+
+            if (DidCodeAreaResize(previouslyRenderedScreen, screen))
+            {
+                previouslyRenderedScreen = previouslyRenderedScreen.Resize(screen.Width, screen.Height);
+            }
+
+            // calculate the diff between the previous screen and the
+            // screen to be drawn, and output that diff.
+            string outputDiff = IncrementalRendering.CalculateDiff(screen, previouslyRenderedScreen, ansiCoordinate);
+            previouslyRenderedScreen = screen;
+
+            Write(outputDiff, outputDiff.Length > 64);
         }
-
-        // calculate the diff between the previous screen and the
-        // screen to be drawn, and output that diff.
-        string outputDiff = IncrementalRendering.CalculateDiff(screen, previouslyRenderedScreen, ansiCoordinate);
-        previouslyRenderedScreen = screen;
-
-        Write(outputDiff, outputDiff.Length > 64);
     }
 
     private void Write(string output, bool hideCursor = false)
@@ -185,11 +196,11 @@ internal class Renderer
 
                 var rowCells = new List<Cell>();
 
-                    //left border
-                    rowCells.AddRange(Cell.FromText(BoxDrawing.EdgeVertical, theme.CompletionBorder));
+                //left border
+                rowCells.AddRange(Cell.FromText(BoxDrawing.EdgeVertical, theme.CompletionBorder));
 
-                    //(un)selected item marker
-                    if (isSelected)
+                //(un)selected item marker
+                if (isSelected)
                 {
                     rowCells.AddRange(Cell.FromText(theme.SelectedCompletionItemMarker));
                 }
@@ -198,16 +209,16 @@ internal class Renderer
                     rowCells.AddRange(Cell.FromText(theme.UnselectedCompletionItemMarker));
                 }
 
-                    //item
-                    var itemCells = Cell.FromText(TruncateToWindow(item + new string(' ', wordWidth - item.GetUnicodeWidth()), 2 + theme.SelectedCompletionItemMarker.Length)); // 2 = left border + right border
-                    if (isSelected)
+                //item
+                var itemCells = Cell.FromText(TruncateToWindow(item + new string(' ', wordWidth - item.GetUnicodeWidth()), 2 + theme.SelectedCompletionItemMarker.Length)); // 2 = left border + right border
+                if (isSelected)
                 {
                     TransformFormattingForSelected(itemCells);
                 }
                 rowCells.AddRange(itemCells);
 
-                    //right border
-                    rowCells.AddRange(Cell.FromText(" " + BoxDrawing.EdgeVertical, theme.CompletionBorder));
+                //right border
+                rowCells.AddRange(Cell.FromText(" " + BoxDrawing.EdgeVertical, theme.CompletionBorder));
 
                 return new Row(rowCells);
             })
