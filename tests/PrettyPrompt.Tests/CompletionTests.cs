@@ -4,8 +4,9 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using PrettyPrompt.Consoles;
+using System.Linq;
 using System.Threading.Tasks;
+using PrettyPrompt.Consoles;
 using Xunit;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
@@ -181,6 +182,30 @@ public class CompletionTests
 
         Assert.True(result.IsSuccess);
         Assert.Equal($"Aardvark Q", result.Text);
+    }
+
+    /// <summary>
+    /// Tests bug from https://github.com/waf/PrettyPrompt/issues/22.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_AddNewLines_ReturnToStart_ShowCompletionList_ConfirmInput()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput(
+            $"{Shift}{Enter}{Shift}{Enter}{Shift}{Enter}{Shift}{Enter}", //new lines
+            $"{Control}{Home}", //return to start
+            $"{Control}{Spacebar}", //show completion list
+            $"{Enter}"); //confirm input
+
+        var prompt = ConfigurePrompt(console);
+
+        var result = await prompt.ReadLineAsync();
+
+        Assert.True(result.IsSuccess);
+
+        var output = console.GetAllOutput();
+        var indexOfOutputWithCompletionPane = output.Select((o, i) => (o, i)).First(t => t.o.Contains("┌───────────")).i;
+        Assert.Contains("            ", output[indexOfOutputWithCompletionPane + 1]); //completion pane should be cleared
     }
 
     public static Prompt ConfigurePrompt(IConsole console, PromptTheme theme = null) =>
