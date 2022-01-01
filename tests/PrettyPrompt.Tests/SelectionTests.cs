@@ -5,6 +5,7 @@
 #endregion
 
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using static System.ConsoleKey;
@@ -386,5 +387,33 @@ public class SelectionTests
         var result = await prompt.ReadLineAsync();
         Assert.True(result.IsSuccess);
         Assert.Equal("abcd", result.Text);
+    }
+
+    /// <summary>
+    /// Tests bug from https://github.com/waf/PrettyPrompt/issues/47.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_Write_SelectedAll_Confirm_ShouldRedraw()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput(
+            $"123{Shift}{Enter}",
+            $"456{Shift}{Enter}",
+            $"789{Control}{A}", //select all
+            $"{Control}{Enter}"); //confirm input
+
+        var prompt = new Prompt(console: console);
+
+        var result = await prompt.ReadLineAsync();
+
+        Assert.True(result.IsSuccess);
+
+        var output = console.GetAllOutput();
+        var indexOfOutputWithSelection = output.Select((o, i) => (o, i)).First(t => t.o.Contains("[39;49;7m")).i; //reset + reverse
+        var redraw = output[indexOfOutputWithSelection + 1];
+        Assert.Contains("123", redraw);
+        Assert.Contains("456", redraw);
+        Assert.Contains("789", redraw);
+        Assert.DoesNotContain("7m", redraw); //reverse
     }
 }
