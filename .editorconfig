@@ -1,5 +1,8 @@
 ﻿[*.cs]
 
+indent_style=space
+end_of_line=crlf
+
 # CS1591: Missing XML comment for publicly visible type or member
 dotnet_diagnostic.CS1591.severity = none
 

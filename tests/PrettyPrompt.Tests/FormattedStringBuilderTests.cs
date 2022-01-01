@@ -38,10 +38,10 @@ public class FormattedStringBuilderTests
         Assert.Equal(4, sb.Length);
         Assert.Equal(
             new FormattedString(
-                "1234", 
+                "1234",
                 new FormatSpan(1, 1, new ConsoleFormat(Foreground: AnsiColor.Red)),
                 new FormatSpan(2, 1, new ConsoleFormat(Foreground: AnsiColor.Green)),
-                new FormatSpan(3, 1, new ConsoleFormat(Foreground: AnsiColor.Yellow))), 
+                new FormatSpan(3, 1, new ConsoleFormat(Foreground: AnsiColor.Yellow))),
             sb.ToFormattedString());
 
         sb.Clear();

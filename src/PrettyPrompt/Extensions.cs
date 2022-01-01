@@ -75,6 +75,6 @@ internal static class Extensions
     public static ConsoleKeyInfo ToKeyInfo(this ConsoleKey consoleKey, char character, bool shift = false, bool alt = false, bool control = false)
        => new(character, consoleKey, shift, alt, control);
 
-    public static int Clamp(this int value, int min, int max) 
+    public static int Clamp(this int value, int min, int max)
         => value < min ? min : (value > max ? max : value);
 }
