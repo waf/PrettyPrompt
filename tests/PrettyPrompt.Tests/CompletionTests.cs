@@ -188,7 +188,7 @@ public class CompletionTests
     /// Tests bug from https://github.com/waf/PrettyPrompt/issues/22.
     /// </summary>
     [Fact]
-    public async Task ReadLine_AddNewLines_ReturnToStart_ShowCompletionList_ConfirmInput()
+    public async Task ReadLine_AddNewLines_ReturnToStart_ShowCompletionList_ConfirmInput_ShouldRedraw()
     {
         var console = ConsoleStub.NewConsole();
         console.StubInput(

@@ -32,6 +32,7 @@ internal class Renderer
     private readonly PromptTheme theme;
 
     private Screen previouslyRenderedScreen = new(0, 0, ConsoleCoordinate.Zero);
+    private bool wasTextSelectedDuringPreviousRender;
 
     public Renderer(IConsole console, PromptTheme theme)
     {
@@ -49,6 +50,11 @@ internal class Renderer
     {
         if (result is not null)
         {
+            if (wasTextSelectedDuringPreviousRender && codePane.Document.Selection is null)
+            {
+                await Redraw();
+            }
+
             if (completionPane.IsOpen)
             {
                 completionPane.IsOpen = false;
@@ -62,18 +68,22 @@ internal class Renderer
                 + ClearToEndOfScreen,
                 hideCursor: true
             );
-            return;
         }
-        if (key.Pattern is (Control, L))
+        else
         {
-            previouslyRenderedScreen = new Screen(0, 0, ConsoleCoordinate.Zero);
-            console.Clear(); // for some reason, using escape codes (ClearEntireScreen and MoveCursorToPosition) leaves
-                             // CursorTop in an old (cached?) state. Using Console.Clear() works around this.
-            RenderPrompt();
-            codePane.MeasureConsole(console, theme.Prompt); // our code pane will have more room to render, it now renders at the top of the screen.
+            if (key.Pattern is (Control, L))
+            {
+                previouslyRenderedScreen = new Screen(0, 0, ConsoleCoordinate.Zero);
+                console.Clear(); // for some reason, using escape codes (ClearEntireScreen and MoveCursorToPosition) leaves
+                                 // CursorTop in an old (cached?) state. Using Console.Clear() works around this.
+                RenderPrompt();
+                codePane.MeasureConsole(console, theme.Prompt); // our code pane will have more room to render, it now renders at the top of the screen.
+            }
+
+            await Redraw();
         }
 
-        await Redraw();
+        wasTextSelectedDuringPreviousRender = codePane.Document.Selection.HasValue;
 
         async Task Redraw()
         {
