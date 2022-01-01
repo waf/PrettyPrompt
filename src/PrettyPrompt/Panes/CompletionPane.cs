@@ -4,13 +4,13 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using PrettyPrompt.Completion;
-using PrettyPrompt.Consoles;
-using PrettyPrompt.Documents;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using PrettyPrompt.Completion;
+using PrettyPrompt.Consoles;
+using PrettyPrompt.Documents;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
 
@@ -18,8 +18,22 @@ namespace PrettyPrompt.Panes;
 
 internal class CompletionPane : IKeyPressHandler
 {
-    private const int MaxCompletionCount = 10;
-    private const int VerticalPaddingHeight = 3; // cursor + top border + bottom border.
+    /// <summary>
+    /// Top border + bottom borde
+    /// </summary>
+    public const int VerticalBordersHeight = 2;
+
+    public const int MaxCompletionItemsCount = 10;
+
+    /// <summary>
+    /// How few completion items we are willing to render.
+    /// </summary>
+    public const int MinCompletionItemsCount = 1;
+
+    /// <summary>
+    /// Cursor + top border + bottom border.
+    /// </summary>
+    private const int VerticalPaddingHeight = 1 + VerticalBordersHeight;
 
     private readonly CodePane codePane;
     private readonly CompletionCallbackAsync complete;
@@ -130,7 +144,7 @@ internal class CompletionPane : IKeyPressHandler
     }
 
     private static bool EnoughRoomToDisplay(CodePane codePane) =>
-        codePane.CodeAreaHeight - codePane.Document.Cursor.Row >= VerticalPaddingHeight + 1; // offset + top border + 1 completion item + bottom border
+        codePane.CodeAreaHeight - codePane.Document.Cursor.Row >= VerticalPaddingHeight + MinCompletionItemsCount; // offset + top border + MinCompletionItemsCount + bottom border
 
     async Task IKeyPressHandler.OnKeyUp(KeyPress key)
     {
@@ -191,7 +205,7 @@ internal class CompletionPane : IKeyPressHandler
 
     private void FilterCompletions(CodePane codePane)
     {
-        int height = Math.Min(codePane.CodeAreaHeight - VerticalPaddingHeight, MaxCompletionCount);
+        int height = Math.Min(codePane.CodeAreaHeight - VerticalPaddingHeight, MaxCompletionItemsCount);
 
         var filtered = new List<CompletionItem>();
         var previouslySelectedItem = this.FilteredView.SelectedItem;

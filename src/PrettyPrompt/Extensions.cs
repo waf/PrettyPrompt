@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace PrettyPrompt;
 
@@ -76,5 +77,8 @@ internal static class Extensions
        => new(character, consoleKey, shift, alt, control);
 
     public static int Clamp(this int value, int min, int max)
-        => value < min ? min : (value > max ? max : value);
+    {
+        Debug.Assert(min <= max);
+        return value < min ? min : (value > max ? max : value);
+    }
 }

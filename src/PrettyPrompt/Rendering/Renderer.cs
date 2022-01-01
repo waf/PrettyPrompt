@@ -26,8 +26,6 @@ namespace PrettyPrompt;
 /// </summary>
 internal class Renderer
 {
-    private const int BottomPadding = 6;
-
     private readonly IConsole console;
     private readonly PromptTheme theme;
 
@@ -43,7 +41,10 @@ internal class Renderer
     public void RenderPrompt()
     {
         // write some newlines to ensure we have enough room to render the completion pane.
-        console.Write(new string('\n', BottomPadding) + MoveCursorUp(BottomPadding) + MoveCursorToColumn(1) + Reset + theme.Prompt);
+        var min = CompletionPane.VerticalBordersHeight + CompletionPane.MinCompletionItemsCount;
+        var max = CompletionPane.VerticalBordersHeight + CompletionPane.MaxCompletionItemsCount;
+        var newLinesCount = (2 * console.WindowHeight / 5).Clamp(min, max);
+        console.Write(new string('\n', newLinesCount) + MoveCursorUp(newLinesCount) + MoveCursorToColumn(1) + Reset + theme.Prompt);
     }
 
     public async Task RenderOutput(PromptResult result, CodePane codePane, CompletionPane completionPane, IReadOnlyCollection<FormatSpan> highlights, KeyPress key)
