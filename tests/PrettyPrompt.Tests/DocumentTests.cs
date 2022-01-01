@@ -18,12 +18,8 @@ public class DocumentTests
     {
         //empty
         var document = new Document("", caret: 0);
-        for (int i = 0; i < 5; i++)
-        {
-            document.Caret = i;
-            Assert.Equal(0, document.CalculateWordBoundaryIndexNearCaret(1));
-            Assert.Equal(0, document.CalculateWordBoundaryIndexNearCaret(-1));
-        }
+        Assert.Equal(0, document.CalculateWordBoundaryIndexNearCaret(1));
+        Assert.Equal(0, document.CalculateWordBoundaryIndexNearCaret(-1));
 
 
         //single char
@@ -31,7 +27,7 @@ public class DocumentTests
         foreach (var c in testChars)
         {
             document = new Document($"{c}", caret: 0);
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i <= 1; i++)
             {
                 document.Caret = i;
                 Assert.Equal(1, document.CalculateWordBoundaryIndexNearCaret(1));
@@ -68,7 +64,7 @@ public class DocumentTests
         foreach (var text in GetTestPairs(distinctChars: false))
         {
             document = new Document(text, caret: 0);
-            for (int i = 0; i < 5; i++)
+            for (int i = 0; i >= 2; i++)
             {
                 document.Caret = i;
                 Assert.Equal(2, document.CalculateWordBoundaryIndexNearCaret(1));
@@ -93,7 +89,7 @@ public class DocumentTests
             Assert.Equal(6, document.CalculateWordBoundaryIndexNearCaret(1));
         }
 
-        for (int i = 6; i <= 10; i++)
+        for (int i = 6; i <= document.Length; i++)
         {
             document.Caret = i;
             Assert.Equal(9, document.CalculateWordBoundaryIndexNearCaret(1));
@@ -101,7 +97,7 @@ public class DocumentTests
 
 
         //move left
-        for (int i = 10; i >= 7; i--)
+        for (int i = document.Length; i >= 7; i--)
         {
             document.Caret = i;
             Assert.Equal(6, document.CalculateWordBoundaryIndexNearCaret(-1));
@@ -129,7 +125,7 @@ public class DocumentTests
 
         //whitespaces only
         var document = new Document("   ", caret: 0);
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i <= document.Length; i++)
         {
             document.Caret = i;
             Assert.Equal(document.GetText().Length, document.CalculateWordBoundaryIndexNearCaret(1));
@@ -138,7 +134,7 @@ public class DocumentTests
 
         //word + whitespaces (behaves like single word when going right;  behaves like two word when going left)
         document = new Document("abc   ", caret: 0);
-        for (int i = 0; i < 10; i++)
+        for (int i = 0; i <= document.Length; i++)
         {
             document.Caret = i;
             Assert.Equal(document.GetText().Length, document.CalculateWordBoundaryIndexNearCaret(1));
@@ -152,7 +148,7 @@ public class DocumentTests
             document.Caret = i;
             Assert.Equal(3, document.CalculateWordBoundaryIndexNearCaret(1));
         }
-        for (int i = 3; i < 10; i++)
+        for (int i = 3; i <= document.Length; i++)
         {
             document.Caret = i;
             Assert.Equal(document.GetText().Length, document.CalculateWordBoundaryIndexNearCaret(1));
@@ -162,7 +158,7 @@ public class DocumentTests
             document.Caret = i;
             Assert.Equal(0, document.CalculateWordBoundaryIndexNearCaret(-1));
         }
-        for (int i = 4; i < 10; i++)
+        for (int i = 4; i <= document.Length; i++)
         {
             document.Caret = i;
             Assert.Equal(3, document.CalculateWordBoundaryIndexNearCaret(-1));

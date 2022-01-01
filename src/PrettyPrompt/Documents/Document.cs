@@ -33,6 +33,7 @@ internal class Document : IEquatable<Document>
         set
         {
             Debug.Assert(value >= 0);
+            Debug.Assert(value <= text.Length);
             caret = value;
         }
     }
