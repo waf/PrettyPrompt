@@ -19,7 +19,12 @@ namespace PrettyPrompt.Panes;
 internal class CompletionPane : IKeyPressHandler
 {
     /// <summary>
-    /// Top border + bottom borde
+    /// Left padding + right padding + right border.
+    /// </summary>
+    public const int HorizontalBordersWidth = 3;
+
+    /// <summary>
+    /// Top border + bottom border.
     /// </summary>
     public const int VerticalBordersHeight = 2;
 

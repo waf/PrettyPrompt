@@ -184,7 +184,8 @@ internal class Renderer
         ).ConfigureAwait(false);
         var documentationRows = BuildDocumentationRows(
             documentation: selectedItemDescription,
-            maxWidth: codeAreaWidth - completionStart.Column - boxWidth
+            maxWidth: codeAreaWidth - completionStart.Column - boxWidth,
+            completionRowsCount: completionRows.Length
         );
 
         return new[]
@@ -257,21 +258,45 @@ internal class Renderer
         }
     }
 
-    private Row[] BuildDocumentationRows(FormattedString documentation, int maxWidth)
+    private Row[] BuildDocumentationRows(FormattedString documentation, int maxWidth, int completionRowsCount)
     {
         if (string.IsNullOrEmpty(documentation.Text) || maxWidth < 12)
             return Array.Empty<Row>();
 
-        // request word wrapping. actual line lengths won't be exactly the requested width due to wrapping.
-        var requestedBoxWidth = Math.Min(maxWidth, 55);
-        var requestedTextWidth = requestedBoxWidth - 3; // 3 because of left padding, right padding, right border
-        var wrapped = WordWrapping.WrapWords(documentation.Replace("\r\n", "\n"), requestedTextWidth);
-        var actualTextWidth = wrapped.Max(line => line.GetUnicodeWidth());
-        var actualBoxWidth = actualTextWidth + 3;
+        documentation = documentation.Replace("\r\n", "\n");
+
+        // Request word wrapping. Actual line lengths won't be exactly the requested width due to wrapping.
+        // We will try wrappings with different available horizontal sizes. We don't want
+        // 'too long and too thin' boxes but also we don't want 'too narrow and too high' ones.
+        // So we use two heuristics to select the 'right' proportions of the documentation box.
+        List<FormattedString> documentationLines = null;
+        for (double proportion = 0.3; proportion <= 0.95; proportion += 0.1) //30%, 40%, ..., 90%
+        {
+            var requestedBoxWidth = (int)(proportion * maxWidth);
+            documentationLines = GetDocumentationLines(requestedBoxWidth);
+
+            var documentationBoxHeight = documentationLines.Count + CompletionPane.VerticalBordersHeight;
+
+            //Heuristic 1) primarily we want to use space preallocated by the completion items box.
+            if (documentationBoxHeight <= completionRowsCount)
+            {
+                var documentationBoxWidth = GetActualTextWidth(documentationLines) + CompletionPane.HorizontalBordersWidth;
+
+                //Heuristic 2) we prefer boxes with an aspect ratio > 4 (which assumes we are trying different proportions in ascending order).
+                const double MonospaceFontWidthHeightRatioApprox = 0.5;
+                if (MonospaceFontWidthHeightRatioApprox * documentationBoxWidth / documentationBoxHeight > 4)
+                {
+                    break;
+                }
+            }
+        }
+
+        var actualTextWidth = GetActualTextWidth(documentationLines);
+        var actualBoxWidth = actualTextWidth + CompletionPane.HorizontalBordersWidth;
 
         var (boxTop, boxBottom) = BoxDrawing.HorizontalBorders(actualBoxWidth - 1, leftCorner: false);
 
-        return wrapped
+        return documentationLines
             .Select(line =>
                 new Row(Cell
                     .FromText(" " + line.Trim() + new string(' ', actualTextWidth - line.GetUnicodeWidth()))
@@ -282,5 +307,15 @@ internal class Renderer
             .Prepend(new Row(Cell.FromText(boxTop, theme.DocumentationBorder)))
             .Append(new Row(Cell.FromText(boxBottom, theme.DocumentationBorder)))
             .ToArray();
+
+        List<FormattedString> GetDocumentationLines(int requestedBoxWidth)
+        {
+            var requestedTextWidth = requestedBoxWidth - CompletionPane.HorizontalBordersWidth;
+            var documentationLines = WordWrapping.WrapWords(documentation, requestedTextWidth);
+            return documentationLines;
+        }
+
+        static int GetActualTextWidth(List<FormattedString> documentationLines)
+            => documentationLines.Max(line => line.GetUnicodeWidth());
     }
 }
