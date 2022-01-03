@@ -62,7 +62,7 @@ public class ResizingAndScrollingTests
     {
         var console = NewConsole(width: 5);
         console.StubInput(Input($"{Enter}"));
-        var prompt = new Prompt(console: console, theme: new PromptTheme(prompt: "LOOOONG_PROMPT--->>"));
+        var prompt = new Prompt(console: console, configuration: new PromptConfiguration(prompt: "LOOOONG_PROMPT--->>"));
         await prompt.ReadLineAsync();
     }
 
@@ -77,7 +77,7 @@ public class ResizingAndScrollingTests
             Input($"a", () => console.BufferWidth.Returns(5)),
             Input($"a{Enter}"));
 
-        var prompt = CompletionTests.ConfigurePrompt(console, new PromptTheme(prompt: "LOOOONG_PROMPT--->>"));
+        var prompt = CompletionTests.ConfigurePrompt(console, new PromptConfiguration(prompt: "LOOOONG_PROMPT--->>"));
         await prompt.ReadLineAsync();
     }
 

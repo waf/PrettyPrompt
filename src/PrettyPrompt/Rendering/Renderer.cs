@@ -27,24 +27,24 @@ namespace PrettyPrompt;
 internal class Renderer
 {
     private readonly IConsole console;
-    private readonly PromptTheme theme;
+    private readonly PromptConfiguration configuration;
 
     private Screen previouslyRenderedScreen = new(0, 0, ConsoleCoordinate.Zero);
     private bool wasTextSelectedDuringPreviousRender;
 
-    public Renderer(IConsole console, PromptTheme theme)
+    public Renderer(IConsole console, PromptConfiguration configuration)
     {
         this.console = console;
-        this.theme = theme;
+        this.configuration = configuration;
     }
 
     public void RenderPrompt()
     {
         // write some newlines to ensure we have enough room to render the completion pane.
-        var min = CompletionPane.VerticalBordersHeight + CompletionPane.MinCompletionItemsCount;
-        var max = CompletionPane.VerticalBordersHeight + CompletionPane.MaxCompletionItemsCount;
-        var newLinesCount = (2 * console.WindowHeight / 5).Clamp(min, max);
-        console.Write(new string('\n', newLinesCount) + MoveCursorUp(newLinesCount) + MoveCursorToColumn(1) + Reset + theme.Prompt);
+        var min = CompletionPane.VerticalBordersHeight + configuration.MinCompletionItemsCount;
+        var max = CompletionPane.VerticalBordersHeight + configuration.MaxCompletionItemsCount;
+        var newLinesCount = ((int)(configuration.ProportionOfWindowHeightForCompletionPane * console.WindowHeight)).Clamp(min, max);
+        console.Write(new string('\n', newLinesCount) + MoveCursorUp(newLinesCount) + MoveCursorToColumn(1) + Reset + configuration.Prompt);
     }
 
     public async Task RenderOutput(PromptResult result, CodePane codePane, CompletionPane completionPane, IReadOnlyCollection<FormatSpan> highlights, KeyPress key)
@@ -78,7 +78,7 @@ internal class Renderer
                 console.Clear(); // for some reason, using escape codes (ClearEntireScreen and MoveCursorToPosition) leaves
                                  // CursorTop in an old (cached?) state. Using Console.Clear() works around this.
                 RenderPrompt();
-                codePane.MeasureConsole(console, theme.Prompt); // our code pane will have more room to render, it now renders at the top of the screen.
+                codePane.MeasureConsole(console, configuration.Prompt); // our code pane will have more room to render, it now renders at the top of the screen.
             }
 
             await Redraw();
@@ -93,7 +93,7 @@ internal class Renderer
             ScreenArea[] completionWidgets = await BuildCompletionScreenAreas(
                 completionPane,
                 cursor: codePane.Document.Cursor,
-                codeAreaStartColumn: theme.Prompt.Length,
+                codeAreaStartColumn: configuration.Prompt.Length,
                 codeAreaWidth: codePane.CodeAreaWidth
             ).ConfigureAwait(false);
 
@@ -101,7 +101,7 @@ internal class Renderer
             var ansiCoordinate = new ConsoleCoordinate
             (
                 row: 1 + codePane.TopCoordinate,
-                column: 1 + theme.Prompt.Length
+                column: 1 + configuration.Prompt.Length
             );
 
             // draw screen areas to screen representation.
@@ -168,7 +168,7 @@ internal class Renderer
 
         int wordWidth = completionPane.FilteredView
             .Max(w => UnicodeWidth.GetWidth(w.DisplayText.Text ?? w.ReplacementText));
-        int boxWidth = wordWidth + 3 + theme.SelectedCompletionItemMarker.Length; // 3 = left border + right border + space before right border
+        int boxWidth = wordWidth + 3 + configuration.SelectedCompletionItemMarker.Length; // 3 = left border + right border + space before right border
 
         var completionStart = new ConsoleCoordinate(
             row: cursor.Row + 1,
@@ -197,7 +197,7 @@ internal class Renderer
 
     private Row[] BuildCompletionRows(CompletionPane completionPane, int codeAreaWidth, int wordWidth, ConsoleCoordinate completionBoxStart)
     {
-        var horizontalBorder = TruncateToWindow(new string(BoxDrawing.EdgeHorizontal, wordWidth + theme.SelectedCompletionItemMarker.Length + 1), 2).Text; // +1 = space after item (=space before right border)
+        var horizontalBorder = TruncateToWindow(new string(BoxDrawing.EdgeHorizontal, wordWidth + configuration.SelectedCompletionItemMarker.Length + 1), 2).Text; // +1 = space after item (=space before right border)
 
         var selectedItem = completionPane.FilteredView.SelectedItem;
         return completionPane.FilteredView
@@ -209,20 +209,20 @@ internal class Renderer
                 var rowCells = new List<Cell>();
 
                 //left border
-                rowCells.AddRange(Cell.FromText(BoxDrawing.EdgeVertical, theme.CompletionBorder));
+                rowCells.AddRange(Cell.FromText(BoxDrawing.EdgeVertical, configuration.CompletionBorder));
 
                 //(un)selected item marker
                 if (isSelected)
                 {
-                    rowCells.AddRange(Cell.FromText(theme.SelectedCompletionItemMarker));
+                    rowCells.AddRange(Cell.FromText(configuration.SelectedCompletionItemMarker));
                 }
                 else
                 {
-                    rowCells.AddRange(Cell.FromText(theme.UnselectedCompletionItemMarker));
+                    rowCells.AddRange(Cell.FromText(configuration.UnselectedCompletionItemMarker));
                 }
 
                 //item
-                var itemCells = Cell.FromText(TruncateToWindow(item + new string(' ', wordWidth - item.GetUnicodeWidth()), 2 + theme.SelectedCompletionItemMarker.Length)); // 2 = left border + right border
+                var itemCells = Cell.FromText(TruncateToWindow(item + new string(' ', wordWidth - item.GetUnicodeWidth()), 2 + configuration.SelectedCompletionItemMarker.Length)); // 2 = left border + right border
                 if (isSelected)
                 {
                     TransformFormattingForSelected(itemCells);
@@ -230,12 +230,12 @@ internal class Renderer
                 rowCells.AddRange(itemCells);
 
                 //right border
-                rowCells.AddRange(Cell.FromText(" " + BoxDrawing.EdgeVertical, theme.CompletionBorder));
+                rowCells.AddRange(Cell.FromText(" " + BoxDrawing.EdgeVertical, configuration.CompletionBorder));
 
                 return new Row(rowCells);
             })
-            .Prepend(new Row(Cell.FromText(BoxDrawing.CornerUpperLeft + horizontalBorder + BoxDrawing.CornerUpperRight, theme.CompletionBorder)))
-            .Append(new Row(Cell.FromText(BoxDrawing.CornerLowerLeft + horizontalBorder + BoxDrawing.CornerLowerRight, theme.CompletionBorder)))
+            .Prepend(new Row(Cell.FromText(BoxDrawing.CornerUpperLeft + horizontalBorder + BoxDrawing.CornerUpperRight, configuration.CompletionBorder)))
+            .Append(new Row(Cell.FromText(BoxDrawing.CornerLowerLeft + horizontalBorder + BoxDrawing.CornerLowerRight, configuration.CompletionBorder)))
             .ToArray();
 
         FormattedString TruncateToWindow(FormattedString line, int offset)
@@ -251,7 +251,7 @@ internal class Renderer
                 var cell = itemCells[i];
                 if (cell.Formatting.Background is null)
                 {
-                    var newFormatting = cell.Formatting with { Background = theme.SelectedCompletionItemBackground };
+                    var newFormatting = cell.Formatting with { Background = configuration.SelectedCompletionItemBackground };
                     itemCells[i] = cell with { Formatting = newFormatting };
                 }
             }
@@ -300,12 +300,12 @@ internal class Renderer
             .Select(line =>
                 new Row(Cell
                     .FromText(" " + line.Trim() + new string(' ', actualTextWidth - line.GetUnicodeWidth()))
-                    .Concat(Cell.FromText(" " + BoxDrawing.EdgeVertical, theme.DocumentationBorder))
+                    .Concat(Cell.FromText(" " + BoxDrawing.EdgeVertical, configuration.DocumentationBorder))
                     .ToList()
                 )
             )
-            .Prepend(new Row(Cell.FromText(boxTop, theme.DocumentationBorder)))
-            .Append(new Row(Cell.FromText(boxBottom, theme.DocumentationBorder)))
+            .Prepend(new Row(Cell.FromText(boxTop, configuration.DocumentationBorder)))
+            .Append(new Row(Cell.FromText(boxBottom, configuration.DocumentationBorder)))
             .ToArray();
 
         List<FormattedString> GetDocumentationLines(int requestedBoxWidth)
