@@ -28,13 +28,6 @@ internal class CompletionPane : IKeyPressHandler
     /// </summary>
     public const int VerticalBordersHeight = 2;
 
-    public const int MaxCompletionItemsCount = 10;
-
-    /// <summary>
-    /// How few completion items we are willing to render.
-    /// </summary>
-    public const int MinCompletionItemsCount = 1;
-
     /// <summary>
     /// Cursor + top border + bottom border.
     /// </summary>
@@ -43,6 +36,8 @@ internal class CompletionPane : IKeyPressHandler
     private readonly CodePane codePane;
     private readonly CompletionCallbackAsync complete;
     private readonly OpenCompletionWindowCallbackAsync shouldOpenCompletionWindow;
+    private readonly int minCompletionItemsCount;
+    private readonly int maxCompletionItemsCount;
 
     /// <summary>
     /// The index of the caret when the pane was opened
@@ -64,11 +59,18 @@ internal class CompletionPane : IKeyPressHandler
     /// </summary>
     public bool IsOpen { get; set; }
 
-    public CompletionPane(CodePane codePane, CompletionCallbackAsync complete, OpenCompletionWindowCallbackAsync shouldOpenCompletionWindow)
+    public CompletionPane(
+        CodePane codePane,
+        CompletionCallbackAsync complete,
+        OpenCompletionWindowCallbackAsync shouldOpenCompletionWindow,
+        int minCompletionItemsCount,
+        int maxCompletionItemsCount)
     {
         this.codePane = codePane;
         this.complete = complete;
         this.shouldOpenCompletionWindow = shouldOpenCompletionWindow;
+        this.minCompletionItemsCount = minCompletionItemsCount;
+        this.maxCompletionItemsCount = maxCompletionItemsCount;
     }
 
     private void Open(int caret)
@@ -148,8 +150,8 @@ internal class CompletionPane : IKeyPressHandler
         return Task.CompletedTask;
     }
 
-    private static bool EnoughRoomToDisplay(CodePane codePane) =>
-        codePane.CodeAreaHeight - codePane.Document.Cursor.Row >= VerticalPaddingHeight + MinCompletionItemsCount; // offset + top border + MinCompletionItemsCount + bottom border
+    private bool EnoughRoomToDisplay(CodePane codePane) =>
+        codePane.CodeAreaHeight - codePane.Document.Cursor.Row >= VerticalPaddingHeight + minCompletionItemsCount; // offset + top border + MinCompletionItemsCount + bottom border
 
     async Task IKeyPressHandler.OnKeyUp(KeyPress key)
     {
@@ -210,7 +212,7 @@ internal class CompletionPane : IKeyPressHandler
 
     private void FilterCompletions(CodePane codePane)
     {
-        int height = Math.Min(codePane.CodeAreaHeight - VerticalPaddingHeight, MaxCompletionItemsCount);
+        int height = Math.Min(codePane.CodeAreaHeight - VerticalPaddingHeight, maxCompletionItemsCount);
 
         var filtered = new List<CompletionItem>();
         var previouslySelectedItem = this.FilteredView.SelectedItem;

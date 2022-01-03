@@ -208,13 +208,13 @@ public class CompletionTests
         Assert.Contains("            ", output[indexOfOutputWithCompletionPane + 1]); //completion pane should be cleared
     }
 
-    public static Prompt ConfigurePrompt(IConsole console, PromptTheme theme = null) =>
+    public static Prompt ConfigurePrompt(IConsole console, PromptConfiguration configuration = null) =>
         new(
             callbacks: new PromptCallbacks
             {
                 CompletionCallback = new CompletionTestData().CompletionHandlerAsync
             },
             console: console,
-            theme: theme
+            configuration: configuration
         );
 }

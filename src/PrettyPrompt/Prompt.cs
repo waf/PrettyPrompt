@@ -23,7 +23,7 @@ public sealed class Prompt : IPrompt
 {
     private readonly IConsole console;
     private readonly HistoryLog history;
-    private readonly PromptTheme theme;
+    private readonly PromptConfiguration configuration;
     private readonly CancellationManager cancellationManager;
 
     private readonly CompletionCallbackAsync completionCallback;
@@ -38,18 +38,18 @@ public sealed class Prompt : IPrompt
     /// <param name="persistentHistoryFilepath">The filepath of where to store history entries. If null, persistent history is disabled.</param>
     /// <param name="callbacks">A collection of callbacks for modifying and intercepting the prompt's behavior</param>
     /// <param name="console">The implementation of the console to use. This is mainly for ease of unit testing</param>
-    /// <param name="theme">Rendering theme. If null, default theme is used.</param>
+    /// <param name="configuration">If null, default configuration is used.</param>
     public Prompt(
         string persistentHistoryFilepath = null,
         PromptCallbacks callbacks = null,
         IConsole console = null,
-        PromptTheme theme = null)
+        PromptConfiguration configuration = null)
     {
         this.console = console ?? new SystemConsole();
         this.console.InitVirtualTerminalProcessing();
 
         this.history = new HistoryLog(persistentHistoryFilepath);
-        this.theme = theme ?? new PromptTheme();
+        this.configuration = configuration ?? new PromptConfiguration();
         this.cancellationManager = new CancellationManager(this.console);
 
         callbacks ??= new PromptCallbacks();
@@ -59,21 +59,21 @@ public sealed class Prompt : IPrompt
         this.keyPressCallbacks = callbacks.KeyPressCallbacks;
 
         var highlightCallback = callbacks.HighlightCallback;
-        this.highlighter = new SyntaxHighlighter(highlightCallback, PromptTheme.HasUserOptedOutFromColor);
+        this.highlighter = new SyntaxHighlighter(highlightCallback, PromptConfiguration.HasUserOptedOutFromColor);
     }
 
     /// <inheritdoc cref="IPrompt.ReadLineAsync()" />
     public async Task<PromptResult> ReadLineAsync()
     {
-        var renderer = new Renderer(console, theme);
+        var renderer = new Renderer(console, configuration);
         renderer.RenderPrompt();
 
         // code pane contains the code the user is typing. It does not include the prompt (i.e. "> ")
         var codePane = new CodePane(topCoordinate: console.CursorTop, detectSoftEnterCallback);
-        codePane.MeasureConsole(console, theme.Prompt);
+        codePane.MeasureConsole(console, configuration.Prompt);
 
         // completion pane is the pop-up window that shows potential autocompletions.
-        var completionPane = new CompletionPane(codePane, completionCallback, shouldOpenCompletionWindow);
+        var completionPane = new CompletionPane(codePane, completionCallback, shouldOpenCompletionWindow, configuration.MinCompletionItemsCount, configuration.MaxCompletionItemsCount);
 
         history.Track(codePane);
         cancellationManager.CaptureControlC();
@@ -81,12 +81,12 @@ public sealed class Prompt : IPrompt
         foreach (var key in KeyPress.ReadForever(console))
         {
             // grab the code area width every key press, so we rerender appropriately when the console is resized.
-            codePane.MeasureConsole(console, theme.Prompt);
+            codePane.MeasureConsole(console, configuration.Prompt);
 
             await InterpretKeyPress(key, codePane, completionPane).ConfigureAwait(false);
 
             // typing / word-wrapping may have scrolled the console, giving us more room.
-            codePane.MeasureConsole(console, theme.Prompt);
+            codePane.MeasureConsole(console, configuration.Prompt);
 
             // render the typed input, with syntax highlighting
             var inputText = codePane.Document.GetText();
