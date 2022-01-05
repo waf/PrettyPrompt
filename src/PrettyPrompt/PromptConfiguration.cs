@@ -18,8 +18,7 @@ public class PromptConfiguration
     /// </summary>
     public string Prompt { get; }
 
-    public ConsoleFormat CompletionBorder { get; }
-    public ConsoleFormat DocumentationBorder { get; }
+    public ConsoleFormat CompletionBorderFormat { get; }
 
     public FormattedString SelectedCompletionItemMarker { get; }
     public string UnselectedCompletionItemMarker { get; }
@@ -40,7 +39,6 @@ public class PromptConfiguration
     public PromptConfiguration(
         string prompt = "> ",
         ConsoleFormat? completionBorder = null,
-        ConsoleFormat? documentationBorder = null,
         FormattedString? selectedCompletionItemMarkSymbol = null,
         AnsiColor? selectedCompletionItemBackground = null,
         int minCompletionItemsCount = 1,
@@ -53,10 +51,9 @@ public class PromptConfiguration
 
         Prompt = prompt;
 
-        CompletionBorder = GetFormat(completionBorder ?? new ConsoleFormat(Foreground: AnsiColor.Blue));
-        DocumentationBorder = GetFormat(documentationBorder ?? new ConsoleFormat(Foreground: AnsiColor.Cyan));
+        CompletionBorderFormat = GetFormat(completionBorder ?? new ConsoleFormat(Foreground: AnsiColor.Blue));
 
-        SelectedCompletionItemMarker = selectedCompletionItemMarkSymbol ?? new FormattedString(">", new FormatSpan(0, 1, new ConsoleFormat(Foreground: DocumentationBorder.Foreground)));
+        SelectedCompletionItemMarker = selectedCompletionItemMarkSymbol ?? new FormattedString(">", new FormatSpan(0, 1, new ConsoleFormat(Foreground: AnsiColor.Cyan)));
         UnselectedCompletionItemMarker = new string(' ', SelectedCompletionItemMarker.Length);
         SelectedCompletionItemBackground = GetColor(selectedCompletionItemBackground ?? AnsiColor.RGB(40, 30, 30));
 
