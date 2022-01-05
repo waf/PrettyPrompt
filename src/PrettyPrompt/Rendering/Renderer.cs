@@ -4,8 +4,10 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+#nullable enable
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using PrettyPrompt.Consoles;
@@ -187,20 +189,20 @@ internal class Renderer
 
         var completionArea = new ScreenArea(completionStart, completionRows);
         var documentationArea = new ScreenArea(documentationStart, documentationRows);
-        var connectionHeight = Math.Max(0, documentationRows.Length - completionRows.Length - 1);
+        var connectionHeight = Math.Max(0, documentationRows.Length - completionRows.Length);
         var completionTopRightCorner = new ConsoleCoordinate(completionStart.Row, completionStart.Column + boxWidth - 1);
         if (connectionHeight > 0)
         {
-            var connectionRow = new Row(Cell.FromText(BoxDrawing.EdgeVertical.ToString(), configuration.CompletionBorderFormat));
-            var connectionRows = Enumerable.Repeat(connectionRow, connectionHeight)
-                .Prepend(new Row(Cell.FromText(BoxDrawing.EdgeVerticalAndLeftHorizontal.ToString(), configuration.CompletionBorderFormat)))
-                .Append(new Row(Cell.FromText(BoxDrawing.CornerLowerLeft.ToString(), configuration.CompletionBorderFormat)))
+            var connectionRow = new Row(Cell.FromText(BoxDrawing.EdgeVertical.ToString(), configuration.CompletionBoxBorderFormat));
+            var connectionRows = Enumerable.Repeat(connectionRow, connectionHeight - 1)
+                .Prepend(new Row(Cell.FromText(BoxDrawing.EdgeVerticalAndLeftHorizontal.ToString(), configuration.CompletionBoxBorderFormat)))
+                .Append(new Row(Cell.FromText(BoxDrawing.CornerLowerLeft.ToString(), configuration.CompletionBoxBorderFormat)))
                 .ToArray();
 
             var completionBottomRightCorner = new ConsoleCoordinate(completionStart.Row + completionRows.Length - 1, completionStart.Column + boxWidth - 1);
             var connectionArea = new ScreenArea(completionBottomRightCorner, connectionRows);
 
-            var topRightCornerRow = new Row(Cell.FromText(BoxDrawing.EdgeHorizontalAndLowerVertical.ToString(), configuration.CompletionBorderFormat));
+            var topRightCornerRow = new Row(Cell.FromText(BoxDrawing.EdgeHorizontalAndLowerVertical.ToString(), configuration.CompletionBoxBorderFormat));
             var topRightCornerArea = new ScreenArea(completionTopRightCorner, new[] { topRightCornerRow });
 
             return new[] { completionArea, documentationArea, topRightCornerArea, connectionArea };
@@ -209,11 +211,11 @@ internal class Renderer
         {
             if (documentationRows.Length > 0)
             {
-                var topRightCornerRow = new Row(Cell.FromText(BoxDrawing.EdgeHorizontalAndLowerVertical.ToString(), configuration.CompletionBorderFormat));
+                var topRightCornerRow = new Row(Cell.FromText(BoxDrawing.EdgeHorizontalAndLowerVertical.ToString(), configuration.CompletionBoxBorderFormat));
                 var topRightCornerArea = new ScreenArea(completionTopRightCorner, new[] { topRightCornerRow });
 
                 var lowerConnectionCorner = new ConsoleCoordinate(documentationRows.Length, completionStart.Column + boxWidth - 1);
-                var bottomRightCornerRow = new Row(Cell.FromText(documentationRows.Length < completionRows.Length ? BoxDrawing.EdgeVerticalAndRightHorizontal.ToString() : BoxDrawing.EdgeHorizontalAndUpperVertical.ToString(), configuration.CompletionBorderFormat));
+                var bottomRightCornerRow = new Row(Cell.FromText(documentationRows.Length < completionRows.Length ? BoxDrawing.EdgeVerticalAndRightHorizontal.ToString() : BoxDrawing.EdgeHorizontalAndUpperVertical.ToString(), configuration.CompletionBoxBorderFormat));
                 var bottomRightCornerArea = new ScreenArea(lowerConnectionCorner, new[] { bottomRightCornerRow });
 
                 return new[] { completionArea, documentationArea, topRightCornerArea, bottomRightCornerArea };
@@ -239,7 +241,7 @@ internal class Renderer
                 var rowCells = new List<Cell>();
 
                 //left border
-                rowCells.AddRange(Cell.FromText(BoxDrawing.EdgeVertical, configuration.CompletionBorderFormat));
+                rowCells.AddRange(Cell.FromText(BoxDrawing.EdgeVertical, configuration.CompletionBoxBorderFormat));
 
                 //(un)selected item marker
                 if (isSelected)
@@ -255,36 +257,23 @@ internal class Renderer
                 var itemCells = Cell.FromText(TruncateToWindow(item + new string(' ', wordWidth - item.GetUnicodeWidth()), 2 + configuration.SelectedCompletionItemMarker.Length)); // 2 = left border + right border
                 if (isSelected)
                 {
-                    TransformFormattingForSelected(itemCells);
+                    TransformBackground(itemCells, configuration.SelectedCompletionItemBackground);
                 }
                 rowCells.AddRange(itemCells);
 
                 //right border
-                rowCells.AddRange(Cell.FromText(" " + BoxDrawing.EdgeVertical, configuration.CompletionBorderFormat));
+                rowCells.AddRange(Cell.FromText(" " + BoxDrawing.EdgeVertical, configuration.CompletionBoxBorderFormat));
 
                 return new Row(rowCells);
             })
-            .Prepend(new Row(Cell.FromText(BoxDrawing.CornerUpperLeft + horizontalBorder + BoxDrawing.CornerUpperRight, configuration.CompletionBorderFormat)))
-            .Append(new Row(Cell.FromText(BoxDrawing.CornerLowerLeft + horizontalBorder + BoxDrawing.CornerLowerRight, configuration.CompletionBorderFormat)))
+            .Prepend(new Row(Cell.FromText(BoxDrawing.CornerUpperLeft + horizontalBorder + BoxDrawing.CornerUpperRight, configuration.CompletionBoxBorderFormat)))
+            .Append(new Row(Cell.FromText(BoxDrawing.CornerLowerLeft + horizontalBorder + BoxDrawing.CornerLowerRight, configuration.CompletionBoxBorderFormat)))
             .ToArray();
 
         FormattedString TruncateToWindow(FormattedString line, int offset)
         {
             var availableWidth = Math.Max(0, codeAreaWidth - completionBoxStart.Column - offset);
             return line.Substring(0, Math.Min(line.Length, availableWidth));
-        }
-
-        void TransformFormattingForSelected(List<Cell> itemCells)
-        {
-            for (int i = 0; i < itemCells.Count; i++)
-            {
-                var cell = itemCells[i];
-                if (cell.Formatting.Background is null)
-                {
-                    var newFormatting = cell.Formatting with { Background = configuration.SelectedCompletionItemBackground };
-                    itemCells[i] = cell with { Formatting = newFormatting };
-                }
-            }
         }
     }
 
@@ -299,7 +288,7 @@ internal class Renderer
         // We will try wrappings with different available horizontal sizes. We don't want
         // 'too long and too thin' boxes but also we don't want 'too narrow and too high' ones.
         // So we use two heuristics to select the 'right' proportions of the documentation box.
-        List<FormattedString> documentationLines = null;
+        List<FormattedString>? documentationLines = null;
         for (double proportion = 0.3; proportion <= 0.95; proportion += 0.1) //30%, 40%, ..., 90%
         {
             var requestedBoxWidth = (int)(proportion * maxWidth);
@@ -321,6 +310,7 @@ internal class Renderer
             }
         }
 
+        Debug.Assert(documentationLines != null);
         var actualTextWidth = GetActualTextWidth(documentationLines);
         var actualBoxWidth = actualTextWidth + CompletionPane.HorizontalBordersWidth;
 
@@ -328,14 +318,15 @@ internal class Renderer
 
         return documentationLines
             .Select(line =>
-                new Row(Cell
-                    .FromText(" " + line.Trim() + new string(' ', actualTextWidth - line.GetUnicodeWidth()))
-                    .Concat(Cell.FromText(" " + BoxDrawing.EdgeVertical, configuration.CompletionBorderFormat))
-                    .ToList()
-                )
+            {
+                var cells = Cell.FromText(" " + line.Trim() + new string(' ', actualTextWidth - line.GetUnicodeWidth() + 1));
+                TransformBackground(cells, configuration.CompletionItemDocumentationPaneBackground);
+                cells.AddRange(Cell.FromText(BoxDrawing.EdgeVertical, configuration.CompletionBoxBorderFormat));
+                return new Row(cells);
+            }
             )
-            .Prepend(new Row(Cell.FromText(boxTop, configuration.CompletionBorderFormat)))
-            .Append(new Row(Cell.FromText(boxBottom, configuration.CompletionBorderFormat)))
+            .Prepend(new Row(Cell.FromText(boxTop, configuration.CompletionBoxBorderFormat)))
+            .Append(new Row(Cell.FromText(boxBottom, configuration.CompletionBoxBorderFormat)))
             .ToArray();
 
         List<FormattedString> GetDocumentationLines(int requestedBoxWidth)
@@ -347,5 +338,18 @@ internal class Renderer
 
         static int GetActualTextWidth(List<FormattedString> documentationLines)
             => documentationLines.Max(line => line.GetUnicodeWidth());
+    }
+
+    private static void TransformBackground(List<Cell> itemCells, AnsiColor? background)
+    {
+        for (int i = 0; i < itemCells.Count; i++)
+        {
+            var cell = itemCells[i];
+            if (cell.Formatting.Background is null)
+            {
+                var newFormatting = cell.Formatting with { Background = background };
+                itemCells[i] = cell with { Formatting = newFormatting };
+            }
+        }
     }
 }
