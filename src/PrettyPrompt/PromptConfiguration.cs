@@ -18,8 +18,8 @@ public class PromptConfiguration
     /// </summary>
     public string Prompt { get; }
 
-    public ConsoleFormat CompletionBorder { get; }
-    public ConsoleFormat DocumentationBorder { get; }
+    public ConsoleFormat CompletionBoxBorderFormat { get; }
+    public AnsiColor? CompletionItemDocumentationPaneBackground { get; }
 
     public FormattedString SelectedCompletionItemMarker { get; }
     public string UnselectedCompletionItemMarker { get; }
@@ -39,8 +39,8 @@ public class PromptConfiguration
 
     public PromptConfiguration(
         string prompt = "> ",
-        ConsoleFormat? completionBorder = null,
-        ConsoleFormat? documentationBorder = null,
+        ConsoleFormat? completionBoxBorderFormat = null,
+        AnsiColor? completionItemDocumentationPaneBackground = null,
         FormattedString? selectedCompletionItemMarkSymbol = null,
         AnsiColor? selectedCompletionItemBackground = null,
         int minCompletionItemsCount = 1,
@@ -53,12 +53,12 @@ public class PromptConfiguration
 
         Prompt = prompt;
 
-        CompletionBorder = GetFormat(completionBorder ?? new ConsoleFormat(Foreground: AnsiColor.Blue));
-        DocumentationBorder = GetFormat(documentationBorder ?? new ConsoleFormat(Foreground: AnsiColor.Cyan));
+        CompletionBoxBorderFormat = GetFormat(completionBoxBorderFormat ?? new ConsoleFormat(Foreground: AnsiColor.Blue));
+        CompletionItemDocumentationPaneBackground = GetColor(completionItemDocumentationPaneBackground ?? AnsiColor.RGB(30, 30, 30));
 
-        SelectedCompletionItemMarker = selectedCompletionItemMarkSymbol ?? new FormattedString(">", new FormatSpan(0, 1, new ConsoleFormat(Foreground: DocumentationBorder.Foreground)));
+        SelectedCompletionItemMarker = selectedCompletionItemMarkSymbol ?? new FormattedString(">", new FormatSpan(0, 1, new ConsoleFormat(Foreground: AnsiColor.Cyan)));
         UnselectedCompletionItemMarker = new string(' ', SelectedCompletionItemMarker.Length);
-        SelectedCompletionItemBackground = GetColor(selectedCompletionItemBackground ?? AnsiColor.RGB(40, 30, 30));
+        SelectedCompletionItemBackground = GetColor(selectedCompletionItemBackground ?? AnsiColor.RGB(30, 30, 30));
 
         ConsoleFormat GetFormat(ConsoleFormat format) => HasUserOptedOutFromColor ? ConsoleFormat.None : format;
         AnsiColor? GetColor(AnsiColor color) => HasUserOptedOutFromColor ? null : color;

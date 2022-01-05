@@ -14,6 +14,10 @@ static class BoxDrawing
     public const char CornerLowerLeft = '└';
     public const char EdgeHorizontal = '─';
     public const char EdgeVertical = '│';
+    public const char EdgeVerticalAndLeftHorizontal = '┤';
+    public const char EdgeVerticalAndRightHorizontal = '├';
+    public const char EdgeHorizontalAndLowerVertical = '┬';
+    public const char EdgeHorizontalAndUpperVertical = '┴';
 
     public static (string top, string bottom) HorizontalBorders(int width, bool leftCorner = true, bool rightCorner = true)
     {
