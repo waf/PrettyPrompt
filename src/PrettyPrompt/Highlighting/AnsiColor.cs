@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using PrettyPrompt.Consoles;
 
 namespace PrettyPrompt.Highlighting;
 
@@ -16,16 +17,9 @@ namespace PrettyPrompt.Highlighting;
 /// <remarks>https://en.wikipedia.org/wiki/ANSI_escape_code#Colors</remarks>
 public sealed class AnsiColor : IEquatable<AnsiColor>
 {
+    private readonly string foregroundCode;
+    private readonly string backgroundCode;
     private readonly string friendlyName;
-    public string Foreground { get; }
-    public string Background { get; }
-
-    private AnsiColor(string foreground, string background, string friendlyName)
-    {
-        this.Foreground = foreground;
-        this.Background = background;
-        this.friendlyName = friendlyName;
-    }
 
     public static readonly AnsiColor Black = new("30", "40", nameof(Black));
     public static readonly AnsiColor Red = new("31", "41", nameof(Red));
@@ -44,37 +38,30 @@ public sealed class AnsiColor : IEquatable<AnsiColor>
     public static readonly AnsiColor BrightCyan = new("96", "106", nameof(BrightCyan));
     public static readonly AnsiColor BrightWhite = new("97", "107", nameof(BrightWhite));
 
-    public static AnsiColor RGB(byte r, byte g, byte b) => new($"38;2;{r};{g};{b}", $"48;2;{r};{g};{b}", "RGB");
+    public static AnsiColor Rgb(byte r, byte g, byte b) => new($"38;2;{r};{g};{b}", $"48;2;{r};{g};{b}", "RGB color");
 
-    public override bool Equals(object obj)
+    public AnsiColor(string foregroundCode, string backgroundCode, string friendlyName)
     {
-        return Equals(obj as AnsiColor);
+        this.foregroundCode = foregroundCode;
+        this.backgroundCode = backgroundCode;
+        this.friendlyName = friendlyName;
     }
 
-    public bool Equals(AnsiColor other)
-    {
-        return other != null &&
-               Foreground == other.Foreground &&
-               Background == other.Background;
-    }
+    public string GetAnsiEscapeSequence(Type type = Type.Foreground) => AnsiEscapeCodes.ToAnsiEscapeSequence(GetCode(type));
+    internal string GetCode(Type type = Type.Foreground) => type == Type.Foreground ? foregroundCode : backgroundCode;
 
-    public override int GetHashCode()
-    {
-        return HashCode.Combine(Foreground, Background);
-    }
+    public override bool Equals(object obj) => Equals(obj as AnsiColor);
+    public bool Equals(AnsiColor other) => other != null && foregroundCode == other.foregroundCode && backgroundCode == other.backgroundCode;
+    public override int GetHashCode() => foregroundCode.GetHashCode();
 
-    public static bool operator ==(AnsiColor left, AnsiColor right)
-    {
-        return EqualityComparer<AnsiColor>.Default.Equals(left, right);
-    }
+    public static bool operator ==(AnsiColor left, AnsiColor right) => EqualityComparer<AnsiColor>.Default.Equals(left, right);
+    public static bool operator !=(AnsiColor left, AnsiColor right) => !(left == right);
 
-    public static bool operator !=(AnsiColor left, AnsiColor right)
-    {
-        return !(left == right);
-    }
+    public override string ToString() => friendlyName;
 
-    public override string ToString()
+    public enum Type
     {
-        return friendlyName;
+        Foreground,
+        Background
     }
 }
