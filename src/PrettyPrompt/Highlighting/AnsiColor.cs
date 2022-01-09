@@ -15,7 +15,7 @@ namespace PrettyPrompt.Highlighting;
 /// Each color has a different code depending on if it's applied as a foreground or background color.
 /// </summary>
 /// <remarks>https://en.wikipedia.org/wiki/ANSI_escape_code#Colors</remarks>
-public sealed class AnsiColor : IEquatable<AnsiColor>
+public readonly struct AnsiColor : IEquatable<AnsiColor>
 {
     private readonly string foregroundCode;
     private readonly string backgroundCode;
@@ -50,8 +50,8 @@ public sealed class AnsiColor : IEquatable<AnsiColor>
     public string GetAnsiEscapeSequence(Type type = Type.Foreground) => AnsiEscapeCodes.ToAnsiEscapeSequence(GetCode(type));
     internal string GetCode(Type type = Type.Foreground) => type == Type.Foreground ? foregroundCode : backgroundCode;
 
-    public override bool Equals(object obj) => Equals(obj as AnsiColor);
-    public bool Equals(AnsiColor other) => other != null && foregroundCode == other.foregroundCode && backgroundCode == other.backgroundCode;
+    public override bool Equals(object obj) => obj is AnsiColor other && Equals(other);
+    public bool Equals(AnsiColor other) => foregroundCode == other.foregroundCode && backgroundCode == other.backgroundCode;
     public override int GetHashCode() => foregroundCode.GetHashCode();
 
     public static bool operator ==(AnsiColor left, AnsiColor right) => EqualityComparer<AnsiColor>.Default.Equals(left, right);
