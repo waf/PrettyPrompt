@@ -88,7 +88,7 @@ public class PromptCallbacks
     /// <summary>
     /// An optional delegate that controls when the completion window should open.
     /// </summary>
-    public OpenCompletionWindowCallbackAsync OpenCompletionWindowCallback { get; init; }
+    public OpenCompletionWindowCallbackAsync? OpenCompletionWindowCallback { get; init; }
 
     /// <summary>
     /// An optional delegate that controls syntax highlighting
@@ -121,7 +121,6 @@ public class PromptCallbacks
     /// be returned from the <see cref="KeyPressCallbackAsync"/> function. If a null result is returned, then the user will remain on
     /// the current input prompt.
     /// </example>
-    public Dictionary<object, KeyPressCallbackAsync> KeyPressCallbacks { get; init; } =
-        new Dictionary<object, KeyPressCallbackAsync>();
+    public Dictionary<object, KeyPressCallbackAsync> KeyPressCallbacks { get; init; } = new();
 }
 

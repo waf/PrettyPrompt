@@ -4,7 +4,6 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -49,7 +48,7 @@ internal class Renderer
         console.Write(new string('\n', newLinesCount) + MoveCursorUp(newLinesCount) + MoveCursorToColumn(1) + Reset + configuration.Prompt);
     }
 
-    public async Task RenderOutput(PromptResult result, CodePane codePane, CompletionPane completionPane, IReadOnlyCollection<FormatSpan> highlights, KeyPress key)
+    public async Task RenderOutput(PromptResult? result, CodePane codePane, CompletionPane completionPane, IReadOnlyCollection<FormatSpan> highlights, KeyPress key)
     {
         if (result is not null)
         {
@@ -162,10 +161,11 @@ internal class Renderer
         //  │ completion 3 │ 
         //  └──────────────┘
 
-        if (!completionPane.IsOpen || completionPane.FilteredView.Count == 0)
+        var filteredView = completionPane.FilteredView;
+        if (!completionPane.IsOpen || filteredView.IsEmpty)
             return Array.Empty<ScreenArea>();
 
-        int wordWidth = completionPane.FilteredView
+        int wordWidth = filteredView
             .Max(w => UnicodeWidth.GetWidth(w.DisplayText.Text ?? w.ReplacementText));
         int boxWidth = wordWidth + 3 + configuration.SelectedCompletionItemMarker.Length; // 3 = left border + right border + space before right border
 
@@ -179,7 +179,7 @@ internal class Renderer
 
         var documentationStart = new ConsoleCoordinate(cursor.Row + 1, completionStart.Column + boxWidth);
         var selectedItemDescription = await (
-            completionPane.FilteredView.SelectedItem.ExtendedDescription?.Value ?? Task.FromResult(FormattedString.Empty)
+            filteredView.SelectedItem.ExtendedDescription?.Value ?? Task.FromResult(FormattedString.Empty)
         ).ConfigureAwait(false);
         var documentationRows = BuildDocumentationRows(
             documentation: selectedItemDescription,

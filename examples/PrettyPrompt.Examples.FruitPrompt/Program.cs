@@ -87,13 +87,12 @@ internal static class Program
             {
                 var displayText = new FormattedString(fruit.Name, new FormatSpan(0, fruit.Name.Length, new ConsoleFormat(Foreground: fruit.Highlight)));
                 var description = GetFormattedString(fruit.Description);
-                return new CompletionItem
-                {
-                    StartIndex = previousWordStart + 1,
-                    ReplacementText = fruit.Name,
-                    DisplayText = displayText,
-                    ExtendedDescription = new Lazy<Task<FormattedString>>(() => Task.FromResult(description))
-                };
+                return new CompletionItem(
+                    startIndex: previousWordStart + 1,
+                    replacementText: fruit.Name,
+                    displayText: displayText,
+                    extendedDescription: new Lazy<Task<FormattedString>>(() => Task.FromResult(description))
+                );
             })
             .ToArray()
         );

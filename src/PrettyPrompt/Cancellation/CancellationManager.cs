@@ -13,7 +13,7 @@ namespace PrettyPrompt.Cancellation;
 sealed class CancellationManager
 {
     private readonly IConsole console;
-    private PromptResult execution;
+    private PromptResult? execution;
 
     public CancellationManager(IConsole console)
     {
@@ -33,7 +33,7 @@ sealed class CancellationManager
         this.console.CaptureControlC = false;
     }
 
-    private void SignalCancellationToLastResult(object sender, ConsoleCancelEventArgs e)
+    private void SignalCancellationToLastResult(object? sender, ConsoleCancelEventArgs e)
     {
         e.Cancel = true;
         this.execution?.CancellationTokenSource?.Cancel();

@@ -21,7 +21,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
 {
     public static FormattedString Empty => string.Empty;
 
-    public string Text { get; }
+    public string? Text { get; }
     private readonly FormatSpan[] formatSpans;
 
     public IReadOnlyList<FormatSpan> FormatSpans => formatSpans ?? Array.Empty<FormatSpan>();
@@ -30,11 +30,11 @@ public readonly struct FormattedString : IEquatable<FormattedString>
     private string TextOrEmpty => Text ?? "";
     private FormatSpan[] FormatSpansOrEmpty => formatSpans ?? Array.Empty<FormatSpan>();
 
-    public FormattedString(string text, IEnumerable<FormatSpan> formatSpans)
+    public FormattedString(string? text, IEnumerable<FormatSpan>? formatSpans)
         : this(text, formatSpans?.ToArray())
     { }
 
-    public FormattedString(string text, params FormatSpan[] formatSpans)
+    public FormattedString(string? text, params FormatSpan[]? formatSpans)
     {
         Text = text;
         if ((formatSpans?.Length ?? 0) == 0)
@@ -43,17 +43,17 @@ public readonly struct FormattedString : IEquatable<FormattedString>
         }
         else
         {
-            this.formatSpans = formatSpans.Where(s => s.Length > 0).OrderBy(s => s.Start).ToArray();
+            this.formatSpans = formatSpans!.Where(s => s.Length > 0).OrderBy(s => s.Start).ToArray();
             CheckFormatSpans();
         }
     }
 
-    public FormattedString(string text, ConsoleFormat formatting)
-        : this(text, new FormatSpan(0, text.Length, formatting))
+    public FormattedString(string? text, ConsoleFormat formatting)
+        : this(text, (text?.Length ?? 0) == 0 ? Array.Empty<FormatSpan>() : new[] { new FormatSpan(0, text!.Length, formatting) })
     {
     }
 
-    public static implicit operator FormattedString(string text) => new(text);
+    public static implicit operator FormattedString(string? text) => new(text);
 
     public static FormattedString operator +(FormattedString left, FormattedString right)
     {
@@ -374,9 +374,9 @@ public readonly struct FormattedString : IEquatable<FormattedString>
         return true;
     }
 
-    public override bool Equals(object obj) => obj is FormattedString other && Equals(other);
+    public override bool Equals(object? obj) => obj is FormattedString other && Equals(other);
     public override int GetHashCode() => string.GetHashCode(Text);
-    public override string ToString() => Text;
+    public override string? ToString() => Text;
 
     public static bool operator ==(FormattedString left, FormattedString right) => left.Equals(right);
     public static bool operator !=(FormattedString left, FormattedString right) => !(left == right);

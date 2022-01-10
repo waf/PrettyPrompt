@@ -126,7 +126,7 @@ static class IncrementalRendering
         return diff.ToString();
     }
 
-    private static void UpdateCoordinateFromCursorMove(Screen currentScreen, ConsoleCoordinate ansiCoordinate, StringBuilder diff, ref ConsoleCoordinate previousCoordinate, Cell currentCell)
+    private static void UpdateCoordinateFromCursorMove(Screen currentScreen, ConsoleCoordinate ansiCoordinate, StringBuilder diff, ref ConsoleCoordinate previousCoordinate, Cell? currentCell)
     {
         var characterWidth = currentCell is null ? 1 : currentCell.ElementWidth;
         // if we hit the edge of the screen, wrap

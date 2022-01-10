@@ -21,7 +21,7 @@ internal static class Extensions
     /// Like <see cref="System.Linq.Enumerable.Zip{TFirst, TSecond}(IEnumerable{TFirst}, IEnumerable{TSecond})"/>,
     /// but the length of the zipped sequence is equal to the longer enumerable (with default(T) elements for the shorter enumerable).
     /// </summary>
-    public static IEnumerable<(int, T1, T2)> ZipLongest<T1, T2>(this IEnumerable<T1> left, IEnumerable<T2> right)
+    public static IEnumerable<(int, T1?, T2?)> ZipLongest<T1, T2>(this IEnumerable<T1> left, IEnumerable<T2> right)
     {
         var leftEnumerator = left.GetEnumerator();
         var rightEnumerator = right.GetEnumerator();
