@@ -122,7 +122,7 @@ internal static class Program
         }
     }
 
-    private static Task<KeyPressCallbackResult> ShowFruitDocumentation(string text, int caret)
+    private static Task<KeyPressCallbackResult?> ShowFruitDocumentation(string text, int caret)
     {
         string wordUnderCursor = GetWordAtCaret(text, caret).ToLower();
 
@@ -136,7 +136,7 @@ internal static class Program
         // and will still be able to edit the input.
         // if we were to return a non-null result, this result will be returned from ReadLineAsync(). This
         // is useful if we want our custom keypress to submit the prompt and control the output manually.
-        return Task.FromResult<KeyPressCallbackResult>(null);
+        return Task.FromResult<KeyPressCallbackResult?>(null);
 
         // local functions
         static string GetWordAtCaret(string text, int caret)
@@ -164,7 +164,7 @@ internal static class Program
                 OperatingSystem.IsMacOS() ? new ProcessStartInfo("open", url) :
                 new ProcessStartInfo("xdg-open", url); //linux, unix-like
 
-            Process.Start(browser).WaitForExit();
+            Process.Start(browser)?.WaitForExit();
         }
     }
 }

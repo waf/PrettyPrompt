@@ -17,7 +17,7 @@ public class CompletionTestData
 {
     private readonly IReadOnlyCollection<string> completions;
 
-    public CompletionTestData(IReadOnlyCollection<string> completions = null)
+    public CompletionTestData(IReadOnlyCollection<string>? completions = null)
     {
         this.completions = completions ?? new[] { "Aardvark", "Albatross", "Alligator", "Alpaca", "Ant", "Anteater", "Baboon", "Cat", "Dog", "Elephant", "Fox", "Zebra" };
     }

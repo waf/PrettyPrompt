@@ -248,13 +248,13 @@ public class PromptTests
         var console = ConsoleStub.NewConsole();
         console.StubInput($"I like apple{Control}{LeftArrow}{Control}{LeftArrow}{F1}{Enter}");
 
-        string input = null;
+        string? input = null;
         int? caret = null;
         var prompt = new Prompt(callbacks: new PromptCallbacks
         {
             KeyPressCallbacks =
                 {
-                    [F1] = (inputArg, caretArg) => { input = inputArg; caret = caretArg; return Task.FromResult<KeyPressCallbackResult>(null); }
+                    [F1] = (inputArg, caretArg) => { input = inputArg; caret = caretArg; return Task.FromResult<KeyPressCallbackResult?>(null); }
                 }
         }, console: console);
 
@@ -276,7 +276,7 @@ public class PromptTests
             KeyPressCallbacks =
                 {
                     [F2] = (inputArg, caretArg) => {
-                        return Task.FromResult(callbackOutput);
+                        return Task.FromResult<KeyPressCallbackResult?>(callbackOutput);
                     }
                 }
         }, console: console);
@@ -286,4 +286,3 @@ public class PromptTests
         Assert.Equal(callbackOutput, result);
     }
 }
-
