@@ -4,15 +4,16 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using PrettyPrompt.Consoles;
-using PrettyPrompt.Documents;
-using PrettyPrompt.Panes;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using PrettyPrompt.Consoles;
+using PrettyPrompt.Documents;
+using PrettyPrompt.Panes;
 using static System.ConsoleKey;
 
 namespace PrettyPrompt.History;
@@ -31,29 +32,29 @@ sealed class HistoryLog : IKeyPressHandler
     /// The currently active history item. Usually, it's the last element of <see cref="history"/>, unless
     /// the user is navigating next/prev in history.
     /// </summary>
-    private LinkedListNode<Document> current;
+    private LinkedListNode<Document>? current;
 
     /// <summary>
     /// The currently code pane being edited. The contents of this pane will be changed when
     /// navigating through the history.
     /// </summary>
-    private CodePane latestCodePane;
+    private CodePane? latestCodePane;
 
     /// <summary>
     /// In the case where the user leaves some unsubmitted text on their prompt (the latestCodePane), we capture
     /// it so we can restore it when the user stops navigating through history (i.e. they press Down Arrow until
     /// they're back to their current prompt).
     /// </summary>
-    private Document unsubmittedBuffer;
+    private Document? unsubmittedBuffer;
 
     /// <summary>
     /// Filepath of the history storage file. If null, history is not saved. History is stored as base64 encoded lines,
     /// so we can efficiently append to the file, and not have to worry about newlines in the history entries.
     /// </summary>
-    private readonly string persistentHistoryFilepath;
+    private readonly string? persistentHistoryFilepath;
     private readonly Task loadPersistentHistoryTask;
 
-    public HistoryLog(string persistentHistoryFilepath)
+    public HistoryLog(string? persistentHistoryFilepath)
     {
         this.persistentHistoryFilepath = persistentHistoryFilepath;
 
@@ -89,6 +90,8 @@ sealed class HistoryLog : IKeyPressHandler
 
     public async Task OnKeyUp(KeyPress key)
     {
+        if (latestCodePane is null || current is null) return;
+
         await loadPersistentHistoryTask.ConfigureAwait(false);
 
         if (history.Count == 0 || key.Handled) return;
@@ -98,7 +101,7 @@ sealed class HistoryLog : IKeyPressHandler
             case UpArrow when current.Previous is not null:
                 if (current == history.Last)
                 {
-                    unsubmittedBuffer = history.Last.Value?.Clone() ?? new Document();
+                    unsubmittedBuffer = history.Last.Value?.Clone();
                 }
                 var matchingPreviousEntry = FindPreviousMatchingEntry(unsubmittedBuffer, current);
                 SetContents(latestCodePane, matchingPreviousEntry.Value);
@@ -132,12 +135,13 @@ sealed class HistoryLog : IKeyPressHandler
     /// Starting at the <paramref name="currentEntry"/> node, search backwards for a node
     /// that starts with <paramref name="prefix"/>
     /// </summary>
-    private static LinkedListNode<Document> FindPreviousMatchingEntry(Document prefix, LinkedListNode<Document> currentEntry)
+    private static LinkedListNode<Document> FindPreviousMatchingEntry(Document? prefix, LinkedListNode<Document> currentEntry)
     {
-        if (prefix.Length == 0) return currentEntry.Previous;
+        Debug.Assert(currentEntry.Previous is not null);
+
+        if (prefix is null || prefix.Length == 0) return currentEntry.Previous;
 
         string prefixText = prefix.GetText();
-
         for (var node = currentEntry.Previous; node is not null; node = node.Previous)
         {
             if (node.Value.StartsWith(prefixText))

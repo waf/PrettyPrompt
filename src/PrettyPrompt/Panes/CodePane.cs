@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using PrettyPrompt.Consoles;
@@ -23,8 +24,8 @@ internal class CodePane : IKeyPressHandler
     private readonly ForceSoftEnterCallbackAsync shouldForceSoftEnterAsync;
     private readonly SelectionKeyPressHandler selectionHandler;
     private int topCoordinate;
-    private int codeAreaWidth;
-    private int codeAreaHeight;
+    private int codeAreaWidth = int.MaxValue;
+    private int codeAreaHeight = int.MaxValue;
     private int windowTop;
 
     /// <summary>
@@ -36,7 +37,7 @@ internal class CodePane : IKeyPressHandler
     /// The final input text that was entered into the pane.
     /// When null, the text is still being edited.
     /// </summary>
-    public PromptResult Result { get; private set; }
+    public PromptResult? Result { get; private set; }
 
     public int TopCoordinate
     {
@@ -87,6 +88,8 @@ internal class CodePane : IKeyPressHandler
         this.shouldForceSoftEnterAsync = shouldForceSoftEnterAsync;
         this.Document = new Document();
         this.selectionHandler = new SelectionKeyPressHandler(this);
+
+        WordWrap();
     }
 
     public async Task OnKeyDown(KeyPress key)
@@ -191,7 +194,7 @@ internal class CodePane : IKeyPressHandler
             case (Control, V):
             case (Control | Shift, V):
             case (Shift, Insert):
-                string clipboardText = await ClipboardService.GetTextAsync();
+                var clipboardText = await ClipboardService.GetTextAsync();
                 PasteText(clipboardText);
                 break;
             case (Control, Z):
@@ -216,7 +219,7 @@ internal class CodePane : IKeyPressHandler
         return Selection.TryGet(out var selectionSpanValue) ? selectionSpanValue.GetCaretIndices(WordWrappedLines) : default((int Start, int End)?);
     }
 
-    private void PasteText(string pastedText)
+    private void PasteText(string? pastedText)
     {
         if (string.IsNullOrEmpty(pastedText)) return;
 
@@ -265,6 +268,7 @@ internal class CodePane : IKeyPressHandler
         await selectionHandler.OnKeyUp(key);
     }
 
+    [MemberNotNull(nameof(WordWrappedLines))]
     public void WordWrap()
     {
         (WordWrappedLines, Cursor) = Document.WrapEditableCharacters(CodeAreaWidth);

@@ -6,6 +6,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace PrettyPrompt.Documents;
@@ -223,8 +224,8 @@ internal class Document : IEquatable<Document>
     public string GetText(int startIndex, int length) => this.text.ToString(startIndex, length);
     public bool StartsWith(string prefix) =>
         prefix.Length <= this.text.Length && this.text.ToString(0, prefix.Length).Equals(prefix);
-    public override bool Equals(object obj) => Equals(obj as Document);
-    public bool Equals(Document other) => other != null && other.text.Equals(this.text);
+    public override bool Equals(object? obj) => Equals(obj as Document);
+    public bool Equals(Document? other) => other != null && other.text.Equals(this.text);
     public override int GetHashCode() => this.text.GetHashCode();
     private string GetDebuggerDisplay() => this.text.ToString().Insert(this.Caret, "|");
 }

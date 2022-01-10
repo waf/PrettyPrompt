@@ -155,7 +155,7 @@ public static class ConsoleStub
             _ => ConsoleKey.Oem1
         };
 
-    private static ConsoleModifiers AppendFormatStringArgument(List<ConsoleKeyInfo> list, Match key, ConsoleModifiers modifiersPressed, object formatArgument)
+    private static ConsoleModifiers AppendFormatStringArgument(List<ConsoleKeyInfo> list, Match key, ConsoleModifiers modifiersPressed, object? formatArgument)
     {
         switch (formatArgument)
         {
@@ -185,12 +185,12 @@ public static class ConsoleStub
     public readonly struct FormattableStringWithAction
     {
         public readonly FormattableString Input;
-        public readonly Action ActionAfter;
+        public readonly Action? ActionAfter;
 
         public FormattableStringWithAction(FormattableString input)
             : this(input, null) { }
 
-        public FormattableStringWithAction(FormattableString input, Action actionAfter)
+        public FormattableStringWithAction(FormattableString input, Action? actionAfter)
         {
             Input = input;
             ActionAfter = actionAfter;

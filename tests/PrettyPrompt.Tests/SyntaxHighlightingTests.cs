@@ -69,9 +69,9 @@ public class SyntaxHighlightingTests
             {
                 HighlightCallback = new SyntaxHighlighterTestData(new Dictionary<string, AnsiColor>
                 {
-                        { "苹果", format1.Foreground.Value },
-                        { "蓝莓", format2.Foreground.Value },
-                        { "avocado", format3.Foreground.Value }
+                        { "苹果", format1.Foreground!.Value },
+                        { "蓝莓", format2.Foreground!.Value },
+                        { "avocado", format3.Foreground!.Value }
                 }).HighlightHandlerAsync
             },
             console: console

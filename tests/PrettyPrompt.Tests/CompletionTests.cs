@@ -208,7 +208,7 @@ public class CompletionTests
         Assert.Contains("            ", output[indexOfOutputWithCompletionPane + 1]); //completion pane should be cleared
     }
 
-    public static Prompt ConfigurePrompt(IConsole console, PromptConfiguration configuration = null) =>
+    public static Prompt ConfigurePrompt(IConsole console, PromptConfiguration? configuration = null) =>
         new(
             callbacks: new PromptCallbacks
             {

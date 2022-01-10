@@ -27,7 +27,7 @@ public sealed class Prompt : IPrompt
     private readonly CancellationManager cancellationManager;
 
     private readonly CompletionCallbackAsync completionCallback;
-    private readonly OpenCompletionWindowCallbackAsync shouldOpenCompletionWindow;
+    private readonly OpenCompletionWindowCallbackAsync? shouldOpenCompletionWindow;
     private readonly ForceSoftEnterCallbackAsync detectSoftEnterCallback;
     private readonly Dictionary<object, KeyPressCallbackAsync> keyPressCallbacks;
     private readonly SyntaxHighlighter highlighter;
@@ -40,10 +40,10 @@ public sealed class Prompt : IPrompt
     /// <param name="console">The implementation of the console to use. This is mainly for ease of unit testing</param>
     /// <param name="configuration">If null, default configuration is used.</param>
     public Prompt(
-        string persistentHistoryFilepath = null,
-        PromptCallbacks callbacks = null,
-        IConsole console = null,
-        PromptConfiguration configuration = null)
+        string? persistentHistoryFilepath = null,
+        PromptCallbacks? callbacks = null,
+        IConsole? console = null,
+        PromptConfiguration? configuration = null)
     {
         this.console = console ?? new SystemConsole();
         this.console.InitVirtualTerminalProcessing();
@@ -120,7 +120,7 @@ public sealed class Prompt : IPrompt
             await panes.OnKeyUp(key).ConfigureAwait(false);
     }
 
-    private async Task<PromptResult> GetResult(CodePane codePane, KeyPress key, string inputText)
+    private async Task<PromptResult?> GetResult(CodePane codePane, KeyPress key, string inputText)
     {
         // process any user-defined keyboard shortcuts
         if (keyPressCallbacks.TryGetValue(key.Pattern, out var callback))
@@ -184,7 +184,7 @@ public interface IPrompt
 /// </summary>
 public record PromptResult(bool IsSuccess, string Text, bool IsHardEnter)
 {
-    internal CancellationTokenSource CancellationTokenSource { get; set; }
+    internal CancellationTokenSource? CancellationTokenSource { get; set; }
 
     /// <summary>
     /// If your user presses ctrl-c while your application is processing the user's input, this CancellationToken will be

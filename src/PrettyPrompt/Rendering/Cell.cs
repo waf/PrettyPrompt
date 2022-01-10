@@ -37,14 +37,14 @@ internal sealed record Row(List<Cell> Cells);
 [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
 internal sealed record Cell
 {
-    public string Text { get; }
+    public string? Text { get; }
     public bool IsContinuationOfPreviousCharacter { get; }
     public int ElementWidth { get; }
 
     public ConsoleFormat Formatting { get; set; }
     public bool TruncateToScreenHeight { get; set; }
 
-    private Cell(string text, ConsoleFormat Formatting, int elementWidth = 1, bool isContinuationOfPreviousCharacter = false)
+    private Cell(string? text, ConsoleFormat Formatting, int elementWidth = 1, bool isContinuationOfPreviousCharacter = false)
     {
         this.Text = text;
         this.Formatting = Formatting;

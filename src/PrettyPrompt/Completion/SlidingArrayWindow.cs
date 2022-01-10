@@ -7,6 +7,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace PrettyPrompt.Completion;
 
@@ -34,8 +35,10 @@ sealed class SlidingArrayWindow<T> : IReadOnlyCollection<T>
         this.windowBuffer = windowBuffer;
     }
 
-    public T SelectedItem =>
-        array.Length == 0 ? default : array[selectedIndex];
+    /// <summary>
+    /// Is not null when IsEmpty==false.
+    /// </summary>
+    public T? SelectedItem =>        array.Length == 0 ? default : array[selectedIndex];
 
     public void IncrementSelectedIndex()
     {
@@ -74,14 +77,13 @@ sealed class SlidingArrayWindow<T> : IReadOnlyCollection<T>
         ? 0
         : Math.Min(selectedIndex, array.Length - windowLength);
 
-    public IEnumerator<T> GetEnumerator() =>
-        AsArraySegment().GetEnumerator();
+    public IEnumerator<T> GetEnumerator() => AsArraySegment().GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
-    IEnumerator IEnumerable.GetEnumerator() =>
-        AsArraySegment().GetEnumerator();
-
-    private ArraySegment<T> AsArraySegment() =>
-        new ArraySegment<T>(array, windowStart, Math.Min(windowLength, array.Length));
+    private ArraySegment<T> AsArraySegment() => new(array, windowStart, Math.Min(windowLength, array.Length));
 
     public int Count => array.Length;
+
+    [MemberNotNullWhen(false, nameof(SelectedItem))]
+    public bool IsEmpty => array.Length == 0;
 }

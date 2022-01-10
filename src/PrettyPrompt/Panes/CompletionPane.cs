@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using PrettyPrompt.Completion;
@@ -35,7 +36,7 @@ internal class CompletionPane : IKeyPressHandler
 
     private readonly CodePane codePane;
     private readonly CompletionCallbackAsync complete;
-    private readonly OpenCompletionWindowCallbackAsync shouldOpenCompletionWindow;
+    private readonly OpenCompletionWindowCallbackAsync? shouldOpenCompletionWindow;
     private readonly int minCompletionItemsCount;
     private readonly int maxCompletionItemsCount;
 
@@ -62,7 +63,7 @@ internal class CompletionPane : IKeyPressHandler
     public CompletionPane(
         CodePane codePane,
         CompletionCallbackAsync complete,
-        OpenCompletionWindowCallbackAsync shouldOpenCompletionWindow,
+        OpenCompletionWindowCallbackAsync? shouldOpenCompletionWindow,
         int minCompletionItemsCount,
         int maxCompletionItemsCount)
     {
@@ -123,6 +124,7 @@ internal class CompletionPane : IKeyPressHandler
             case RightArrow:
             case Tab:
             case (Control, Spacebar) when FilteredView.Count == 1:
+                Debug.Assert(!FilteredView.IsEmpty);
                 InsertCompletion(codePane.Document, FilteredView.SelectedItem);
                 key.Handled = true;
                 break;
@@ -194,7 +196,7 @@ internal class CompletionPane : IKeyPressHandler
     }
 
     private bool HasTypedPastCompletion() =>
-        FilteredView.SelectedItem is not null
+        !FilteredView.IsEmpty
         && FilteredView.SelectedItem.ReplacementText.Length < (codePane.Document.Caret - openedCaretIndex);
 
     private static bool ShouldCancelOpenMenu(KeyPress key) =>
@@ -238,11 +240,11 @@ internal class CompletionPane : IKeyPressHandler
             selectedIndex
         );
 
-        bool Matches(CompletionItem completion, Document input) =>
-            completion.ReplacementText.StartsWith(
+        bool Matches(CompletionItem? completion, Document input) =>
+            completion?.ReplacementText.StartsWith(
                 input.GetText(completion.StartIndex, codePane.Document.Caret - completion.StartIndex).Trim(),
                 StringComparison.CurrentCultureIgnoreCase
-            );
+            ) ?? false;
     }
 
     private Task<int> ShouldAutomaticallyOpen(Document input, int caret)

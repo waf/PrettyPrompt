@@ -17,7 +17,7 @@ public class CompletionTestData
 {
     private readonly IReadOnlyCollection<string> completions;
 
-    public CompletionTestData(IReadOnlyCollection<string> completions = null)
+    public CompletionTestData(IReadOnlyCollection<string>? completions = null)
     {
         this.completions = completions ?? new[] { "Aardvark", "Albatross", "Alligator", "Alpaca", "Ant", "Anteater", "Baboon", "Cat", "Dog", "Elephant", "Fox", "Zebra" };
     }
@@ -32,13 +32,12 @@ public class CompletionTestData
         return Task.FromResult<IReadOnlyList<CompletionItem>>(
             completions
                 .Where(c => c.StartsWith(typedWord, StringComparison.CurrentCultureIgnoreCase))
-                .Select((c, i) => new CompletionItem
-                {
-                    StartIndex = previousWordStart + 1,
-                    ReplacementText = c,
-                    DisplayText = i % 2 == 0 ? c : null, // display text is optional, ReplacementText should be used when this is null.
-                    ExtendedDescription = new Lazy<Task<FormattedString>>(() => Task.FromResult<FormattedString>("a vivid description of " + c))
-                })
+                .Select((c, i) => new CompletionItem(
+                    startIndex: previousWordStart + 1,
+                    replacementText: c,
+                    displayText: i % 2 == 0 ? c : null, // display text is optional, ReplacementText should be used when this is null.
+                    extendedDescription: new Lazy<Task<FormattedString>>(() => Task.FromResult<FormattedString>("a vivid description of " + c))
+                ))
                 .ToArray()
         );
     }

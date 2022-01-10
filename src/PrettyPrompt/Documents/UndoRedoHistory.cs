@@ -18,7 +18,7 @@ namespace PrettyPrompt.Documents;
 internal sealed class UndoRedoHistory
 {
     private readonly LinkedList<Document> history = new();
-    private LinkedListNode<Document> currentUndoRedoEntry = null;
+    private LinkedListNode<Document>? currentUndoRedoEntry = null;
 
     internal void Track(Document document)
     {

@@ -18,13 +18,13 @@ public class SyntaxHighlighterTestData
 
     private readonly IReadOnlyDictionary<string, AnsiColor> highlights;
 
-    public SyntaxHighlighterTestData(IReadOnlyDictionary<string, AnsiColor> colors = null)
+    public SyntaxHighlighterTestData(IReadOnlyDictionary<string, AnsiColor>? colors = null)
     {
         this.highlights = colors ?? new Dictionary<string, AnsiColor>()
             {
-                { "red", RedFormat.Foreground.Value},
-                { "green", GreenFormat.Foreground.Value},
-                { "blue", BlueFormat.Foreground.Value },
+                { "red", RedFormat.Foreground!.Value },
+                { "green", GreenFormat.Foreground!.Value },
+                { "blue", BlueFormat.Foreground!.Value },
             };
     }
 

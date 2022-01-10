@@ -50,7 +50,7 @@ public readonly struct AnsiColor : IEquatable<AnsiColor>
     public string GetAnsiEscapeSequence(Type type = Type.Foreground) => AnsiEscapeCodes.ToAnsiEscapeSequence(GetCode(type));
     internal string GetCode(Type type = Type.Foreground) => type == Type.Foreground ? foregroundCode : backgroundCode;
 
-    public override bool Equals(object obj) => obj is AnsiColor other && Equals(other);
+    public override bool Equals(object? obj) => obj is AnsiColor other && Equals(other);
     public bool Equals(AnsiColor other) => foregroundCode == other.foregroundCode && backgroundCode == other.backgroundCode;
     public override int GetHashCode() => foregroundCode.GetHashCode();
 

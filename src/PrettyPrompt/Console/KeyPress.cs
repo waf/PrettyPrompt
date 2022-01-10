@@ -26,9 +26,9 @@ internal class KeyPress
     /// <summary>
     /// Text that was pasted as a result of this key press.
     /// </summary>
-    public string PastedText { get; }
+    public string? PastedText { get; }
 
-    public KeyPress(ConsoleKeyInfo consoleKeyInfo, string pastedText = null)
+    public KeyPress(ConsoleKeyInfo consoleKeyInfo, string? pastedText = null)
     {
         this.ConsoleKeyInfo = consoleKeyInfo;
         this.Pattern = consoleKeyInfo.Modifiers == 0
@@ -85,7 +85,7 @@ internal class KeyPress
     /// <summary>
     /// On Linux, .NET doesn't map all the ANSI escaped inputs into ConsoleKeyInfos. Map some of the missing ones here.
     /// </summary>
-    private static KeyPress MapInputEscapeSequence(List<ConsoleKeyInfo> keys)
+    private static KeyPress? MapInputEscapeSequence(List<ConsoleKeyInfo> keys)
     {
         var sequence = new string(keys.Select(key => key.KeyChar).ToArray());
         return sequence switch

@@ -4,8 +4,6 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-#nullable enable
-
 namespace PrettyPrompt.Highlighting;
 
 public readonly record struct ConsoleFormat(
