@@ -53,7 +53,7 @@ internal class Renderer
     {
         if (result is not null)
         {
-            if (wasTextSelectedDuringPreviousRender && codePane.Document.Selection is null)
+            if (wasTextSelectedDuringPreviousRender && codePane.Selection is null)
             {
                 await Redraw();
             }
@@ -65,7 +65,7 @@ internal class Renderer
             }
 
             Write(
-                MoveCursorDown(codePane.Document.WordWrappedLines.Count - codePane.Document.Cursor.Row - 1)
+                MoveCursorDown(codePane.WordWrappedLines.Count - codePane.Cursor.Row - 1)
                 + MoveCursorToColumn(1)
                 + "\n"
                 + ClearToEndOfScreen,
@@ -86,7 +86,7 @@ internal class Renderer
             await Redraw();
         }
 
-        wasTextSelectedDuringPreviousRender = codePane.Document.Selection.HasValue;
+        wasTextSelectedDuringPreviousRender = codePane.Selection.HasValue;
 
         async Task Redraw()
         {
@@ -94,7 +94,7 @@ internal class Renderer
             ScreenArea codeWidget = BuildCodeScreenArea(codePane, highlights);
             ScreenArea[] completionWidgets = await BuildCompletionScreenAreas(
                 completionPane,
-                cursor: codePane.Document.Cursor,
+                cursor: codePane.Cursor,
                 codeAreaStartColumn: configuration.Prompt.Length,
                 codeAreaWidth: codePane.CodeAreaWidth
             ).ConfigureAwait(false);
@@ -109,7 +109,7 @@ internal class Renderer
             // draw screen areas to screen representation.
             // later screen areas can overlap earlier screen areas.
             var screen = new Screen(
-                codePane.CodeAreaWidth, codePane.CodeAreaHeight, codePane.Document.Cursor, screenAreas: new[] { codeWidget }.Concat(completionWidgets).ToArray()
+                codePane.CodeAreaWidth, codePane.CodeAreaHeight, codePane.Cursor, screenAreas: new[] { codeWidget }.Concat(completionWidgets).ToArray()
             );
 
             if (DidCodeAreaResize(previouslyRenderedScreen, screen))
@@ -140,7 +140,7 @@ internal class Renderer
 
     private static ScreenArea BuildCodeScreenArea(CodePane codePane, IReadOnlyCollection<FormatSpan> highlights)
     {
-        var highlightedLines = CellRenderer.ApplyColorToCharacters(highlights, codePane.Document.WordWrappedLines, codePane.Document.Selection);
+        var highlightedLines = CellRenderer.ApplyColorToCharacters(highlights, codePane.WordWrappedLines, codePane.Selection);
         // if we've filled up the full line, add a new line at the end so we can render our cursor on this new line.
         if (highlightedLines[^1].Cells.Count > 0
             && (highlightedLines[^1].Cells.Count >= codePane.CodeAreaWidth

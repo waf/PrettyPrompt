@@ -7,7 +7,7 @@
 using System;
 using System.Threading.Tasks;
 using PrettyPrompt.Consoles;
-using PrettyPrompt.Documents;
+using PrettyPrompt.Panes;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
 
@@ -15,21 +15,21 @@ namespace PrettyPrompt.TextSelection;
 
 class SelectionKeyPressHandler : IKeyPressHandler
 {
-    private readonly Document document;
+    private readonly CodePane codePane;
     private ConsoleCoordinate previousCursorLocation;
 
-    public SelectionKeyPressHandler(Document document)
+    public SelectionKeyPressHandler(CodePane codePane)
     {
-        this.document = document;
+        this.codePane = codePane;
     }
 
     public Task OnKeyDown(KeyPress key)
     {
-        this.previousCursorLocation = document.Cursor;
+        this.previousCursorLocation = codePane.Cursor;
 
         if (key.Pattern is (Control, A))
         {
-            document.Caret = document.Length;
+            codePane.Document.Caret = codePane.Document.Length;
         }
         return Task.CompletedTask;
     }
@@ -46,15 +46,15 @@ class SelectionKeyPressHandler : IKeyPressHandler
         if (key.Pattern is (Control, A))
         {
             var start = ConsoleCoordinate.Zero;
-            var end = new ConsoleCoordinate(document.WordWrappedLines.Count - 1, document.WordWrappedLines[^1].Content.Length);
+            var end = new ConsoleCoordinate(codePane.WordWrappedLines.Count - 1, codePane.WordWrappedLines[^1].Content.Length);
             if (start < end)
             {
-                document.Selection = new SelectionSpan(start, end, SelectionDirection.FromLeftToRight);
+                codePane.Selection = new SelectionSpan(start, end, SelectionDirection.FromLeftToRight);
             }
             return Task.CompletedTask;
         }
 
-        var cursor = document.Cursor;
+        var cursor = codePane.Cursor;
         switch (key.Pattern)
         {
             case
@@ -89,7 +89,7 @@ class SelectionKeyPressHandler : IKeyPressHandler
 
             default:
                 // keypress is not related to selection
-                document.Selection = null;
+                codePane.Selection = null;
                 break;
         }
 
@@ -97,13 +97,13 @@ class SelectionKeyPressHandler : IKeyPressHandler
 
         void UpdateSelection(SelectionSpan newSelection)
         {
-            if (document.Selection.TryGet(out var selection))
+            if (codePane.Selection.TryGet(out var selection))
             {
-                document.Selection = selection.GetUpdatedSelection(newSelection);
+                codePane.Selection = selection.GetUpdatedSelection(newSelection);
             }
             else
             {
-                document.Selection = newSelection;
+                codePane.Selection = newSelection;
             }
         }
     }
