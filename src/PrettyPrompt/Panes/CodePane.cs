@@ -5,6 +5,7 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -67,12 +68,25 @@ internal class CodePane : IKeyPressHandler
         }
     }
 
+    public SelectionSpan? Selection { get; set; }
+
+    /// <summary>
+    /// Document text split into lines.
+    /// </summary>
+    public IReadOnlyList<WrappedLine> WordWrappedLines { get; private set; }
+
+    /// <summary>
+    /// The two-dimensional coordinate of the text cursor in the document,
+    /// after word wrapping / newlines have been processed.
+    /// </summary>
+    public ConsoleCoordinate Cursor { get; set; }
+
     public CodePane(int topCoordinate, ForceSoftEnterCallbackAsync shouldForceSoftEnterAsync)
     {
         this.TopCoordinate = topCoordinate;
         this.shouldForceSoftEnterAsync = shouldForceSoftEnterAsync;
         this.Document = new Document();
-        this.selectionHandler = new SelectionKeyPressHandler(Document);
+        this.selectionHandler = new SelectionKeyPressHandler(this);
     }
 
     public async Task OnKeyDown(KeyPress key)
@@ -80,10 +94,10 @@ internal class CodePane : IKeyPressHandler
         if (key.Handled) return;
 
         await this.selectionHandler.OnKeyDown(key);
-
+        var selection = GetSelectionStartEnd();
         switch (key.Pattern)
         {
-            case (Control, C) when Document.Selection is null:
+            case (Control, C) when selection is null:
                 Result = new PromptResult(IsSuccess: false, string.Empty, IsHardEnter: false);
                 break;
             case (Control, L):
@@ -91,7 +105,7 @@ internal class CodePane : IKeyPressHandler
                 break;
             case Enter when await shouldForceSoftEnterAsync(Document.GetText()):
             case (Shift, Enter):
-                Document.InsertAtCaret('\n');
+                Document.InsertAtCaret('\n', selection);
                 break;
             case (Control, Enter):
             case (Control | Alt, Enter):
@@ -128,31 +142,32 @@ internal class CodePane : IKeyPressHandler
             case (Control, RightArrow):
                 Document.MoveToWordBoundary(+1);
                 break;
-            case (Control, Backspace) when Document.Selection is null:
+            case (Control, Backspace) when selection is null:
                 var startDeleteIndex = Document.CalculateWordBoundaryIndexNearCaret(-1);
                 Document.Remove(startDeleteIndex, Document.Caret - startDeleteIndex);
                 break;
-            case (Control, Delete) when Document.Selection is null:
+            case (Control, Delete) when selection is null:
                 var endDeleteIndex = Document.CalculateWordBoundaryIndexNearCaret(+1);
                 Document.Remove(Document.Caret, endDeleteIndex - Document.Caret);
                 break;
-            case Backspace when Document.Selection is null:
+            case Backspace when selection is null:
                 Document.Remove(Document.Caret - 1, 1);
                 break;
-            case Delete when Document.Selection is null:
+            case Delete when selection is null:
                 Document.Remove(Document.Caret, 1);
                 break;
-            case (_, Delete) or (_, Backspace) or Delete or Backspace when Document.Selection.HasValue:
-                Document.DeleteSelectedText();
+            case (_, Delete) or (_, Backspace) or Delete or Backspace when selection.TryGet(out var selectionValue):
+                {
+                    Document.DeleteSelectedText(selectionValue.Start, selectionValue.End);
+                }
                 break;
             case Tab:
-                Document.InsertAtCaret("    ");
+                Document.InsertAtCaret("    ", selection);
                 break;
-            case (Control, X) when Document.Selection.TryGet(out var selection):
+            case (Control, X) when selection.TryGet(out var selectionValue):
                 {
-                    var (start, end) = selection.GetCaretIndices(Document.WordWrappedLines);
-                    var cutContent = Document.GetText(start, end - start);
-                    Document.Remove(start, end - start);
+                    var cutContent = Document.GetText(selectionValue.Start, selectionValue.End - selectionValue.Start);
+                    Document.Remove(selectionValue.Start, selectionValue.End - selectionValue.Start);
                     await ClipboardService.SetTextAsync(cutContent);
                     break;
                 }
@@ -161,10 +176,9 @@ internal class CodePane : IKeyPressHandler
                     await ClipboardService.SetTextAsync(Document.GetText());
                     break;
                 }
-            case (Control, C) when Document.Selection.TryGet(out var selection):
+            case (Control, C) when selection.TryGet(out var selectionValue):
                 {
-                    var (start, end) = selection.GetCaretIndices(Document.WordWrappedLines);
-                    var copiedContent = Document.GetText(start, end - start);
+                    var copiedContent = Document.GetText(selectionValue.Start, selectionValue.End - selectionValue.Start);
                     await ClipboardService.SetTextAsync(copiedContent);
                     break;
                 }
@@ -191,10 +205,15 @@ internal class CodePane : IKeyPressHandler
             default:
                 if (!char.IsControl(key.ConsoleKeyInfo.KeyChar))
                 {
-                    Document.InsertAtCaret(key.ConsoleKeyInfo.KeyChar);
+                    Document.InsertAtCaret(key.ConsoleKeyInfo.KeyChar, selection);
                 }
                 break;
         }
+    }
+
+    public (int Start, int End)? GetSelectionStartEnd()
+    {
+        return Selection.TryGet(out var selectionSpanValue) ? selectionSpanValue.GetCaretIndices(WordWrappedLines) : default((int Start, int End)?);
     }
 
     private void PasteText(string pastedText)
@@ -202,7 +221,7 @@ internal class CodePane : IKeyPressHandler
         if (string.IsNullOrEmpty(pastedText)) return;
 
         string dedentedText = DedentMultipleLines(pastedText);
-        this.Document.InsertAtCaret(dedentedText);
+        this.Document.InsertAtCaret(dedentedText, GetSelectionStartEnd());
     }
 
     internal void MeasureConsole(IConsole console, string prompt)
@@ -221,23 +240,23 @@ internal class CodePane : IKeyPressHandler
 
         switch (key.Pattern)
         {
-            case (Shift, UpArrow) when Document.Cursor.Row > 0:
-            case UpArrow when Document.Cursor.Row > 0:
+            case (Shift, UpArrow) when Cursor.Row > 0:
+            case UpArrow when Cursor.Row > 0:
                 {
-                    var newCursor = Document.Cursor.MoveUp();
-                    var aboveLine = Document.WordWrappedLines[newCursor.Row];
-                    Document.Cursor = newCursor.WithColumn(Math.Min(aboveLine.Content.AsSpan().TrimEnd().Length, newCursor.Column));
-                    Document.Caret = aboveLine.StartIndex + Document.Cursor.Column;
+                    var newCursor = Cursor.MoveUp();
+                    var aboveLine = WordWrappedLines[newCursor.Row];
+                    Cursor = newCursor.WithColumn(Math.Min(aboveLine.Content.AsSpan().TrimEnd().Length, newCursor.Column));
+                    Document.Caret = aboveLine.StartIndex + Cursor.Column;
                     key.Handled = true;
                     break;
                 }
-            case (Shift, DownArrow) when Document.Cursor.Row < Document.WordWrappedLines.Count - 1:
-            case DownArrow when Document.Cursor.Row < Document.WordWrappedLines.Count - 1:
+            case (Shift, DownArrow) when Cursor.Row < WordWrappedLines.Count - 1:
+            case DownArrow when Cursor.Row < WordWrappedLines.Count - 1:
                 {
-                    var newCursor = Document.Cursor.MoveDown();
-                    var belowLine = Document.WordWrappedLines[newCursor.Row];
-                    Document.Cursor = newCursor.WithColumn(Math.Min(belowLine.Content.AsSpan().TrimEnd().Length, newCursor.Column));
-                    Document.Caret = belowLine.StartIndex + Document.Cursor.Column;
+                    var newCursor = Cursor.MoveDown();
+                    var belowLine = WordWrappedLines[newCursor.Row];
+                    Cursor = newCursor.WithColumn(Math.Min(belowLine.Content.AsSpan().TrimEnd().Length, newCursor.Column));
+                    Document.Caret = belowLine.StartIndex + Cursor.Column;
                     key.Handled = true;
                     break;
                 }
@@ -246,7 +265,10 @@ internal class CodePane : IKeyPressHandler
         await selectionHandler.OnKeyUp(key);
     }
 
-    public void WordWrap() => Document.WordWrap(CodeAreaWidth);
+    public void WordWrap()
+    {
+        (WordWrappedLines, Cursor) = Document.WrapEditableCharacters(CodeAreaWidth);
+    }
 
     /// <summary>
     /// If we have text with consistent, leading indentation, trim that indentation ("dedent" it).

@@ -151,7 +151,7 @@ internal class CompletionPane : IKeyPressHandler
     }
 
     private bool EnoughRoomToDisplay(CodePane codePane) =>
-        codePane.CodeAreaHeight - codePane.Document.Cursor.Row >= VerticalPaddingHeight + minCompletionItemsCount; // offset + top border + MinCompletionItemsCount + bottom border
+        codePane.CodeAreaHeight - codePane.Cursor.Row >= VerticalPaddingHeight + minCompletionItemsCount; // offset + top border + MinCompletionItemsCount + bottom border
 
     async Task IKeyPressHandler.OnKeyUp(KeyPress key)
     {
@@ -274,7 +274,7 @@ internal class CompletionPane : IKeyPressHandler
     private void InsertCompletion(Document input, CompletionItem completion, string suffix = "")
     {
         input.Remove(completion.StartIndex, input.Caret - completion.StartIndex);
-        input.InsertAtCaret(completion.ReplacementText + suffix);
+        input.InsertAtCaret(completion.ReplacementText + suffix, codePane.GetSelectionStartEnd());
         input.Caret = completion.StartIndex + completion.ReplacementText.Length + suffix.Length;
         Close();
     }

@@ -5,11 +5,8 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
-using PrettyPrompt.Consoles;
-using PrettyPrompt.TextSelection;
 
 namespace PrettyPrompt.Documents;
 
@@ -38,20 +35,6 @@ internal class Document : IEquatable<Document>
         }
     }
 
-    /// <summary>
-    /// The two-dimensional coordinate of the text cursor in the document,
-    /// after word wrapping / newlines have been processed.
-    /// </summary>
-    public ConsoleCoordinate Cursor { get; set; }
-
-    /// <summary>
-    /// After <see cref="WordWrap(int)"/> is called, this will contain the
-    /// text split into lines.
-    /// </summary>
-    public IReadOnlyList<WrappedLine> WordWrappedLines { get; private set; }
-
-    public SelectionSpan? Selection { get; set; }
-
     public Document() : this(string.Empty, 0) { }
     public Document(string text, int caret)
     {
@@ -60,32 +43,34 @@ internal class Document : IEquatable<Document>
         this.undoRedoHistory = new UndoRedoHistory();
     }
 
-    public void InsertAtCaret(char character)
+    public void InsertAtCaret(char character, (int Start, int End)? selection)
     {
         undoRedoHistory.Track(this);
-        DeleteSelectedText();
+        if (selection.TryGet(out var selectionValue))
+        {
+            DeleteSelectedText(selectionValue.Start, selectionValue.End);
+        }
         text.Insert(Caret, character);
         Caret++;
         undoRedoHistory.Track(this);
     }
 
-    public void DeleteSelectedText()
-    {
-        if (Selection.TryGet(out var selection))
-        {
-            undoRedoHistory.Track(this);
-            var (start, end) = selection.GetCaretIndices(WordWrappedLines);
-            text.Remove(start, end - start);
-
-            Caret = start;
-            undoRedoHistory.Track(this);
-        }
-    }
-
-    public void InsertAtCaret(string text)
+    public void DeleteSelectedText(int start, int end)
     {
         undoRedoHistory.Track(this);
-        DeleteSelectedText();
+        text.Remove(start, end - start);
+
+        Caret = start;
+        undoRedoHistory.Track(this);
+    }
+
+    public void InsertAtCaret(string text, (int Start, int End)? selection)
+    {
+        undoRedoHistory.Track(this);
+        if (selection.TryGet(out var selectionValue))
+        {
+            DeleteSelectedText(selectionValue.Start, selectionValue.End);
+        }
         this.text.Insert(Caret, text);
         Caret += text.Length;
         undoRedoHistory.Track(this);
@@ -109,10 +94,8 @@ internal class Document : IEquatable<Document>
         undoRedoHistory.Track(this);
     }
 
-    public void WordWrap(int width)
-    {
-        (WordWrappedLines, Cursor) = WordWrapping.WrapEditableCharacters(text, Caret, width);
-    }
+    public WordWrappedText WrapEditableCharacters(int width)
+        => WordWrapping.WrapEditableCharacters(text, Caret, width);
 
     public void MoveToWordBoundary(int direction) =>
         Caret = CalculateWordBoundaryIndexNearCaret(direction);
