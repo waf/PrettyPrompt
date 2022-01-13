@@ -280,7 +280,7 @@ internal class CodePane : IKeyPressHandler
     /// </summary>
     private static string DedentMultipleLines(string text)
     {
-        var lines = text.Split(new[] { '\r', '\n' });
+        var lines = text.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
         if (lines.Length > 1)
         {
             var nonEmptyLines = lines
