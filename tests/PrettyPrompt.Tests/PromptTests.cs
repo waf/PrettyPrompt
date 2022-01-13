@@ -4,17 +4,18 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
-using Xunit;
 using NSubstitute;
-using static PrettyPrompt.Consoles.AnsiEscapeCodes;
+using PrettyPrompt.Highlighting;
+using TextCopy;
+using Xunit;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
 using static System.Environment;
-using System;
-using System.Collections.Generic;
-using PrettyPrompt.Highlighting;
-using System.Linq;
+using static PrettyPrompt.Consoles.AnsiEscapeCodes;
 
 namespace PrettyPrompt.Tests;
 
@@ -262,6 +263,23 @@ public class PromptTests
 
         Assert.Equal("I like apple", input);
         Assert.Equal(2, caret);
+    }
+
+    /// <summary>
+    /// Triggered issue: https://github.com/waf/PrettyPrompt/issues/63
+    /// </summary>
+    /// <returns></returns>
+    [Fact]
+    public async Task ReadLine_PasteMultipleLines()
+    {
+        const string Text = "abc\r\ndef";
+        ClipboardService.SetText(Text);
+        var console = ConsoleStub.NewConsole();
+        console.StubInput($"{Control}{V}{Enter}");
+        var prompt = new Prompt(console: console);
+        var result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal(Text, result.Text);
     }
 
     [Fact]
