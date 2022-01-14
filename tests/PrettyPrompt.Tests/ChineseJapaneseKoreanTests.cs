@@ -64,7 +64,7 @@ public class ChineseJapaneseKoreanTests
 
         var prompt = new Prompt(console: console, callbacks: new PromptCallbacks
         {
-            CompletionCallback = new CompletionTestData(new[] { "书桌上有" }).CompletionHandlerAsync
+            CompletionCallback = new CompletionTestData("书桌上有").CompletionHandlerAsync
         });
         var result = await prompt.ReadLineAsync();
 

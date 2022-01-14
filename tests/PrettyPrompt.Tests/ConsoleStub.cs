@@ -165,6 +165,16 @@ public static class ConsoleStub
                 var parsed = char.TryParse(key.Value, out char character);
                 list.Add(consoleKey.ToKeyInfo(parsed ? character : MapSpecialKey(consoleKey), modifiersPressed));
                 return 0;
+            case string text:
+                if (text.Length > 0)
+                {
+                    list.Add(CharToConsoleKey(text[0]).ToKeyInfo(text[0], modifiersPressed));
+                }
+                for (int i = 1; i < text.Length; i++)
+                {
+                    list.Add(CharToConsoleKey(text[i]).ToKeyInfo(text[i], 0));
+                }
+                return 0;
             default: throw new ArgumentException("Unknown value: " + formatArgument, nameof(formatArgument));
         }
     }

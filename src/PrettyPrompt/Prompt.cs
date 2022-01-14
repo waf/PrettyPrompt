@@ -28,6 +28,7 @@ public sealed class Prompt : IPrompt
 
     private readonly CompletionCallbackAsync completionCallback;
     private readonly OpenCompletionWindowCallbackAsync? shouldOpenCompletionWindow;
+    private readonly SpanToReplaceByCompletionCallbackAsync getSpanToReplaceByCompletion;
     private readonly ForceSoftEnterCallbackAsync detectSoftEnterCallback;
     private readonly Dictionary<object, KeyPressCallbackAsync> keyPressCallbacks;
     private readonly SyntaxHighlighter highlighter;
@@ -55,6 +56,7 @@ public sealed class Prompt : IPrompt
         callbacks ??= new PromptCallbacks();
         this.completionCallback = callbacks.CompletionCallback;
         this.shouldOpenCompletionWindow = callbacks.OpenCompletionWindowCallback;
+        this.getSpanToReplaceByCompletion= callbacks.SpanToReplaceByCompletionCallback;
         this.detectSoftEnterCallback = callbacks.ForceSoftEnterCallback;
         this.keyPressCallbacks = callbacks.KeyPressCallbacks;
 
@@ -73,7 +75,13 @@ public sealed class Prompt : IPrompt
         codePane.MeasureConsole(console, configuration.Prompt);
 
         // completion pane is the pop-up window that shows potential autocompletions.
-        var completionPane = new CompletionPane(codePane, completionCallback, shouldOpenCompletionWindow, configuration.MinCompletionItemsCount, configuration.MaxCompletionItemsCount);
+        var completionPane = new CompletionPane(
+            codePane,
+            completionCallback,
+            shouldOpenCompletionWindow,
+            getSpanToReplaceByCompletion,
+            configuration.MinCompletionItemsCount,
+            configuration.MaxCompletionItemsCount);
 
         history.Track(codePane);
         cancellationManager.CaptureControlC();

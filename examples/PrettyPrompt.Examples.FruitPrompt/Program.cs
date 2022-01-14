@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using PrettyPrompt.Completion;
+using PrettyPrompt.Documents;
 using PrettyPrompt.Highlighting;
 
 namespace PrettyPrompt;
@@ -75,20 +76,24 @@ internal static class Program
     // demo completion algorithm callback
     private static Task<IReadOnlyList<CompletionItem>> FindCompletions(string typedInput, int caret)
     {
-        var textUntilCaret = typedInput.Substring(0, caret);
-        var previousWordStart = textUntilCaret.LastIndexOfAny(new[] { ' ', '\n', '.', '(', ')' });
-        var typedWord = previousWordStart == -1
-            ? textUntilCaret.ToLower()
-            : textUntilCaret.Substring(previousWordStart + 1).ToLower();
+        var nonWordChars = new[] { ' ', '\n', '.', '(', ')' };
+
+        var wordStart = typedInput.AsSpan(0, caret).LastIndexOfAny(nonWordChars);
+        wordStart = wordStart >= 0 ? wordStart + 1 : 0;
+
+        var wordEnd = typedInput.AsSpan(caret).IndexOfAny(nonWordChars);
+        wordEnd = wordEnd >= 0 ? wordEnd : typedInput.Length;
+
+        var typedWord = typedInput.AsSpan(wordStart, wordEnd - wordStart).ToString();
+
         return Task.FromResult<IReadOnlyList<CompletionItem>>(
             Fruits
-            .Where(fruit => fruit.Name.StartsWith(typedWord))
+            .Where(fruit => fruit.Name.StartsWith(typedWord, StringComparison.InvariantCultureIgnoreCase))
             .Select(fruit =>
             {
                 var displayText = new FormattedString(fruit.Name, new FormatSpan(0, fruit.Name.Length, new ConsoleFormat(Foreground: fruit.Highlight)));
                 var description = GetFormattedString(fruit.Description);
                 return new CompletionItem(
-                    startIndex: previousWordStart + 1,
                     replacementText: fruit.Name,
                     displayText: displayText,
                     extendedDescription: new Lazy<Task<FormattedString>>(() => Task.FromResult(description))

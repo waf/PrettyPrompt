@@ -8,9 +8,19 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using PrettyPrompt.Completion;
+using PrettyPrompt.Documents;
 using PrettyPrompt.Highlighting;
 
 namespace PrettyPrompt;
+
+/// <summary>
+/// A callback your application can provide to change word detection behaviour used for completion items insertion.
+/// <seealso cref="PromptCallbacks.SpanToReplaceByCompletionCallback"/>
+/// </summary>
+/// <param name="text">The user's input text</param>
+/// <param name="caret">The index of the text caret in the input text</param>
+/// <returns>Span of text that will be replaced by inserted completion item.</returns>
+public delegate Task<TextSpan> SpanToReplaceByCompletionCallbackAsync(string text, int caret);
 
 /// <summary>
 /// A callback your application can provide to autocomplete input text.
@@ -23,18 +33,15 @@ public delegate Task<IReadOnlyList<CompletionItem>> CompletionCallbackAsync(stri
 
 /// <summary>
 /// A callback your application can provide to determine whether or not the completion window
-/// should automatically open. If not specified, C# intellisense style behavior is used.
+/// should automatically open.
+/// <seealso cref="PromptCallbacks.OpenCompletionWindowCallback"/>
 /// </summary>
 /// <param name="text">The user's input text</param>
 /// <param name="caret">The index of the text caret in the input text</param>
 /// <returns>
-/// An integer that represents if the completion window should open and the offset at which it should be anchored.
-/// If the caret moves behind this anchor, the completion window will automatically close. For example:
-/// Less than zero, the window does not open.
-/// zero, the window opens and the completion window is anchored at the current index.
-/// one, the window opens and the completion window is anchored at one character before the cursor.
+/// A value indicating whether the completion window should automatically open.
 /// </returns>
-public delegate Task<int> OpenCompletionWindowCallbackAsync(string text, int caret);
+public delegate Task<bool> OpenCompletionWindowCallbackAsync(string text, int caret);
 
 /// <summary>
 /// A callback your application can provide to syntax-highlight input text.
@@ -79,14 +86,48 @@ public delegate Task<bool> ForceSoftEnterCallbackAsync(string text);
 
 public class PromptCallbacks
 {
+    private SpanToReplaceByCompletionCallbackAsync spanToReplaceByCompletionCallback;
+
+    public PromptCallbacks()
+    {
+        spanToReplaceByCompletionCallback = GetSpanToReplaceByCompletionAsync;
+    }
+
     /// <summary>
-    /// An optional delegate that provides autocompletion results
+    /// An optional delegate that determines which part of document will be replaced by inserted completion item.
+    /// If not specified, default word detection is used.
+    /// </summary>
+    public SpanToReplaceByCompletionCallbackAsync SpanToReplaceByCompletionCallback
+    {
+        get => spanToReplaceByCompletionCallback;
+        init
+        {
+            spanToReplaceByCompletionCallback =
+                async (string text, int caret) =>
+                {
+                    var span = await value(text, caret);
+                    if (!new TextSpan(0, text.Length).Contains(span))
+                    {
+                        throw new InvalidOperationException("Resulting TextSpan has to be inside the document.");
+                    }
+                    if (!span.Contains(new TextSpan(caret, 0)))
+                    {
+                        throw new InvalidOperationException("Resulting TextSpan has to contain current caret position.");
+                    }
+                    return span;
+                };
+        }
+    }
+
+    /// <summary>
+    /// An optional delegate that provides autocompletion results.
     /// </summary>
     public CompletionCallbackAsync CompletionCallback { get; init; } =
         (_, _) => Task.FromResult<IReadOnlyList<CompletionItem>>(Array.Empty<CompletionItem>());
 
     /// <summary>
     /// An optional delegate that controls when the completion window should open.
+    /// If not specified, C#-like intellisense style behavior is used.
     /// </summary>
     public OpenCompletionWindowCallbackAsync? OpenCompletionWindowCallback { get; init; }
 
@@ -122,5 +163,41 @@ public class PromptCallbacks
     /// the current input prompt.
     /// </example>
     public Dictionary<object, KeyPressCallbackAsync> KeyPressCallbacks { get; init; } = new();
-}
 
+    /// <summary>
+    /// Default implementation.
+    /// </summary>
+    private static Task<TextSpan> GetSpanToReplaceByCompletionAsync(string text, int caret)
+    {
+        int wordStart = caret;
+        for (int i = wordStart - 1; i >= 0; i--)
+        {
+            if (IsWordCharacter(text[i]))
+            {
+                --wordStart;
+            }
+            else
+            {
+                break;
+            }
+        }
+        if (wordStart < 0) wordStart = 0;
+
+        int wordEnd = caret;
+        for (int i = caret; i < text.Length; i++)
+        {
+            if (IsWordCharacter(text[i]))
+            {
+                ++wordEnd;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return Task.FromResult(TextSpan.FromBounds(wordStart, wordEnd));
+
+        static bool IsWordCharacter(char c) => char.IsLetterOrDigit(c) || c == '_';
+    }
+}
