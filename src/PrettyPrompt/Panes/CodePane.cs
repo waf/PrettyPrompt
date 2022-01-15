@@ -161,7 +161,7 @@ internal class CodePane : IKeyPressHandler
                 break;
             case (_, Delete) or (_, Backspace) or Delete or Backspace when selection.TryGet(out var selectionValue):
                 {
-                    Document.DeleteSelectedText(selectionValue.Start, selectionValue.End);
+                    Document.DeleteSelectedText(selectionValue);
                 }
                 break;
             case Tab:
@@ -169,8 +169,8 @@ internal class CodePane : IKeyPressHandler
                 break;
             case (Control, X) when selection.TryGet(out var selectionValue):
                 {
-                    var cutContent = Document.GetText(selectionValue.Start, selectionValue.End - selectionValue.Start);
-                    Document.Remove(selectionValue.Start, selectionValue.End - selectionValue.Start);
+                    var cutContent = Document.GetText(selectionValue);
+                    Document.Remove(selectionValue);
                     await ClipboardService.SetTextAsync(cutContent);
                     break;
                 }
@@ -181,7 +181,7 @@ internal class CodePane : IKeyPressHandler
                 }
             case (Control, C) when selection.TryGet(out var selectionValue):
                 {
-                    var copiedContent = Document.GetText(selectionValue.Start, selectionValue.End - selectionValue.Start);
+                    var copiedContent = Document.GetText(selectionValue);
                     await ClipboardService.SetTextAsync(copiedContent);
                     break;
                 }
@@ -214,9 +214,9 @@ internal class CodePane : IKeyPressHandler
         }
     }
 
-    public (int Start, int End)? GetSelectionStartEnd()
+    public TextSpan? GetSelectionStartEnd()
     {
-        return Selection.TryGet(out var selectionSpanValue) ? selectionSpanValue.GetCaretIndices(WordWrappedLines) : default((int Start, int End)?);
+        return Selection.TryGet(out var selectionSpanValue) ? selectionSpanValue.GetCaretIndices(WordWrappedLines) : default(TextSpan?);
     }
 
     private void PasteText(string? pastedText)

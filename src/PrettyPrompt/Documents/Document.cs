@@ -6,7 +6,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace PrettyPrompt.Documents;
@@ -44,38 +43,40 @@ internal class Document : IEquatable<Document>
         this.undoRedoHistory = new UndoRedoHistory();
     }
 
-    public void InsertAtCaret(char character, (int Start, int End)? selection)
+    public void InsertAtCaret(char character, TextSpan? selection)
     {
         undoRedoHistory.Track(this);
         if (selection.TryGet(out var selectionValue))
         {
-            DeleteSelectedText(selectionValue.Start, selectionValue.End);
+            DeleteSelectedText(selectionValue);
         }
         text.Insert(Caret, character);
         Caret++;
         undoRedoHistory.Track(this);
     }
 
-    public void DeleteSelectedText(int start, int end)
+    public void DeleteSelectedText(TextSpan span)
     {
         undoRedoHistory.Track(this);
-        text.Remove(start, end - start);
+        text.Remove(span.Start, span.End - span.Start);
 
-        Caret = start;
+        Caret = span.Start;
         undoRedoHistory.Track(this);
     }
 
-    public void InsertAtCaret(string text, (int Start, int End)? selection)
+    public void InsertAtCaret(string text, TextSpan? selection)
     {
         undoRedoHistory.Track(this);
         if (selection.TryGet(out var selectionValue))
         {
-            DeleteSelectedText(selectionValue.Start, selectionValue.End);
+            DeleteSelectedText(selectionValue);
         }
         this.text.Insert(Caret, text);
         Caret += text.Length;
         undoRedoHistory.Track(this);
     }
+
+    public void Remove(TextSpan span) => Remove(span.Start, span.Length);
 
     public void Remove(int startIndex, int length)
     {
@@ -221,9 +222,9 @@ internal class Document : IEquatable<Document>
     public char this[int index] => this.text[index];
     public int Length => this.text.Length;
     public string GetText() => this.text.ToString();
+    public string GetText(TextSpan span) => GetText(span.Start, span.Length);
     public string GetText(int startIndex, int length) => this.text.ToString(startIndex, length);
-    public bool StartsWith(string prefix) =>
-        prefix.Length <= this.text.Length && this.text.ToString(0, prefix.Length).Equals(prefix);
+    public bool StartsWith(string prefix) => prefix.Length <= this.text.Length && this.text.ToString(0, prefix.Length).Equals(prefix);
     public override bool Equals(object? obj) => Equals(obj as Document);
     public bool Equals(Document? other) => other != null && other.text.Equals(this.text);
     public override int GetHashCode() => this.text.GetHashCode();

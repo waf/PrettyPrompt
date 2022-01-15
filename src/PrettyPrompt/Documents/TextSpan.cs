@@ -5,55 +5,55 @@
 #endregion
 
 using System;
-using PrettyPrompt.Documents;
 
-namespace PrettyPrompt.Highlighting;
+namespace PrettyPrompt.Documents;
 
-public readonly record struct FormatSpan
+//Microsoft.CodeAnalysis.Text.TextSpan equivalent.
+public readonly struct TextSpan : IEquatable<TextSpan>
 {
-    public static readonly FormatSpan Empty = new(0, 0, ConsoleFormat.None);
-
-    public TextSpan Span { get; }
-    public ConsoleFormat Formatting { get; }
-
     /// <summary>
     /// Start point of the span.
     /// </summary>
-    public int Start => Span.Start;
+    public int Start { get; }
 
     /// <summary>
     /// Length of the span.
     /// </summary>
-    public int Length => Span.Length;
+    public int Length { get; }
 
     /// <summary>
     /// End of the span.
     /// </summary>
-    public int End => Span.End;
+    public int End => Start + Length;
 
     /// <summary>
     /// Determines whether or not the span is empty.
     /// </summary>
-    public bool IsEmpty => Span.IsEmpty;
+    public bool IsEmpty => Length == 0;
 
-    public FormatSpan(
-      TextSpan span,
-      ConsoleFormat formatting)
+    /// <summary>
+    /// Creates a TextSpan instance beginning with the position Start and having the Length specified with length.
+    /// </summary>
+    public TextSpan(int start, int length)
     {
-        Span = span;
-        Formatting = formatting;
+        if (start < 0) throw new ArgumentOutOfRangeException(nameof(start), "must be >=0");
+        if (length < 0) throw new ArgumentOutOfRangeException(nameof(length), "must be >=0");
+
+        Start = start;
+        Length = length;
     }
 
-    public FormatSpan(
-       int start,
-       int length,
-       ConsoleFormat formatting)
+    /// <summary>
+    /// Creates a new TextSpan from start and end positions as opposed to a position and length.
+    /// The returned TextSpan contains the range with start inclusive, and end exclusive.
+    /// </summary>
+    public static TextSpan FromBounds(int start, int end)
     {
-        Span = new TextSpan(start, length);
-        Formatting = formatting;
-    }
+        if (start < 0) throw new ArgumentOutOfRangeException(nameof(start), "must be >=0");
+        if (end < start) throw new ArgumentOutOfRangeException(nameof(end), "must be >=start");
 
-    public static FormatSpan FromBounds(int start, int end, ConsoleFormat formatting) => new(TextSpan.FromBounds(start, end), formatting);
+        return new TextSpan(start, end - start);
+    }
 
     /// <summary>
     /// Determines whether the position lies within the span.
@@ -78,13 +78,13 @@ public readonly record struct FormatSpan
     /// <summary>
     /// Returns the overlap with the given span, or null if there is no overlap.
     /// </summary>
-    public FormatSpan? Overlap(int start, int length)
+    public TextSpan? Overlap(int start, int length)
     {
         int resultStart = Math.Max(Start, start);
         int resultEnd = Math.Min(End, start + length);
         if (resultStart < resultEnd)
         {
-            return FromBounds(resultStart, resultEnd, Formatting);
+            return FromBounds(resultStart, resultEnd);
         }
         return null;
     }
@@ -105,26 +105,21 @@ public readonly record struct FormatSpan
     /// <summary>
     /// Returns the intersection with the given span, or null if there is no intersection.
     /// </summary>
-    public FormatSpan? Intersection(TextSpan span)
+    public TextSpan? Intersection(TextSpan span)
     {
         int resultStart = Math.Max(Start, span.Start);
         int resultEnd = Math.Min(End, span.End);
         if (resultStart <= resultEnd)
         {
-            return FromBounds(resultStart, resultEnd, Formatting);
+            return FromBounds(resultStart, resultEnd);
         }
         return null;
     }
 
-    /// <summary>
-    /// Creates new span translated by some offset.
-    /// </summary>
-    public FormatSpan Offset(int offset) => new(Start + offset, Length, Formatting);
-
-    /// <summary>
-    /// Creates new span with new length.
-    /// </summary>
-    public FormatSpan WithLength(int length) => new(Start, length, Formatting);
-
+    public static bool operator ==(TextSpan left, TextSpan right) => left.Equals(right);
+    public static bool operator !=(TextSpan left, TextSpan right) => !left.Equals(right);
+    public bool Equals(TextSpan other) => Start == other.Start && Length == other.Length;
+    public override bool Equals(object? obj) => obj is TextSpan other && Equals(other);
+    public override int GetHashCode() => (Start, Length).GetHashCode();
     public override string ToString() => $"[{Start}..{End})";
 }

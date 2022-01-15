@@ -275,9 +275,9 @@ internal class CompletionPane : IKeyPressHandler
 
     private void InsertCompletion(Document input, CompletionItem completion, string suffix = "")
     {
-        input.Remove(completion.StartIndex, input.Caret - completion.StartIndex);
-        input.InsertAtCaret(completion.ReplacementText + suffix, codePane.GetSelectionStartEnd());
-        input.Caret = completion.StartIndex + completion.ReplacementText.Length + suffix.Length;
+        input.Remove(completion.StartIndex, Math.Min(completion.ReplacementText.Length, input.Length - completion.StartIndex));
+        input.InsertAtCaret(completion.ReplacementText, codePane.GetSelectionStartEnd());
+        input.Caret = completion.StartIndex + completion.ReplacementText.Length;
         Close();
     }
 }
