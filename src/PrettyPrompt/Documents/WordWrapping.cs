@@ -38,11 +38,12 @@ internal static class WordWrapping
         int textIndex = 0;
         int cursorColumn = 0;
         int cursorRow = 0;
-        foreach (ReadOnlyMemory<char> chunk in input.GetChunks())
+        foreach (ReadOnlyMemory<char> chunkMemory in input.GetChunks())
         {
-            for (var i = 0; i < chunk.Span.Length; i++)
+            var chunk = chunkMemory.Span;
+            for (var i = 0; i < chunk.Length; i++)
             {
-                char character = chunk.Span[i];
+                char character = chunk[i];
                 line.Append(character);
                 bool isCursorPastCharacter = initialCaretPosition > textIndex;
 
@@ -72,10 +73,10 @@ internal static class WordWrapping
             lines.Add(new WrappedLine(textIndex - line.Length, line.ToString()));
 
         return new WordWrappedText(lines, new ConsoleCoordinate(cursorRow, cursorColumn));
-    }
 
-    private static bool NextCharacterIsFullWidthAndWillWrap(int width, int currentLineLength, ReadOnlyMemory<char> chunk, int i) =>
-        chunk.Span.Length > i + 1 && UnicodeWidth.GetWidth(chunk.Span[i + 1]) > 1 && currentLineLength + 1 == width;
+        static bool NextCharacterIsFullWidthAndWillWrap(int width, int currentLineLength, ReadOnlySpan<char> chunk, int i)
+            => chunk.Length > i + 1 && UnicodeWidth.GetWidth(chunk[i + 1]) > 1 && currentLineLength + 1 == width;
+    }
 
     /// <summary>
     /// Wrap words into lines of at most maxLength long. Split on spaces
