@@ -38,7 +38,7 @@ sealed class SlidingArrayWindow<T> : IReadOnlyCollection<T>
     /// <summary>
     /// Is not null when IsEmpty==false.
     /// </summary>
-    public T? SelectedItem =>        array.Length == 0 ? default : array[selectedIndex];
+    public T? SelectedItem => array.Length == 0 ? default : array[selectedIndex];
 
     public void IncrementSelectedIndex()
     {

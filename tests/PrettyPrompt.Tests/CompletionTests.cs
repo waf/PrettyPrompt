@@ -4,6 +4,8 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using PrettyPrompt.Consoles;
@@ -22,13 +24,7 @@ public class CompletionTests
         var console = ConsoleStub.NewConsole();
         console.StubInput($"Aa{Enter}{Enter}");
 
-        var prompt = new Prompt(
-            callbacks: new PromptCallbacks
-            {
-                CompletionCallback = new CompletionTestData().CompletionHandlerAsync
-            },
-            console: console
-        );
+        var prompt = ConfigurePrompt(console);
 
         var result = await prompt.ReadLineAsync();
 
@@ -208,11 +204,35 @@ public class CompletionTests
         Assert.Contains("            ", output[indexOfOutputWithCompletionPane + 1]); //completion pane should be cleared
     }
 
-    public static Prompt ConfigurePrompt(IConsole console, PromptConfiguration? configuration = null) =>
+    /// <summary>
+    /// Tests bug from https://github.com/waf/PrettyPrompt/issues/65.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_CompletionInsertionNotFromEndOfWord()
+    {
+        const string Text = "abcde";
+        for (int insertCaretPosition = 0; insertCaretPosition < Text.Length; insertCaretPosition++)
+        {
+            var console = ConsoleStub.NewConsole();
+
+            var input = new List<FormattableString>() { $"{Text}" };
+            input.AddRange(Enumerable.Repeat<FormattableString>($"{LeftArrow}", count: Text.Length - insertCaretPosition));
+            input.Add($"{Enter}{Enter}"); //invoke completion list
+            input.Add($"{Enter}{Enter}"); //insert completion
+
+            console.StubInput(input.ToArray());
+            var prompt = ConfigurePrompt(console, completions: new[] { Text });
+            var result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal(Text, result.Text);
+        }
+    }
+
+    public static Prompt ConfigurePrompt(IConsole console, PromptConfiguration? configuration = null, string[]? completions = null) =>
         new(
             callbacks: new PromptCallbacks
             {
-                CompletionCallback = new CompletionTestData().CompletionHandlerAsync
+                CompletionCallback = new CompletionTestData(completions).CompletionHandlerAsync
             },
             console: console,
             configuration: configuration

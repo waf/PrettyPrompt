@@ -37,6 +37,7 @@ internal class CompletionPane : IKeyPressHandler
     private readonly CodePane codePane;
     private readonly CompletionCallbackAsync complete;
     private readonly OpenCompletionWindowCallbackAsync? shouldOpenCompletionWindow;
+    private readonly SpanToReplaceByCompletionCallbackAsync getSpanToReplaceByCompletion;
     private readonly int minCompletionItemsCount;
     private readonly int maxCompletionItemsCount;
 
@@ -64,12 +65,14 @@ internal class CompletionPane : IKeyPressHandler
         CodePane codePane,
         CompletionCallbackAsync complete,
         OpenCompletionWindowCallbackAsync? shouldOpenCompletionWindow,
+        SpanToReplaceByCompletionCallbackAsync getSpanToReplaceByCompletion,
         int minCompletionItemsCount,
         int maxCompletionItemsCount)
     {
         this.codePane = codePane;
         this.complete = complete;
         this.shouldOpenCompletionWindow = shouldOpenCompletionWindow;
+        this.getSpanToReplaceByCompletion = getSpanToReplaceByCompletion;
         this.minCompletionItemsCount = minCompletionItemsCount;
         this.maxCompletionItemsCount = maxCompletionItemsCount;
     }
@@ -88,9 +91,9 @@ internal class CompletionPane : IKeyPressHandler
         this.FilteredView = new SlidingArrayWindow<CompletionItem>();
     }
 
-    Task IKeyPressHandler.OnKeyDown(KeyPress key)
+    async Task IKeyPressHandler.OnKeyDown(KeyPress key)
     {
-        if (!EnoughRoomToDisplay(this.codePane)) return Task.CompletedTask;
+        if (!EnoughRoomToDisplay(this.codePane)) return;
 
         if (!IsOpen)
         {
@@ -98,16 +101,16 @@ internal class CompletionPane : IKeyPressHandler
             {
                 Open(codePane.Document.Caret);
                 key.Handled = true;
-                return Task.CompletedTask;
+                return;
             }
             key.Handled = false;
-            return Task.CompletedTask;
+            return;
         }
 
         if (FilteredView is null || FilteredView.Count == 0)
         {
             key.Handled = false;
-            return Task.CompletedTask;
+            return;
         }
 
         switch (key.Pattern)
@@ -125,7 +128,7 @@ internal class CompletionPane : IKeyPressHandler
             case Tab:
             case (Control, Spacebar) when FilteredView.Count == 1:
                 Debug.Assert(!FilteredView.IsEmpty);
-                InsertCompletion(codePane.Document, FilteredView.SelectedItem);
+                await InsertCompletion(codePane.Document, FilteredView.SelectedItem).ConfigureAwait(false);
                 key.Handled = true;
                 break;
             case (Control, Spacebar):
@@ -149,7 +152,7 @@ internal class CompletionPane : IKeyPressHandler
                 break;
         }
 
-        return Task.CompletedTask;
+        return;
     }
 
     private bool EnoughRoomToDisplay(CodePane codePane) =>
@@ -159,11 +162,11 @@ internal class CompletionPane : IKeyPressHandler
     {
         if (!EnoughRoomToDisplay(this.codePane)) return;
 
-        if (!char.IsControl(key.ConsoleKeyInfo.KeyChar)
-            && (await ShouldAutomaticallyOpen(codePane.Document, codePane.Document.Caret)) is int offset and >= 0)
+        if (!char.IsControl(key.ConsoleKeyInfo.KeyChar) &&
+            await ShouldAutomaticallyOpen(codePane.Document, codePane.Document.Caret).ConfigureAwait(false))
         {
             Close();
-            Open(codePane.Document.Caret - offset);
+            Open(codePane.Document.Caret);
         }
 
         if (codePane.Document.Caret < openedCaretIndex)
@@ -172,12 +175,15 @@ internal class CompletionPane : IKeyPressHandler
         }
         else if (IsOpen)
         {
+            var documentText = codePane.Document.GetText();
+            int documentCaret = codePane.Document.Caret;
+            var spanToReplace = await getSpanToReplaceByCompletion(documentText, documentCaret).ConfigureAwait(false);
             if (allCompletions.Count == 0)
             {
-                var completions = await this.complete.Invoke(codePane.Document.GetText(), codePane.Document.Caret).ConfigureAwait(false);
+                var completions = await complete(documentText, documentCaret, spanToReplace).ConfigureAwait(false);
                 if (completions.Any())
                 {
-                    SetCompletions(completions, codePane);
+                    await SetCompletions(documentText, documentCaret, completions, codePane).ConfigureAwait(false);
                 }
                 else
                 {
@@ -186,36 +192,36 @@ internal class CompletionPane : IKeyPressHandler
             }
             else if (!key.Handled)
             {
-                FilterCompletions(codePane);
+                FilterCompletions(spanToReplace, codePane);
                 if (HasTypedPastCompletion() || ShouldCancelOpenMenu(key))
                 {
                     Close();
                 }
             }
         }
-    }
 
-    private bool HasTypedPastCompletion() =>
-        !FilteredView.IsEmpty
-        && FilteredView.SelectedItem.ReplacementText.Length < (codePane.Document.Caret - openedCaretIndex);
+        bool HasTypedPastCompletion() =>
+            !FilteredView.IsEmpty
+            && FilteredView.SelectedItem.ReplacementText.Length < (codePane.Document.Caret - openedCaretIndex);
+    }
 
     private static bool ShouldCancelOpenMenu(KeyPress key) =>
         key.Pattern is LeftArrow or (_, LeftArrow);
 
-    private void SetCompletions(IReadOnlyList<CompletionItem> completions, CodePane codePane)
+    private async Task SetCompletions(string documentText, int documentCaret, IReadOnlyList<CompletionItem> completions, CodePane codePane)
     {
         allCompletions = completions;
         if (completions.Any())
         {
-            openedCaretIndex = completions[0].StartIndex;
-            FilterCompletions(codePane);
+            var spanToReplace = await getSpanToReplaceByCompletion(documentText, documentCaret).ConfigureAwait(false);
+            FilterCompletions(spanToReplace, codePane);
+            openedCaretIndex = spanToReplace.Start;
         }
     }
 
-    private void FilterCompletions(CodePane codePane)
+    private void FilterCompletions(TextSpan spanToReplace, CodePane codePane)
     {
         int height = Math.Min(codePane.CodeAreaHeight - VerticalPaddingHeight, maxCompletionItemsCount);
-
         var filtered = new List<CompletionItem>();
         var previouslySelectedItem = this.FilteredView.SelectedItem;
         int selectedIndex = -1;
@@ -242,12 +248,12 @@ internal class CompletionPane : IKeyPressHandler
 
         bool Matches(CompletionItem? completion, Document input) =>
             completion?.ReplacementText.StartsWith(
-                input.GetText(completion.StartIndex, codePane.Document.Caret - completion.StartIndex).Trim(),
+                input.GetText(spanToReplace).Trim(),
                 StringComparison.CurrentCultureIgnoreCase
             ) ?? false;
     }
 
-    private Task<int> ShouldAutomaticallyOpen(Document input, int caret)
+    private Task<bool> ShouldAutomaticallyOpen(Document input, int caret)
     {
         if (shouldOpenCompletionWindow is not null)
         {
@@ -256,28 +262,29 @@ internal class CompletionPane : IKeyPressHandler
 
         if (caret > 0 && input[caret - 1] is '.' or '(') // typical "intellisense behavior", opens for new methods and parameters
         {
-            return Task.FromResult(0);
+            return Task.FromResult(true);
         }
 
         if (caret == 1 && !char.IsWhiteSpace(input[0]) // 1 word character typed in brand new prompt
             && (input.Length == 1 || !char.IsLetterOrDigit(input[1]))) // if there's more than one character on the prompt, but we're typing a new word at the beginning (e.g. "a| bar")
         {
-            return Task.FromResult(1);
+            return Task.FromResult(true);
         }
 
         // open when we're starting a new "word" in the prompt.
         return caret - 2 >= 0
             && char.IsWhiteSpace(input[caret - 2])
             && char.IsLetter(input[caret - 1])
-            ? Task.FromResult(1)
-            : Task.FromResult(-1);
+            ? Task.FromResult(true)
+            : Task.FromResult(false);
     }
 
-    private void InsertCompletion(Document input, CompletionItem completion, string suffix = "")
+    private async Task InsertCompletion(Document document, CompletionItem completion)
     {
-        input.Remove(completion.StartIndex, input.Caret - completion.StartIndex);
-        input.InsertAtCaret(completion.ReplacementText + suffix, codePane.GetSelectionStartEnd());
-        input.Caret = completion.StartIndex + completion.ReplacementText.Length + suffix.Length;
+        var spanToReplace = await getSpanToReplaceByCompletion(document.GetText(), document.Caret).ConfigureAwait(false);
+        document.Remove(spanToReplace);
+        document.InsertAtCaret(completion.ReplacementText, codePane.GetSelectionStartEnd());
+        document.Caret = spanToReplace.Start + completion.ReplacementText.Length;
         Close();
     }
 }

@@ -35,7 +35,7 @@ internal readonly struct SelectionSpan
         Direction = direction;
     }
 
-    public (int Start, int End) GetCaretIndices(IReadOnlyList<WrappedLine> wrappedLines)
+    public TextSpan GetCaretIndices(IReadOnlyList<WrappedLine> wrappedLines)
     {
         Debug.Assert(Start.Column <= wrappedLines[Start.Row].Content.Length);
         //End.Row==wrappedLines.Count when last line ends with '\n' (-> End.Row is empty and not present in wrappedLines)
@@ -49,7 +49,7 @@ internal readonly struct SelectionSpan
             wrappedLines[End.Row - 1].StartIndex + wrappedLines[End.Row - 1].Content.Length;
 
         Debug.Assert(selectionStart < selectionEnd);
-        return (selectionStart, selectionEnd);
+        return TextSpan.FromBounds(selectionStart, selectionEnd);
     }
 
     public SelectionSpan WithStart(ConsoleCoordinate start) => new(start, End, Direction);
