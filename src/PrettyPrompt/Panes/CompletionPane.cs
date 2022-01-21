@@ -177,9 +177,10 @@ internal class CompletionPane : IKeyPressHandler
         {
             var documentText = codePane.Document.GetText();
             int documentCaret = codePane.Document.Caret;
+            var spanToReplace = await getSpanToReplaceByCompletion(documentText, documentCaret).ConfigureAwait(false);
             if (allCompletions.Count == 0)
             {
-                var completions = await complete.Invoke(documentText, documentCaret).ConfigureAwait(false);
+                var completions = await complete(documentText, documentCaret, spanToReplace).ConfigureAwait(false);
                 if (completions.Any())
                 {
                     await SetCompletions(documentText, documentCaret, completions, codePane).ConfigureAwait(false);
@@ -191,7 +192,7 @@ internal class CompletionPane : IKeyPressHandler
             }
             else if (!key.Handled)
             {
-                _ = await FilterCompletions(documentText, documentCaret, codePane);
+                FilterCompletions(spanToReplace, codePane);
                 if (HasTypedPastCompletion() || ShouldCancelOpenMenu(key))
                 {
                     Close();
@@ -212,15 +213,14 @@ internal class CompletionPane : IKeyPressHandler
         allCompletions = completions;
         if (completions.Any())
         {
-            var spanToReplace = await FilterCompletions(documentText, documentCaret, codePane);
+            var spanToReplace = await getSpanToReplaceByCompletion(documentText, documentCaret).ConfigureAwait(false);
+            FilterCompletions(spanToReplace, codePane);
             openedCaretIndex = spanToReplace.Start;
         }
     }
 
-    private async Task<TextSpan> FilterCompletions(string documentText, int documentCaret, CodePane codePane)
+    private void FilterCompletions(TextSpan spanToReplace, CodePane codePane)
     {
-        var spanToReplace = await getSpanToReplaceByCompletion(documentText, documentCaret);
-        Debug.WriteLine(spanToReplace);
         int height = Math.Min(codePane.CodeAreaHeight - VerticalPaddingHeight, maxCompletionItemsCount);
         var filtered = new List<CompletionItem>();
         var previouslySelectedItem = this.FilteredView.SelectedItem;
@@ -245,7 +245,6 @@ internal class CompletionPane : IKeyPressHandler
             height,
             selectedIndex
         );
-        return spanToReplace;
 
         bool Matches(CompletionItem? completion, Document input) =>
             completion?.ReplacementText.StartsWith(

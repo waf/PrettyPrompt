@@ -27,18 +27,9 @@ public class CompletionTestData
         this.completions = completions ?? new[] { "Aardvark", "Albatross", "Alligator", "Alpaca", "Ant", "Anteater", "Baboon", "Cat", "Dog", "Elephant", "Fox", "Zebra" };
     }
 
-    public Task<IReadOnlyList<CompletionItem>> CompletionHandlerAsync(string typedInput, int caret)
+    public Task<IReadOnlyList<CompletionItem>> CompletionHandlerAsync(string typedInput, int caret, TextSpan spanToBeReplaced)
     {
-        var nonWordChars = new[] { ' ', '\n', '.', '(', ')' };
-
-        var wordStart = typedInput.AsSpan(0, caret).LastIndexOfAny(nonWordChars);
-        wordStart = wordStart >= 0 ? wordStart + 1 : 0;
-
-        var wordEnd = typedInput.AsSpan(caret).IndexOfAny(nonWordChars);
-        wordEnd = wordEnd >= 0 ? wordEnd : typedInput.Length;
-
-        var typedWord = typedInput.AsSpan(wordStart, wordEnd - wordStart).ToString();
-
+        var typedWord = typedInput.AsSpan(spanToBeReplaced.Start, spanToBeReplaced.Length).ToString();
         return Task.FromResult<IReadOnlyList<CompletionItem>>(
             completions
                 .Where(c => c.StartsWith(typedWord, StringComparison.CurrentCultureIgnoreCase))

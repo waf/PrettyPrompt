@@ -28,8 +28,9 @@ public delegate Task<TextSpan> SpanToReplaceByCompletionCallbackAsync(string tex
 /// </summary>
 /// <param name="text">The user's input text</param>
 /// <param name="caret">The index of the text caret in the input text</param>
+/// <param name="spanToBeReplaced">Span of text that will be replaced by inserted completion item</param>
 /// <returns>A list of possible completions that will be displayed in the autocomplete menu.</returns>
-public delegate Task<IReadOnlyList<CompletionItem>> CompletionCallbackAsync(string text, int caret);
+public delegate Task<IReadOnlyList<CompletionItem>> CompletionCallbackAsync(string text, int caret, TextSpan spanToBeReplaced);
 
 /// <summary>
 /// A callback your application can provide to determine whether or not the completion window
@@ -123,7 +124,7 @@ public class PromptCallbacks
     /// An optional delegate that provides autocompletion results.
     /// </summary>
     public CompletionCallbackAsync CompletionCallback { get; init; } =
-        (_, _) => Task.FromResult<IReadOnlyList<CompletionItem>>(Array.Empty<CompletionItem>());
+        (_, _, _) => Task.FromResult<IReadOnlyList<CompletionItem>>(Array.Empty<CompletionItem>());
 
     /// <summary>
     /// An optional delegate that controls when the completion window should open.
