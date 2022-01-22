@@ -54,13 +54,13 @@ internal class Renderer
         {
             if (wasTextSelectedDuringPreviousRender && codePane.Selection is null)
             {
-                await Redraw();
+                await Redraw().ConfigureAwait(false);
             }
 
             if (completionPane.IsOpen)
             {
                 completionPane.IsOpen = false;
-                await Redraw();
+                await Redraw().ConfigureAwait(false);
             }
 
             Write(
@@ -82,7 +82,7 @@ internal class Renderer
                 codePane.MeasureConsole(console, configuration.Prompt); // our code pane will have more room to render, it now renders at the top of the screen.
             }
 
-            await Redraw();
+            await Redraw().ConfigureAwait(false);
         }
 
         wasTextSelectedDuringPreviousRender = codePane.Selection.HasValue;
