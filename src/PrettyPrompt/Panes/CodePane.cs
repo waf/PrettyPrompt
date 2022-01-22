@@ -22,6 +22,7 @@ namespace PrettyPrompt.Panes;
 internal class CodePane : IKeyPressHandler
 {
     private readonly ForceSoftEnterCallbackAsync shouldForceSoftEnterAsync;
+    private readonly IClipboard clipboard;
     private readonly SelectionKeyPressHandler selectionHandler;
     private int topCoordinate;
     private int codeAreaWidth = int.MaxValue;
@@ -82,10 +83,11 @@ internal class CodePane : IKeyPressHandler
     /// </summary>
     public ConsoleCoordinate Cursor { get; set; }
 
-    public CodePane(int topCoordinate, ForceSoftEnterCallbackAsync shouldForceSoftEnterAsync)
+    public CodePane(int topCoordinate, ForceSoftEnterCallbackAsync shouldForceSoftEnterAsync, IClipboard clipboard)
     {
         this.TopCoordinate = topCoordinate;
         this.shouldForceSoftEnterAsync = shouldForceSoftEnterAsync;
+        this.clipboard = clipboard;
         this.Document = new Document();
         this.selectionHandler = new SelectionKeyPressHandler(this);
 
@@ -171,22 +173,22 @@ internal class CodePane : IKeyPressHandler
                 {
                     var cutContent = Document.GetText(selectionValue);
                     Document.Remove(selectionValue);
-                    await ClipboardService.SetTextAsync(cutContent);
+                    await clipboard.SetTextAsync(cutContent);
                     break;
                 }
             case (Control, X):
                 {
-                    await ClipboardService.SetTextAsync(Document.GetText());
+                    await clipboard.SetTextAsync(Document.GetText());
                     break;
                 }
             case (Control, C) when selection.TryGet(out var selectionValue):
                 {
                     var copiedContent = Document.GetText(selectionValue);
-                    await ClipboardService.SetTextAsync(copiedContent);
+                    await clipboard.SetTextAsync(copiedContent);
                     break;
                 }
             case (Control | Shift, C):
-                await ClipboardService.SetTextAsync(Document.GetText());
+                await clipboard.SetTextAsync(Document.GetText());
                 break;
             case (Shift, Insert) when key.PastedText is not null:
                 PasteText(key.PastedText);
@@ -194,7 +196,7 @@ internal class CodePane : IKeyPressHandler
             case (Control, V):
             case (Control | Shift, V):
             case (Shift, Insert):
-                var clipboardText = await ClipboardService.GetTextAsync();
+                var clipboardText = await clipboard.GetTextAsync();
                 PasteText(clipboardText);
                 break;
             case (Control, Z):

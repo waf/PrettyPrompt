@@ -15,6 +15,7 @@ using PrettyPrompt.Highlighting;
 using PrettyPrompt.History;
 using PrettyPrompt.Panes;
 using PrettyPrompt.Rendering;
+using TextCopy;
 
 namespace PrettyPrompt;
 
@@ -25,13 +26,14 @@ public sealed class Prompt : IPrompt
     private readonly HistoryLog history;
     private readonly PromptConfiguration configuration;
     private readonly CancellationManager cancellationManager;
+    private readonly IClipboard clipboard;
+    private readonly SyntaxHighlighter highlighter;
 
     private readonly CompletionCallbackAsync completionCallback;
     private readonly OpenCompletionWindowCallbackAsync? shouldOpenCompletionWindow;
     private readonly SpanToReplaceByCompletionCallbackAsync getSpanToReplaceByCompletion;
     private readonly ForceSoftEnterCallbackAsync detectSoftEnterCallback;
     private readonly Dictionary<object, KeyPressCallbackAsync> keyPressCallbacks;
-    private readonly SyntaxHighlighter highlighter;
 
     /// <summary>
     /// Instantiates a prompt object. This object can be re-used for multiple invocations of <see cref="ReadLineAsync()"/>.
@@ -52,6 +54,7 @@ public sealed class Prompt : IPrompt
         this.history = new HistoryLog(persistentHistoryFilepath);
         this.configuration = configuration ?? new PromptConfiguration();
         this.cancellationManager = new CancellationManager(this.console);
+        this.clipboard = (console is IConsoleWithClipboard consoleWithClipboard) ? consoleWithClipboard.Clipboard : new Clipboard();
 
         callbacks ??= new PromptCallbacks();
         this.completionCallback = callbacks.CompletionCallback;
@@ -71,7 +74,7 @@ public sealed class Prompt : IPrompt
         renderer.RenderPrompt();
 
         // code pane contains the code the user is typing. It does not include the prompt (i.e. "> ")
-        var codePane = new CodePane(topCoordinate: console.CursorTop, detectSoftEnterCallback);
+        var codePane = new CodePane(topCoordinate: console.CursorTop, detectSoftEnterCallback, clipboard);
         codePane.MeasureConsole(console, configuration.Prompt);
 
         // completion pane is the pop-up window that shows potential autocompletions.
