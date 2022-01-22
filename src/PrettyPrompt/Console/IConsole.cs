@@ -5,6 +5,7 @@
 #endregion
 
 using System;
+using TextCopy;
 
 namespace PrettyPrompt.Consoles;
 
@@ -32,4 +33,9 @@ public interface IConsole
 
     event ConsoleCancelEventHandler CancelKeyPress;
     bool CaptureControlC { get; set; }
+}
+
+internal interface IConsoleWithClipboard : IConsole
+{
+    IClipboard Clipboard { get; }
 }
