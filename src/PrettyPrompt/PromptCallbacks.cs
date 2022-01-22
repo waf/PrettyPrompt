@@ -106,7 +106,7 @@ public class PromptCallbacks
             spanToReplaceByCompletionCallback =
                 async (string text, int caret) =>
                 {
-                    var span = await value(text, caret);
+                    var span = await value(text, caret).ConfigureAwait(false);
                     if (!new TextSpan(0, text.Length).Contains(span))
                     {
                         throw new InvalidOperationException("Resulting TextSpan has to be inside the document.");

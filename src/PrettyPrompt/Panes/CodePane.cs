@@ -98,7 +98,7 @@ internal class CodePane : IKeyPressHandler
     {
         if (key.Handled) return;
 
-        await this.selectionHandler.OnKeyDown(key);
+        await selectionHandler.OnKeyDown(key).ConfigureAwait(false);
         var selection = GetSelectionStartEnd();
         switch (key.Pattern)
         {
@@ -108,7 +108,7 @@ internal class CodePane : IKeyPressHandler
             case (Control, L):
                 TopCoordinate = 0; // actually clearing the screen is handled in the renderer.
                 break;
-            case Enter when await shouldForceSoftEnterAsync(Document.GetText()):
+            case Enter when await shouldForceSoftEnterAsync(Document.GetText()).ConfigureAwait(false):
             case (Shift, Enter):
                 Document.InsertAtCaret('\n', selection);
                 break;
@@ -173,22 +173,22 @@ internal class CodePane : IKeyPressHandler
                 {
                     var cutContent = Document.GetText(selectionValue);
                     Document.Remove(selectionValue);
-                    await clipboard.SetTextAsync(cutContent);
+                    await clipboard.SetTextAsync(cutContent).ConfigureAwait(false);
                     break;
                 }
             case (Control, X):
                 {
-                    await clipboard.SetTextAsync(Document.GetText());
+                    await clipboard.SetTextAsync(Document.GetText()).ConfigureAwait(false);
                     break;
                 }
             case (Control, C) when selection.TryGet(out var selectionValue):
                 {
                     var copiedContent = Document.GetText(selectionValue);
-                    await clipboard.SetTextAsync(copiedContent);
+                    await clipboard.SetTextAsync(copiedContent).ConfigureAwait(false);
                     break;
                 }
             case (Control | Shift, C):
-                await clipboard.SetTextAsync(Document.GetText());
+                await clipboard.SetTextAsync(Document.GetText()).ConfigureAwait(false);
                 break;
             case (Shift, Insert) when key.PastedText is not null:
                 PasteText(key.PastedText);
@@ -196,7 +196,7 @@ internal class CodePane : IKeyPressHandler
             case (Control, V):
             case (Control | Shift, V):
             case (Shift, Insert):
-                var clipboardText = await clipboard.GetTextAsync();
+                var clipboardText = await clipboard.GetTextAsync().ConfigureAwait(false);
                 PasteText(clipboardText);
                 break;
             case (Control, Z):
@@ -267,7 +267,7 @@ internal class CodePane : IKeyPressHandler
                 }
         }
 
-        await selectionHandler.OnKeyUp(key);
+        await selectionHandler.OnKeyUp(key).ConfigureAwait(false);
     }
 
     [MemberNotNull(nameof(WordWrappedLines))]
