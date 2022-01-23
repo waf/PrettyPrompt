@@ -6,7 +6,6 @@
 
 using System;
 using System.Diagnostics;
-using System.Text;
 
 namespace PrettyPrompt.Documents;
 
@@ -17,87 +16,79 @@ namespace PrettyPrompt.Documents;
 [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
 internal class Document : IEquatable<Document>
 {
-    private readonly StringBuilder text;
+    private StringBuilderWithCaret stringBuilder;
     private readonly UndoRedoHistory undoRedoHistory;
-    private int caret;
 
     /// <summary>
     /// The one-dimensional index of the text caret in the document text
     /// </summary>
     public int Caret
     {
-        get => caret;
-        set
-        {
-            Debug.Assert(value >= 0);
-            Debug.Assert(value <= text.Length);
-            caret = value;
-        }
+        get => stringBuilder.Caret;
+        set => stringBuilder.Caret = value;
     }
 
     public Document() : this(string.Empty, 0) { }
     public Document(string text, int caret)
     {
-        this.text = new StringBuilder(text);
-        this.Caret = caret;
-        this.undoRedoHistory = new UndoRedoHistory();
+        this.stringBuilder = new StringBuilderWithCaret(text, caret);
+        this.undoRedoHistory = new UndoRedoHistory(stringBuilder);
     }
 
     public void InsertAtCaret(char character, TextSpan? selection)
     {
-        undoRedoHistory.Track(this);
-        if (selection.TryGet(out var selectionValue))
+        using (undoRedoHistory.Track(stringBuilder))
         {
-            DeleteSelectedText(selectionValue);
+            if (selection.TryGet(out var selectionValue))
+            {
+                DeleteSelectedText(selectionValue);
+            }
+            stringBuilder.Insert(Caret, character);
         }
-        text.Insert(Caret, character);
-        Caret++;
-        undoRedoHistory.Track(this);
     }
 
     public void DeleteSelectedText(TextSpan span)
     {
-        undoRedoHistory.Track(this);
-        text.Remove(span.Start, span.End - span.Start);
-
-        Caret = span.Start;
-        undoRedoHistory.Track(this);
+        using (undoRedoHistory.Track(stringBuilder))
+        {
+            stringBuilder.Remove(span);
+        }
     }
 
     public void InsertAtCaret(string text, TextSpan? selection)
     {
-        undoRedoHistory.Track(this);
-        if (selection.TryGet(out var selectionValue))
+        using (undoRedoHistory.Track(stringBuilder))
         {
-            DeleteSelectedText(selectionValue);
+            if (selection.TryGet(out var selectionValue))
+            {
+                DeleteSelectedText(selectionValue);
+            }
+            this.stringBuilder.Insert(Caret, text);
         }
-        this.text.Insert(Caret, text);
-        Caret += text.Length;
-        undoRedoHistory.Track(this);
     }
 
     public void Remove(TextSpan span) => Remove(span.Start, span.Length);
 
     public void Remove(int startIndex, int length)
     {
-        if (startIndex >= text.Length || startIndex < 0) return;
+        if (startIndex >= stringBuilder.Length || startIndex < 0) return;
 
-        undoRedoHistory.Track(this);
-        text.Remove(startIndex, length);
-        Caret = startIndex;
-        undoRedoHistory.Track(this);
+        using (undoRedoHistory.Track(stringBuilder))
+        {
+            stringBuilder.Remove(startIndex, length);
+        }
     }
 
     public void Clear()
     {
-        undoRedoHistory.Track(this);
-        text.Clear();
-        Caret = 0;
-        undoRedoHistory.Track(this);
+        using (undoRedoHistory.Track(stringBuilder))
+        {
+            stringBuilder.Clear();
+        }
     }
 
     public WordWrappedText WrapEditableCharacters(int width)
-        => WordWrapping.WrapEditableCharacters(text, Caret, width);
+        => WordWrapping.WrapEditableCharacters(stringBuilder, Caret, width);
 
     public void MoveToWordBoundary(int direction) =>
         Caret = CalculateWordBoundaryIndexNearCaret(direction);
@@ -109,16 +100,16 @@ internal class Document : IEquatable<Document>
 
         if (direction > 0)
         {
-            for (var i = Caret; i < text.Length - 1; i++)
+            for (var i = Caret; i < stringBuilder.Length - 1; i++)
             {
                 if (IsWordBoundary(i, i + 1))
                     return i + 1;
             }
-            return text.Length;
+            return stringBuilder.Length;
         }
         else
         {
-            for (var i = Math.Min(Caret, text.Length) - 1; i > 0; i--)
+            for (var i = Math.Min(Caret, stringBuilder.Length) - 1; i > 0; i--)
             {
                 if (IsWordBoundary(i - 1, i))
                     return i;
@@ -128,10 +119,10 @@ internal class Document : IEquatable<Document>
 
         bool IsWordBoundary(int index1, int index2)
         {
-            if (index2 >= text.Length) return false;
+            if (index2 >= stringBuilder.Length) return false;
 
-            var c1 = text[index1];
-            var c2 = text[index2];
+            var c1 = stringBuilder[index1];
+            var c2 = stringBuilder[index2];
 
             var isWhitespace1 = char.IsWhiteSpace(c1);
             var isWhitespace2 = char.IsWhiteSpace(c2);
@@ -150,15 +141,15 @@ internal class Document : IEquatable<Document>
 
         int CalculateLineBoundaryIndexNearCaret(int direction)
         {
-            if (text.Length == 0) return Caret;
+            if (stringBuilder.Length == 0) return Caret;
 
             if (direction > 0)
             {
-                for (var i = Caret; i < text.Length; i++)
+                for (var i = Caret; i < stringBuilder.Length; i++)
                 {
-                    if (text[i] == '\n') return i;
+                    if (stringBuilder[i] == '\n') return i;
                 }
-                return text.Length;
+                return stringBuilder.Length;
             }
             else
             {
@@ -168,7 +159,7 @@ internal class Document : IEquatable<Document>
                 var beforeCaretIndex = (Caret - 1).Clamp(0, Length - 1);
                 for (int i = beforeCaretIndex; i >= 0; i--)
                 {
-                    if (text[i] == '\n')
+                    if (stringBuilder[i] == '\n')
                     {
                         lineStart = Math.Min(i + 1, Length - 1);
                         break;
@@ -178,7 +169,7 @@ internal class Document : IEquatable<Document>
                 int lineStartNonWhiteSpace = lineStart;
                 for (int i = lineStart; i < Length; i++)
                 {
-                    var c = text[i];
+                    var c = stringBuilder[i];
                     if (c == '\n')
                     {
                         return lineStart;
@@ -195,40 +186,25 @@ internal class Document : IEquatable<Document>
         }
     }
 
-    public Document Clone() => new(text.ToString(), Caret);
-
-    public void Undo()
-    {
-        var newVersion = undoRedoHistory.Undo();
-        this.text.Clear();
-        this.text.Append(newVersion.text);
-        this.Caret = newVersion.Caret;
-    }
-
-    public void Redo()
-    {
-        var newVersion = undoRedoHistory.Redo();
-        this.text.Clear();
-        this.text.Append(newVersion.text);
-        this.Caret = newVersion.Caret;
-    }
-
+    public Document Clone() => new(stringBuilder.ToString(), Caret);
+    public void Undo() => stringBuilder = undoRedoHistory.Undo();
+    public void Redo() => stringBuilder = undoRedoHistory.Redo();
     public void ClearUndoRedoHistory() => undoRedoHistory.Clear();
 
     /*
      * The following methods are forwarding along the StringBuilder APIs.
      */
 
-    public char this[int index] => this.text[index];
-    public int Length => this.text.Length;
-    public string GetText() => this.text.ToString();
+    public char this[int index] => this.stringBuilder[index];
+    public int Length => this.stringBuilder.Length;
+    public string GetText() => this.stringBuilder.ToString();
     public string GetText(TextSpan span) => GetText(span.Start, span.Length);
-    public string GetText(int startIndex, int length) => this.text.ToString(startIndex, length);
-    public bool StartsWith(string prefix) => prefix.Length <= this.text.Length && this.text.ToString(0, prefix.Length).Equals(prefix);
+    public string GetText(int startIndex, int length) => this.stringBuilder.ToString(startIndex, length);
+    public bool StartsWith(string prefix) => prefix.Length <= this.stringBuilder.Length && this.stringBuilder.ToString(0, prefix.Length).Equals(prefix);
     public override bool Equals(object? obj) => Equals(obj as Document);
-    public bool Equals(Document? other) => other != null && other.text.Equals(this.text);
-    public override int GetHashCode() => this.text.GetHashCode();
-    private string GetDebuggerDisplay() => this.text.ToString().Insert(this.Caret, "|");
+    public bool Equals(Document? other) => other != null && other.stringBuilder.Equals(this.stringBuilder);
+    public override int GetHashCode() => this.stringBuilder.GetHashCode();
+    private string GetDebuggerDisplay() => this.stringBuilder.ToString().Insert(this.Caret, "|");
 }
 
 internal readonly struct WrappedLine
