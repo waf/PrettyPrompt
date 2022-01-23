@@ -283,7 +283,7 @@ internal class CompletionPane : IKeyPressHandler
     {
         var spanToReplace = await getSpanToReplaceByCompletion(document.GetText(), document.Caret).ConfigureAwait(false);
         document.Remove(spanToReplace);
-        document.InsertAtCaret(completion.ReplacementText, codePane.GetSelectionStartEnd());
+        document.InsertAtCaret(completion.ReplacementText, codePane.GetSelectionSpan());
         document.Caret = spanToReplace.Start + completion.ReplacementText.Length;
         Close();
     }

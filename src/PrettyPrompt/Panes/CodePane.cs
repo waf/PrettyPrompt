@@ -99,7 +99,7 @@ internal class CodePane : IKeyPressHandler
         if (key.Handled) return;
 
         await selectionHandler.OnKeyDown(key).ConfigureAwait(false);
-        var selection = GetSelectionStartEnd();
+        var selection = GetSelectionSpan();
         switch (key.Pattern)
         {
             case (Control, C) when selection is null:
@@ -216,9 +216,15 @@ internal class CodePane : IKeyPressHandler
         }
     }
 
-    public TextSpan? GetSelectionStartEnd()
+    public TextSpan? GetSelectionSpan()
     {
-        return Selection.TryGet(out var selectionSpanValue) ? selectionSpanValue.GetCaretIndices(WordWrappedLines) : default(TextSpan?);
+        if (Selection.TryGet(out var selection))
+        {
+            var selectionSpan = selection.GetCaretIndices(WordWrappedLines);
+            Debug.Assert(new TextSpan(0, Document.Length).Contains(selectionSpan));
+            return selectionSpan;
+        }
+        return default;
     }
 
     private void PasteText(string? pastedText)
@@ -226,7 +232,7 @@ internal class CodePane : IKeyPressHandler
         if (string.IsNullOrEmpty(pastedText)) return;
 
         string dedentedText = DedentMultipleLines(pastedText);
-        this.Document.InsertAtCaret(dedentedText, GetSelectionStartEnd());
+        this.Document.InsertAtCaret(dedentedText, GetSelectionSpan());
     }
 
     internal void MeasureConsole(IConsole console, string prompt)
