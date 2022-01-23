@@ -5,7 +5,6 @@
 #endregion
 
 using System.Threading.Tasks;
-using TextCopy;
 using Xunit;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
@@ -254,18 +253,21 @@ public class UndoRedoTests
 
         //---------------------------------------------
 
-        ClipboardService.SetText("xyz");
         console = ConsoleStub.NewConsole();
-        console.StubInput(
-            $"abcd",
-            $"{LeftArrow}{Shift}{LeftArrow}{Shift}{LeftArrow}", //select 'bc'
-            $"{Control}{V}", //paste 'xyz' (=replace 'bc' with 'xyz')
-            $"{Control}{Z}", //redo
-            $"{Enter}"
-        );
-        prompt = new Prompt(console: console);
-        result = await prompt.ReadLineAsync();
-        Assert.True(result.IsSuccess);
-        Assert.Equal("abcd", result.Text);
+        using (console.ProtectClipboard())
+        {
+            console.Clipboard.SetText("xyz");
+            console.StubInput(
+                $"abcd",
+                $"{LeftArrow}{Shift}{LeftArrow}{Shift}{LeftArrow}", //select 'bc'
+                $"{Control}{V}", //paste 'xyz' (=replace 'bc' with 'xyz')
+                $"{Control}{Z}", //redo
+                $"{Enter}"
+            );
+            prompt = new Prompt(console: console);
+            result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal("abcd", result.Text);
+        }
     }
 }

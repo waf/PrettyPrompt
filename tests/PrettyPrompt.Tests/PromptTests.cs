@@ -273,13 +273,16 @@ public class PromptTests
     public async Task ReadLine_PasteMultipleLines()
     {
         const string Text = "abc\r\ndef";
-        ClipboardService.SetText(Text);
         var console = ConsoleStub.NewConsole();
-        console.StubInput($"{Control}{V}{Enter}");
-        var prompt = new Prompt(console: console);
-        var result = await prompt.ReadLineAsync();
-        Assert.True(result.IsSuccess);
-        Assert.Equal(Text, result.Text);
+        using (console.ProtectClipboard())
+        {
+            console.Clipboard.SetText(Text);
+            console.StubInput($"{Control}{V}{Enter}");
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal(Text, result.Text);
+        }
     }
 
     [Fact]

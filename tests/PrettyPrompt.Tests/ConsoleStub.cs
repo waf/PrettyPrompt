@@ -17,16 +17,25 @@ using TextCopy;
 
 namespace PrettyPrompt.Tests;
 
-public static class ConsoleStub
+internal static class ConsoleStub
 {
     private static readonly Regex FormatStringSplit = new(@"({\d+}|.)", RegexOptions.Compiled);
+    private static readonly Mutex mutex = new(initiallyOwned: false, nameof(ConsoleStub) + "Mutex"); //interprocess
 
-    public static IConsole NewConsole(int width = 100, int height = 100)
+    public static IConsoleWithClipboard NewConsole(int width = 100, int height = 100)
     {
         var console = Substitute.For<IConsoleWithClipboard>();
         console.BufferWidth.Returns(width);
         console.WindowHeight.Returns(height);
-        console.Clipboard.Returns(MutexProtectedCllipboard.Instance);
+        console.Clipboard.Returns(new Clipboard());
+
+        console.ProtectClipboard().Returns(
+            _ =>
+            {
+                mutex.WaitOne();
+                return new MutexProtector();
+            });
+
         return console;
     }
 
@@ -211,66 +220,8 @@ public static class ConsoleStub
         }
     }
 
-    private class MutexProtectedCllipboard : IClipboard
+    private class MutexProtector : IDisposable
     {
-        public static readonly MutexProtectedCllipboard Instance = new();
-
-        private static readonly Mutex mutex = new(initiallyOwned: false, nameof(MutexProtectedCllipboard)); //interprocess
-
-        private readonly Clipboard clipboard = new();
-
-        private MutexProtectedCllipboard() { }
-
-        public string? GetText()
-        {
-            try
-            {
-                mutex.WaitOne();
-                return clipboard.GetText();
-            }
-            finally
-            {
-                mutex.ReleaseMutex();
-            }
-        }
-
-        public Task<string?> GetTextAsync(CancellationToken cancellation = default)
-        {
-            try
-            {
-                mutex.WaitOne();
-                return clipboard.GetTextAsync(cancellation);
-            }
-            finally
-            {
-                mutex.ReleaseMutex();
-            }
-        }
-
-        public void SetText(string text)
-        {
-            try
-            {
-                mutex.WaitOne();
-                clipboard.SetText(text);
-            }
-            finally
-            {
-                mutex.ReleaseMutex();
-            }
-        }
-
-        public Task SetTextAsync(string text, CancellationToken cancellation = default)
-        {
-            try
-            {
-                mutex.WaitOne();
-                return clipboard.SetTextAsync(text, cancellation);
-            }
-            finally
-            {
-                mutex.ReleaseMutex();
-            }
-        }
+        public void Dispose() => mutex.ReleaseMutex();
     }
 }
