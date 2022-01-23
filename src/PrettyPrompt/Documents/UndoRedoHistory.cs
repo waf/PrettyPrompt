@@ -4,6 +4,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
@@ -26,24 +27,24 @@ internal sealed class UndoRedoHistory
         history.Add(document.Clone());
     }
 
-    internal void Track(StringBuilderWithCaret document)
+    internal TrackingOperation Track(StringBuilderWithCaret document)
     {
         CheckValidity();
 
-        if (history[currentIndex].EqualsText(document))
+        if (!history[currentIndex].EqualsText(document))
         {
-            return;
-        }
+            if (currentIndex != history.Count - 1)
 
-        if (currentIndex != history.Count - 1)
-        {
-            //edit after undos -> we will throw following redos away
-            var itemsToRemove = history.Count - currentIndex - 1;
-            history.RemoveRange(1, itemsToRemove);
-        }
+            {
+                //edit after undos -> we will throw following redos away
+                var itemsToRemove = history.Count - currentIndex - 1;
+                history.RemoveRange(1, itemsToRemove);
+            }
 
-        history.Add(document.Clone());
-        currentIndex = history.Count - 1;
+            history.Add(document.Clone());
+            currentIndex = history.Count - 1;
+        }
+        return new TrackingOperation(this, document);
     }
 
     public StringBuilderWithCaret Undo()
@@ -82,5 +83,22 @@ internal sealed class UndoRedoHistory
     {
         Debug.Assert(history.Count > 0);
         Debug.Assert(currentIndex >= 0 && currentIndex < history.Count);
+    }
+
+    public readonly struct TrackingOperation : IDisposable
+    {
+        private readonly UndoRedoHistory history;
+        private readonly StringBuilderWithCaret document;
+
+        public TrackingOperation(UndoRedoHistory history, StringBuilderWithCaret document)
+        {
+            this.history = history;
+            this.document = document;
+        }
+
+        public void Dispose()
+        {
+            history.Track(document);
+        }
     }
 }

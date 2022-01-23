@@ -37,31 +37,34 @@ internal class Document : IEquatable<Document>
 
     public void InsertAtCaret(char character, TextSpan? selection)
     {
-        undoRedoHistory.Track(stringBuilder);
-        if (selection.TryGet(out var selectionValue))
+        using (undoRedoHistory.Track(stringBuilder))
         {
-            DeleteSelectedText(selectionValue);
+            if (selection.TryGet(out var selectionValue))
+            {
+                DeleteSelectedText(selectionValue);
+            }
+            stringBuilder.Insert(Caret, character);
         }
-        stringBuilder.Insert(Caret, character);
-        undoRedoHistory.Track(stringBuilder);
     }
 
     public void DeleteSelectedText(TextSpan span)
     {
-        undoRedoHistory.Track(stringBuilder);
-        stringBuilder.Remove(span);
-        undoRedoHistory.Track(stringBuilder);
+        using (undoRedoHistory.Track(stringBuilder))
+        {
+            stringBuilder.Remove(span);
+        }
     }
 
     public void InsertAtCaret(string text, TextSpan? selection)
     {
-        undoRedoHistory.Track(stringBuilder);
-        if (selection.TryGet(out var selectionValue))
+        using (undoRedoHistory.Track(stringBuilder))
         {
-            DeleteSelectedText(selectionValue);
+            if (selection.TryGet(out var selectionValue))
+            {
+                DeleteSelectedText(selectionValue);
+            }
+            this.stringBuilder.Insert(Caret, text);
         }
-        this.stringBuilder.Insert(Caret, text);
-        undoRedoHistory.Track(stringBuilder);
     }
 
     public void Remove(TextSpan span) => Remove(span.Start, span.Length);
@@ -70,16 +73,18 @@ internal class Document : IEquatable<Document>
     {
         if (startIndex >= stringBuilder.Length || startIndex < 0) return;
 
-        undoRedoHistory.Track(stringBuilder);
-        stringBuilder.Remove(startIndex, length);
-        undoRedoHistory.Track(stringBuilder);
+        using (undoRedoHistory.Track(stringBuilder))
+        {
+            stringBuilder.Remove(startIndex, length);
+        }
     }
 
     public void Clear()
     {
-        undoRedoHistory.Track(stringBuilder);
-        stringBuilder.Clear();
-        undoRedoHistory.Track(stringBuilder);
+        using (undoRedoHistory.Track(stringBuilder))
+        {
+            stringBuilder.Clear();
+        }
     }
 
     public WordWrappedText WrapEditableCharacters(int width)
