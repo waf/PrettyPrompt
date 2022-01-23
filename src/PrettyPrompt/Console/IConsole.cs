@@ -38,4 +38,5 @@ public interface IConsole
 internal interface IConsoleWithClipboard : IConsole
 {
     IClipboard Clipboard { get; }
+    IDisposable ProtectClipboard();
 }
