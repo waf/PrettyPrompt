@@ -5,6 +5,7 @@
 #endregion
 
 using System.Threading.Tasks;
+using TextCopy;
 using Xunit;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
@@ -45,7 +46,7 @@ public class UndoRedoTests
         Assert.True(result.IsSuccess);
         Assert.Equal("", result.Text);
 
-        ///--------------------------------------------
+        //---------------------------------------------
 
         console = ConsoleStub.NewConsole();
         console.StubInput(
@@ -64,7 +65,7 @@ public class UndoRedoTests
         Assert.Equal($"{MoveCursorLeft(1)} {MoveCursorLeft(1)}", outputs[2]); //delete of 'a'
         Assert.Equal("a", outputs[3]);
 
-        ///--------------------------------------------
+        //---------------------------------------------
 
         console = ConsoleStub.NewConsole();
         console.StubInput(
@@ -80,7 +81,7 @@ public class UndoRedoTests
         Assert.Equal("a", result.Text);
 
 
-        ///--------------------------------------------
+        //---------------------------------------------
 
         console = ConsoleStub.NewConsole();
         console.StubInput(
@@ -112,7 +113,7 @@ public class UndoRedoTests
         Assert.True(result.IsSuccess);
         Assert.Equal("ab", result.Text);
 
-        ///--------------------------------------------
+        //---------------------------------------------
 
         console = ConsoleStub.NewConsole();
         console.StubInput(
@@ -128,7 +129,7 @@ public class UndoRedoTests
         Assert.True(result.IsSuccess);
         Assert.Equal("", result.Text);
 
-        ///--------------------------------------------
+        //---------------------------------------------
 
         console = ConsoleStub.NewConsole();
         console.StubInput(
@@ -146,7 +147,7 @@ public class UndoRedoTests
         Assert.True(result.IsSuccess);
         Assert.Equal("ab", result.Text);
 
-        ///--------------------------------------------
+        //---------------------------------------------
 
         console = ConsoleStub.NewConsole();
         console.StubInput(
@@ -166,7 +167,7 @@ public class UndoRedoTests
         Assert.True(result.IsSuccess);
         Assert.Equal("abcd", result.Text);
 
-        ///--------------------------------------------
+        //---------------------------------------------
 
         console = ConsoleStub.NewConsole();
         console.StubInput(
@@ -187,7 +188,7 @@ public class UndoRedoTests
         Assert.True(result.IsSuccess);
         Assert.Equal("abcd", result.Text);
 
-        ///--------------------------------------------
+        //---------------------------------------------
 
         console = ConsoleStub.NewConsole();
         console.StubInput(
@@ -232,5 +233,39 @@ public class UndoRedoTests
         Assert.Equal($"{MoveCursorLeft(1)} {MoveCursorLeft(1)}", outputs[2]); //delete of 'a'
         Assert.Equal("b", outputs[3]);
         Assert.Equal($"{MoveCursorLeft(1)} {MoveCursorLeft(1)}", outputs[4]); //delete of 'b'
+    }
+
+    //Reproduces bug from https://github.com/waf/PrettyPrompt/issues/77
+    [Fact]
+    public async Task ReadLine_ReplaceSelectedText_Undo()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput(
+            $"abcd",
+            $"{LeftArrow}{Shift}{LeftArrow}{Shift}{LeftArrow}", //select 'bc'
+            $"x", //replace 'bc' with 'x'
+            $"{Control}{Z}", //redo
+            $"{Enter}"
+        );
+        var prompt = new Prompt(console: console);
+        var result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal("abcd", result.Text);
+
+        //---------------------------------------------
+
+        ClipboardService.SetText("xyz");
+        console = ConsoleStub.NewConsole();
+        console.StubInput(
+            $"abcd",
+            $"{LeftArrow}{Shift}{LeftArrow}{Shift}{LeftArrow}", //select 'bc'
+            $"{Control}{V}", //paste 'xyz' (=replace 'bc' with 'xyz')
+            $"{Control}{Z}", //redo
+            $"{Enter}"
+        );
+        prompt = new Prompt(console: console);
+        result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal("abcd", result.Text);
     }
 }
