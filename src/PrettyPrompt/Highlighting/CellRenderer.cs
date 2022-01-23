@@ -106,7 +106,7 @@ static class CellRenderer
     /// </summary>
     public static Row[] ApplyColorToCharacters(IReadOnlyCollection<FormatSpan> highlights, string text, int textWidth)
     {
-        var wrapped = WordWrapping.WrapEditableCharacters(new System.Text.StringBuilder(text), 0, textWidth);
+        var wrapped = WordWrapping.WrapEditableCharacters(new StringBuilderWithCaret(text, 0), 0, textWidth);
         return ApplyColorToCharacters(highlights, wrapped.WrappedLines, null);
     }
 }

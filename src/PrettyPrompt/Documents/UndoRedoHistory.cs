@@ -5,6 +5,7 @@
 #endregion
 
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace PrettyPrompt.Documents;
 
@@ -12,42 +13,74 @@ namespace PrettyPrompt.Documents;
 /// Stores undo/redo history for a single document.
 /// </summary>
 /// <remarks>
-/// Implementation is naive -- it just stores full snapshots in a linked list and undo/redo navigates
+/// Implementation is naive -- it just stores full snapshots in a linked and undo/redo navigates
 /// through it. If tracking snapshots of the input ends up causing high memory, we can rework it.
 /// </remarks>
 internal sealed class UndoRedoHistory
 {
-    private readonly LinkedList<Document> history = new();
-    private LinkedListNode<Document>? currentUndoRedoEntry = null;
+    private readonly List<StringBuilderWithCaret> history = new();
+    private int currentIndex;
 
-    internal void Track(Document document)
+    public UndoRedoHistory(StringBuilderWithCaret document)
     {
-        if (currentUndoRedoEntry is not null && currentUndoRedoEntry.Value.Equals(document)) return;
-        history.AddLast(document.Clone());
-        currentUndoRedoEntry = history.Last;
+        history.Add(document.Clone());
     }
 
-    public Document Undo()
+    internal void Track(StringBuilderWithCaret document)
     {
-        if (currentUndoRedoEntry?.Previous is not null)
+        CheckValidity();
+
+        if (history[currentIndex].EqualsText(document))
         {
-            currentUndoRedoEntry = currentUndoRedoEntry.Previous;
+            return;
         }
-        return currentUndoRedoEntry?.Value ?? new Document();
+
+        if (currentIndex != history.Count - 1)
+        {
+            //edit after undos -> we will throw following redos away
+            var itemsToRemove = history.Count - currentIndex - 1;
+            history.RemoveRange(1, itemsToRemove);
+        }
+
+        history.Add(document.Clone());
+        currentIndex = history.Count - 1;
     }
 
-    public Document Redo()
+    public StringBuilderWithCaret Undo()
     {
-        if (currentUndoRedoEntry?.Next is not null)
+        CheckValidity();
+
+        if (currentIndex > 0)
         {
-            currentUndoRedoEntry = currentUndoRedoEntry.Next;
+            --currentIndex;
         }
-        return currentUndoRedoEntry?.Value ?? new Document();
+
+        return history[currentIndex].Clone();
+    }
+
+    public StringBuilderWithCaret Redo()
+    {
+        CheckValidity();
+
+        if (currentIndex < history.Count - 1)
+        {
+            ++currentIndex;
+        }
+
+        return history[currentIndex].Clone();
     }
 
     internal void Clear()
     {
-        history.Clear();
-        currentUndoRedoEntry = null;
+        CheckValidity();
+
+        currentIndex = 0;
+        history.RemoveRange(1, history.Count - 1);
+    }
+
+    private void CheckValidity()
+    {
+        Debug.Assert(history.Count > 0);
+        Debug.Assert(currentIndex >= 0 && currentIndex < history.Count);
     }
 }
