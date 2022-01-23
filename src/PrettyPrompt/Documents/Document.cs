@@ -41,7 +41,7 @@ internal class Document : IEquatable<Document>
         {
             if (selection.TryGet(out var selectionValue))
             {
-                DeleteSelectedText(selectionValue);
+                stringBuilder.Remove(selectionValue);
             }
             stringBuilder.Insert(Caret, character);
         }
@@ -61,7 +61,7 @@ internal class Document : IEquatable<Document>
         {
             if (selection.TryGet(out var selectionValue))
             {
-                DeleteSelectedText(selectionValue);
+                stringBuilder.Remove(selectionValue);
             }
             this.stringBuilder.Insert(Caret, text);
         }
