@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using PrettyPrompt.Consoles;
@@ -13,8 +14,6 @@ using PrettyPrompt.Highlighting;
 using PrettyPrompt.Rendering;
 
 namespace PrettyPrompt.Documents;
-
-internal readonly record struct WordWrappedText(IReadOnlyList<WrappedLine> WrappedLines, ConsoleCoordinate Cursor);
 
 internal static class WordWrapping
 {
@@ -28,7 +27,7 @@ internal static class WordWrapping
         if (input.Length == 0)
         {
             return new WordWrappedText(
-                new[] { new WrappedLine(0, string.Empty) },
+                new[] { WrappedLine.Empty(startIndex: 0) },
                 new ConsoleCoordinate(0, initialCaretPosition));
         }
 
@@ -70,7 +69,16 @@ internal static class WordWrapping
         }
 
         if (currentLineLength > 0)
+        {
             lines.Add(new WrappedLine(textIndex - line.Length, line.ToString()));
+        }
+
+        Debug.Assert(textIndex == input.Length);
+        if (cursorRow >= lines.Count)
+        {
+            Debug.Assert(cursorRow == lines.Count);
+            lines.Add(WrappedLine.Empty(startIndex: textIndex));
+        }
 
         return new WordWrappedText(lines, new ConsoleCoordinate(cursorRow, cursorColumn));
 
@@ -129,4 +137,45 @@ internal static class WordWrapping
 
         return lines;
     }
+}
+
+internal struct WordWrappedText
+{
+    public IReadOnlyList<WrappedLine> WrappedLines { get; }
+    private ConsoleCoordinate cursor;
+
+    public ConsoleCoordinate Cursor
+    {
+        get => cursor;
+        set
+        {
+            Debug.Assert(value.Row < WrappedLines.Count);
+            Debug.Assert(value.Column <= WrappedLines[value.Row].Content.Length);
+            cursor = value;
+        }
+    }
+
+    public WordWrappedText(IReadOnlyList<WrappedLine> wrappedLines, ConsoleCoordinate cursor)
+    {
+        WrappedLines = wrappedLines;
+
+        this.cursor = default;
+        Cursor = cursor;
+    }
+}
+
+internal readonly struct WrappedLine
+{
+    public readonly int StartIndex;
+    public readonly string Content;
+
+    public WrappedLine(int startIndex, string content)
+    {
+        Debug.Assert(startIndex >= 0);
+
+        StartIndex = startIndex;
+        Content = content;
+    }
+
+    public static WrappedLine Empty(int startIndex) => new(startIndex, string.Empty);
 }

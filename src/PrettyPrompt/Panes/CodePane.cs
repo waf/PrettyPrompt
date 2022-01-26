@@ -28,6 +28,7 @@ internal class CodePane : IKeyPressHandler
     private int codeAreaWidth = int.MaxValue;
     private int codeAreaHeight = int.MaxValue;
     private int windowTop;
+    private WordWrappedText wordWrappedText;
 
     /// <summary>
     /// The input text being edited in the pane
@@ -75,13 +76,17 @@ internal class CodePane : IKeyPressHandler
     /// <summary>
     /// Document text split into lines.
     /// </summary>
-    public IReadOnlyList<WrappedLine> WordWrappedLines { get; private set; }
+    public IReadOnlyList<WrappedLine> WordWrappedLines => wordWrappedText.WrappedLines;
 
     /// <summary>
     /// The two-dimensional coordinate of the text cursor in the document,
     /// after word wrapping / newlines have been processed.
     /// </summary>
-    public ConsoleCoordinate Cursor { get; set; }
+    public ConsoleCoordinate Cursor
+    {
+        get => wordWrappedText.Cursor;
+        set => wordWrappedText.Cursor = value;
+    }
 
     public CodePane(int topCoordinate, ForceSoftEnterCallbackAsync shouldForceSoftEnterAsync, IClipboard clipboard)
     {
@@ -274,12 +279,13 @@ internal class CodePane : IKeyPressHandler
         }
 
         await selectionHandler.OnKeyUp(key).ConfigureAwait(false);
+
+        CheckConsistency();
     }
 
-    [MemberNotNull(nameof(WordWrappedLines))]
     public void WordWrap()
     {
-        (WordWrappedLines, Cursor) = Document.WrapEditableCharacters(CodeAreaWidth);
+        wordWrappedText = Document.WrapEditableCharacters(CodeAreaWidth);
     }
 
     /// <summary>
@@ -309,5 +315,18 @@ internal class CodePane : IKeyPressHandler
         }
         var pastedText = string.Join('\n', lines);
         return pastedText;
+    }
+
+    [Conditional("DEBUG")]
+    private void CheckConsistency()
+    {
+        if (Selection.TryGet(out var selection))
+        {
+            var selectionSpan = selection.GetCaretIndices(WordWrappedLines);
+            Debug.Assert(Document.Caret >= selectionSpan.Start);
+            Debug.Assert(Document.Caret <= selectionSpan.End);
+            Debug.Assert(Cursor >= selection.Start);
+            Debug.Assert(Cursor <= selection.End);
+        }
     }
 }
