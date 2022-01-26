@@ -206,17 +206,3 @@ internal class Document : IEquatable<Document>
     public override int GetHashCode() => this.stringBuilder.GetHashCode();
     private string GetDebuggerDisplay() => this.stringBuilder.ToString().Insert(this.Caret, "|");
 }
-
-internal readonly struct WrappedLine
-{
-    public readonly int StartIndex;
-    public readonly string Content;
-
-    public WrappedLine(int startIndex, string content)
-    {
-        Debug.Assert(startIndex >= 0);
-
-        StartIndex = startIndex;
-        Content = content;
-    }
-}
