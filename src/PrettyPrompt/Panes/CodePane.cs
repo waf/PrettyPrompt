@@ -7,7 +7,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using PrettyPrompt.Consoles;
@@ -94,9 +93,12 @@ internal class CodePane : IKeyPressHandler
         this.shouldForceSoftEnterAsync = shouldForceSoftEnterAsync;
         this.clipboard = clipboard;
         this.Document = new Document();
+        this.Document.Changed += WordWrap;
         this.selectionHandler = new SelectionKeyPressHandler(this);
 
         WordWrap();
+
+        void WordWrap() => wordWrappedText = Document.WrapEditableCharacters(CodeAreaWidth);
     }
 
     public async Task OnKeyDown(KeyPress key)
@@ -206,11 +208,9 @@ internal class CodePane : IKeyPressHandler
                 break;
             case (Control, Z):
                 Document.Undo();
-                WordWrap();
                 break;
             case (Control, Y):
                 Document.Redo();
-                WordWrap();
                 break;
             default:
                 if (!char.IsControl(key.ConsoleKeyInfo.KeyChar))
@@ -281,11 +281,6 @@ internal class CodePane : IKeyPressHandler
         await selectionHandler.OnKeyUp(key).ConfigureAwait(false);
 
         CheckConsistency();
-    }
-
-    public void WordWrap()
-    {
-        wordWrappedText = Document.WrapEditableCharacters(CodeAreaWidth);
     }
 
     /// <summary>

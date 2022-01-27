@@ -4,6 +4,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+using System;
 using System.Diagnostics;
 using System.Text;
 
@@ -18,6 +19,10 @@ internal class StringBuilderWithCaret
 {
     private readonly StringBuilder sb;
     private int caret;
+    private bool changedEventsSuspended;
+    private bool changedDuringEventSuspension;
+
+    public event Action? Changed;
 
     /// <summary>
     /// The one-dimensional index of the text caret in the document text
@@ -30,6 +35,7 @@ internal class StringBuilderWithCaret
             Debug.Assert(value >= 0);
             Debug.Assert(value <= sb.Length);
             caret = value;
+            InvokeChangedEvent();
         }
     }
 
@@ -45,26 +51,41 @@ internal class StringBuilderWithCaret
 
     public void Clear()
     {
-        Caret = 0;
+        if (sb.Length > 0)
+        {
+            Caret = 0;
+            sb.Clear();
+            InvokeChangedEvent();
+        }
+    }
+
+    public void SetContents(StringBuilderWithCaret content)
+    {
         sb.Clear();
+        sb.Append(content.sb);
+        Caret = sb.Length;
+        InvokeChangedEvent();
     }
 
     public void Insert(int index, char c)
     {
         sb.Insert(index, c);
         ++Caret;
+        InvokeChangedEvent();
     }
 
     public void Insert(int index, string text)
     {
         sb.Insert(index, text);
         Caret += text.Length;
+        InvokeChangedEvent();
     }
 
     public void Remove(int startIndex, int length)
     {
         sb.Remove(startIndex, length);
         Caret = startIndex;
+        InvokeChangedEvent();
     }
 
     public void Remove(TextSpan span) => Remove(span.Start, span.Length);
@@ -74,4 +95,31 @@ internal class StringBuilderWithCaret
     public bool EqualsText(StringBuilderWithCaret other) => sb.Equals(other.sb);
     public StringBuilderWithCaret Clone() => new(sb.ToString(), caret);
     private string GetDebuggerDisplay() => sb.ToString().Insert(Caret, "|");
+
+    public void SuspendChangedEvents()
+    {
+        changedEventsSuspended = true;
+        changedDuringEventSuspension = false;
+    }
+
+    public void ResumeChangedEvents()
+    {
+        changedEventsSuspended = false;
+        if (changedDuringEventSuspension)
+        {
+            InvokeChangedEvent();
+        }
+    }
+
+    private void InvokeChangedEvent()
+    {
+        if (changedEventsSuspended)
+        {
+            changedDuringEventSuspension = true;
+        }
+        else
+        {
+            Changed?.Invoke();
+        }
+    }
 }

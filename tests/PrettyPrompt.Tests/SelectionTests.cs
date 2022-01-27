@@ -7,6 +7,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using PrettyPrompt.Consoles;
 using Xunit;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
@@ -407,9 +408,7 @@ public class SelectionTests
             $"{Control}{Enter}"); //confirm input
 
         var prompt = new Prompt(console: console);
-
         var result = await prompt.ReadLineAsync();
-
         Assert.True(result.IsSuccess);
 
         var output = console.GetAllOutput();
@@ -419,5 +418,23 @@ public class SelectionTests
         Assert.Contains("456", redraw);
         Assert.Contains("789", redraw);
         Assert.DoesNotContain("7m", redraw); //reverse
+    }
+
+    [Fact]
+    public async Task ReadLine_WriteLetter_LeftSelect_OverWrite_CheckRedraw()
+    {
+        var console = ConsoleStub.NewConsole();
+        var prompt = new Prompt(console: console);
+        console.StubInput(
+            $"a",
+            $"{Shift}{LeftArrow}b",
+            $"{Enter}"
+        );
+        var result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        var outputs = console.GetAllOutput();
+        Assert.Equal("a", outputs[1]);
+        Assert.Equal("\u001b[1D\u001b[39;49;7ma\u001b[0m\u001b[1D", outputs[2]); //move left, rewrite 'a' with reverse colors, reset, move left
+        Assert.Equal("b", outputs[3]);
     }
 }
