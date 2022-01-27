@@ -69,9 +69,9 @@ public class FuzzingTests
             )
             .Concat(new[]
             {
-                    A.ToKeyInfo('a'),
-                    Enter.ToKeyInfo('\0', shift: true),
-                    Delete.ToKeyInfo('\0')
+                A.ToKeyInfo('a'),
+                Enter.ToKeyInfo('\0', shift: true),
+                Delete.ToKeyInfo('\0')
             })
             .ToArray();
 
@@ -84,6 +84,58 @@ public class FuzzingTests
         console.StubInput(randomKeys);
 
         var prompt = new Prompt(persistentHistoryFilepath: Path.GetTempFileName(), console: console);
+
+        try
+        {
+            var result = await prompt.ReadLineAsync();
+            Assert.NotNull(result);
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Fuzzing failed for seed: " + seed, ex);
+        }
+    }
+
+    [Theory(Timeout = 60 * 1000)]
+    [InlineData(null)] // random seed, if we find other failing seeds, we can add them here as additional cases
+    [InlineData(1)] // triggered https://github.com/waf/PrettyPrompt/issues/68
+    public async Task FuzzedSelectionAndCompletion(int? seed)
+    {
+        seed ??= Guid.NewGuid().GetHashCode();
+        var r = new Random(seed.Value);
+
+        var directions = new[] { Home, End, LeftArrow, RightArrow, UpArrow, DownArrow };
+        var keySet =
+            (
+                from ctrl in new[] { false, true }
+                from shift in new[] { false, true }
+                from key in directions
+                select key.ToKeyInfo('\0', shift: shift, control: ctrl)
+            )
+            .Concat(new[]
+            {
+                A.ToKeyInfo('a'),
+                Enter.ToKeyInfo('\0', shift: true),
+                Delete.ToKeyInfo('\0'),
+                Spacebar.ToKeyInfo('\0', control: true), //completion trigger
+            })
+            .ToArray();
+
+        var randomKeys = Enumerable.Range(1, 10_000)
+            .Select(_ => keySet[r.Next(keySet.Length)])
+            .Concat(Enumerable.Repeat(Enter.ToKeyInfo('\0'), 4)) // hit enter a few times to submit the prompt
+            .ToList();
+
+        var console = ConsoleStub.NewConsole();
+        console.StubInput(randomKeys);
+
+        var prompt = new Prompt(
+            persistentHistoryFilepath: Path.GetTempFileName(),
+            callbacks: new PromptCallbacks
+            {
+                CompletionCallback = new CompletionTestData(null).CompletionHandlerAsync
+            },
+            console: console);
 
         try
         {

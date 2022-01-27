@@ -125,8 +125,6 @@ public sealed class Prompt : IPrompt
         foreach (var panes in new IKeyPressHandler[] { completionPane, codePane, history })
             await panes.OnKeyDown(key).ConfigureAwait(false);
 
-        codePane.WordWrap();
-
         foreach (var panes in new IKeyPressHandler[] { completionPane, codePane, history })
             await panes.OnKeyUp(key).ConfigureAwait(false);
     }

@@ -16,7 +16,7 @@ namespace PrettyPrompt.Documents;
 [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
 internal class Document : IEquatable<Document>
 {
-    private StringBuilderWithCaret stringBuilder;
+    private readonly StringBuilderWithCaret stringBuilder;
     private readonly UndoRedoHistory undoRedoHistory;
 
     /// <summary>
@@ -37,7 +37,7 @@ internal class Document : IEquatable<Document>
 
     public void InsertAtCaret(char character, TextSpan? selection)
     {
-        using (undoRedoHistory.Track(stringBuilder))
+        using (BeginChanges())
         {
             if (selection.TryGet(out var selectionValue))
             {
@@ -49,7 +49,7 @@ internal class Document : IEquatable<Document>
 
     public void DeleteSelectedText(TextSpan span)
     {
-        using (undoRedoHistory.Track(stringBuilder))
+        using (BeginChanges())
         {
             stringBuilder.Remove(span);
         }
@@ -57,7 +57,7 @@ internal class Document : IEquatable<Document>
 
     public void InsertAtCaret(string text, TextSpan? selection)
     {
-        using (undoRedoHistory.Track(stringBuilder))
+        using (BeginChanges())
         {
             if (selection.TryGet(out var selectionValue))
             {
@@ -73,7 +73,7 @@ internal class Document : IEquatable<Document>
     {
         if (startIndex >= stringBuilder.Length || startIndex < 0) return;
 
-        using (undoRedoHistory.Track(stringBuilder))
+        using (BeginChanges())
         {
             stringBuilder.Remove(startIndex, length);
         }
@@ -81,9 +81,17 @@ internal class Document : IEquatable<Document>
 
     public void Clear()
     {
-        using (undoRedoHistory.Track(stringBuilder))
+        using (BeginChanges())
         {
             stringBuilder.Clear();
+        }
+    }
+
+    public void SetContents(Document document)
+    {
+        using (BeginChanges())
+        {
+            stringBuilder.SetContents(document.stringBuilder);
         }
     }
 
@@ -187,14 +195,19 @@ internal class Document : IEquatable<Document>
     }
 
     public Document Clone() => new(stringBuilder.ToString(), Caret);
-    public void Undo() => stringBuilder = undoRedoHistory.Undo();
-    public void Redo() => stringBuilder = undoRedoHistory.Redo();
+    public void Undo() => stringBuilder.SetContents(undoRedoHistory.Undo());
+    public void Redo() => stringBuilder.SetContents(undoRedoHistory.Redo());
     public void ClearUndoRedoHistory() => undoRedoHistory.Clear();
+
+    public event Action? Changed
+    {
+        add => stringBuilder.Changed += value;
+        remove => stringBuilder.Changed -= value;
+    }
 
     /*
      * The following methods are forwarding along the StringBuilder APIs.
      */
-
     public char this[int index] => this.stringBuilder[index];
     public int Length => this.stringBuilder.Length;
     public string GetText() => this.stringBuilder.ToString();
@@ -205,4 +218,28 @@ internal class Document : IEquatable<Document>
     public bool Equals(Document? other) => other != null && other.stringBuilder.Equals(this.stringBuilder);
     public override int GetHashCode() => this.stringBuilder.GetHashCode();
     private string GetDebuggerDisplay() => this.stringBuilder.ToString().Insert(this.Caret, "|");
+
+    /// <summary>
+    /// Accumulates changed events and invokes only one on dispose.
+    /// Also takes care of history tracking (before/after).
+    /// </summary>
+    private ChangeContext BeginChanges() => new(this);
+
+    private readonly struct ChangeContext : IDisposable
+    {
+        private readonly Document document;
+
+        public ChangeContext(Document document)
+        {
+            this.document = document;
+            document.stringBuilder.SuspendChangedEvents();
+            document.undoRedoHistory.Track(document.stringBuilder);
+        }
+
+        public void Dispose()
+        {
+            document.stringBuilder.ResumeChangedEvents();
+            document.undoRedoHistory.Track(document.stringBuilder);
+        }
+    }
 }

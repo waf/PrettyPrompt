@@ -22,16 +22,16 @@ internal sealed class UndoRedoHistory
     private readonly List<StringBuilderWithCaret> history = new();
     private int currentIndex;
 
-    public UndoRedoHistory(StringBuilderWithCaret document)
+    public UndoRedoHistory(StringBuilderWithCaret text)
     {
-        history.Add(document.Clone());
+        history.Add(text.Clone());
     }
 
-    internal TrackingOperation Track(StringBuilderWithCaret document)
+    internal void Track(StringBuilderWithCaret text)
     {
         CheckValidity();
 
-        if (!history[currentIndex].EqualsText(document))
+        if (!history[currentIndex].EqualsText(text))
         {
             if (currentIndex != history.Count - 1)
 
@@ -41,10 +41,9 @@ internal sealed class UndoRedoHistory
                 history.RemoveRange(1, itemsToRemove);
             }
 
-            history.Add(document.Clone());
+            history.Add(text.Clone());
             currentIndex = history.Count - 1;
         }
-        return new TrackingOperation(this, document);
     }
 
     public StringBuilderWithCaret Undo()
@@ -83,22 +82,5 @@ internal sealed class UndoRedoHistory
     {
         Debug.Assert(history.Count > 0);
         Debug.Assert(currentIndex >= 0 && currentIndex < history.Count);
-    }
-
-    public readonly struct TrackingOperation : IDisposable
-    {
-        private readonly UndoRedoHistory history;
-        private readonly StringBuilderWithCaret document;
-
-        public TrackingOperation(UndoRedoHistory history, StringBuilderWithCaret document)
-        {
-            this.history = history;
-            this.document = document;
-        }
-
-        public void Dispose()
-        {
-            history.Track(document);
-        }
     }
 }
