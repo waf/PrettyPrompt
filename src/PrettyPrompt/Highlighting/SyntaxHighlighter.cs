@@ -12,7 +12,7 @@ namespace PrettyPrompt.Highlighting;
 
 class SyntaxHighlighter
 {
-    private readonly HighlightCallbackAsync highlightCallbackAsync;
+    private readonly IPromptCallbacks promptCallbacks;
     private readonly bool hasUserOptedOutFromColor;
 
     // quick and dirty caching, mainly to handle cases where the user enters control
@@ -20,9 +20,9 @@ class SyntaxHighlighter
     private string previousInput;
     private IReadOnlyCollection<FormatSpan> previousOutput;
 
-    public SyntaxHighlighter(HighlightCallbackAsync highlightCallbackAsync, bool hasUserOptedOutFromColor)
+    public SyntaxHighlighter(IPromptCallbacks promptCallbacks, bool hasUserOptedOutFromColor)
     {
-        this.highlightCallbackAsync = highlightCallbackAsync;
+        this.promptCallbacks = promptCallbacks;
         this.hasUserOptedOutFromColor = hasUserOptedOutFromColor;
         this.previousInput = string.Empty;
         this.previousOutput = Array.Empty<FormatSpan>();
@@ -37,7 +37,7 @@ class SyntaxHighlighter
             return previousOutput;
         }
 
-        var highlights = await highlightCallbackAsync.Invoke(input).ConfigureAwait(false);
+        var highlights = await promptCallbacks.HighlightCallbackAsync(input).ConfigureAwait(false);
         previousInput = input;
         previousOutput = highlights;
         return highlights;

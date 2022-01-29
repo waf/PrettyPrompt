@@ -11,7 +11,6 @@ using System.Threading.Tasks;
 using NSubstitute;
 using PrettyPrompt.Documents;
 using PrettyPrompt.Highlighting;
-using TextCopy;
 using Xunit;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
@@ -57,7 +56,7 @@ public class PromptTests
 
         // add completion handler, as it has caused problem when completing all whitespace prompts
         var prompt = new Prompt(
-            callbacks: new PromptCallbacks
+            callbacks: new TestPromptCallbacks
             {
                 CompletionCallback = new CompletionTestData().CompletionHandlerAsync
             },
@@ -213,7 +212,7 @@ public class PromptTests
 
         int syntaxHighlightingInvocations = 0;
 
-        var prompt = new Prompt(callbacks: new PromptCallbacks
+        var prompt = new Prompt(callbacks: new TestPromptCallbacks
         {
             HighlightCallback = text =>
             {
@@ -252,13 +251,12 @@ public class PromptTests
 
         string? input = null;
         int? caret = null;
-        var prompt = new Prompt(callbacks: new PromptCallbacks
-        {
-            KeyPressCallbacks =
-                {
-                    [F1] = (inputArg, caretArg) => { input = inputArg; caret = caretArg; return Task.FromResult<KeyPressCallbackResult?>(null); }
-                }
-        }, console: console);
+        var prompt = new Prompt(callbacks: new TestPromptCallbacks(
+            new Dictionary<object, KeyPressCallbackAsync>()
+            {
+                [F1] = (inputArg, caretArg) => { input = inputArg; caret = caretArg; return Task.FromResult<KeyPressCallbackResult?>(null); }
+            }
+        ), console: console);
 
         _ = await prompt.ReadLineAsync();
 
@@ -310,15 +308,14 @@ public class PromptTests
         console.StubInput($"I like apple{Control}{LeftArrow}{Control}{LeftArrow}{F2}{Enter}");
 
         var callbackOutput = new KeyPressCallbackResult("", "Callback output!");
-        var prompt = new Prompt(callbacks: new PromptCallbacks
-        {
-            KeyPressCallbacks =
-                {
-                    [F2] = (inputArg, caretArg) => {
-                        return Task.FromResult<KeyPressCallbackResult?>(callbackOutput);
-                    }
+        var prompt = new Prompt(callbacks: new TestPromptCallbacks(
+            new Dictionary<object, KeyPressCallbackAsync>()
+            {
+                [F2] = (inputArg, caretArg) => {
+                    return Task.FromResult<KeyPressCallbackResult?>(callbackOutput);
                 }
-        }, console: console);
+            }), 
+            console: console);
 
         var result = await prompt.ReadLineAsync();
 

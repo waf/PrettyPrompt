@@ -131,7 +131,7 @@ public class FuzzingTests
 
         var prompt = new Prompt(
             persistentHistoryFilepath: Path.GetTempFileName(),
-            callbacks: new PromptCallbacks
+            callbacks: new TestPromptCallbacks
             {
                 CompletionCallback = new CompletionTestData(null).CompletionHandlerAsync
             },

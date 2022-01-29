@@ -23,7 +23,7 @@ public class SyntaxHighlightingTests
         console.StubInput($"red green nocolor blue{Enter}");
 
         var prompt = new Prompt(
-            callbacks: new PromptCallbacks
+            callbacks: new TestPromptCallbacks
             {
                 HighlightCallback = new SyntaxHighlighterTestData().HighlightHandlerAsync
             },
@@ -65,13 +65,13 @@ public class SyntaxHighlightingTests
         console.StubInput($"苹果 o 蓝莓 o avocado o{Enter}");
 
         var prompt = new Prompt(
-            callbacks: new PromptCallbacks
+            callbacks: new TestPromptCallbacks
             {
                 HighlightCallback = new SyntaxHighlighterTestData(new Dictionary<string, AnsiColor>
                 {
-                        { "苹果", format1.Foreground!.Value },
-                        { "蓝莓", format2.Foreground!.Value },
-                        { "avocado", format3.Foreground!.Value }
+                    { "苹果", format1.Foreground!.Value },
+                    { "蓝莓", format2.Foreground!.Value },
+                    { "avocado", format3.Foreground!.Value }
                 }).HighlightHandlerAsync
             },
             console: console

@@ -62,7 +62,7 @@ public class ChineseJapaneseKoreanTests
         var console = ConsoleStub.NewConsole();
         console.StubInput($"书{Enter}{Enter}");
 
-        var prompt = new Prompt(console: console, callbacks: new PromptCallbacks
+        var prompt = new Prompt(console: console, callbacks: new TestPromptCallbacks
         {
             CompletionCallback = new CompletionTestData("书桌上有").CompletionHandlerAsync
         });
