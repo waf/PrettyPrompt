@@ -8,9 +8,11 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Documents;
+using PrettyPrompt.Rendering;
 using PrettyPrompt.TextSelection;
 using TextCopy;
 using static System.ConsoleKey;
@@ -174,7 +176,7 @@ internal class CodePane : IKeyPressHandler
                 }
                 break;
             case Tab:
-                Document.InsertAtCaret("    ", selection);
+                Document.InsertAtCaret(Document.TabSpaces, selection);
                 break;
             case (Control, X) when selection.TryGet(out var selectionValue):
                 {
@@ -236,8 +238,68 @@ internal class CodePane : IKeyPressHandler
     {
         if (string.IsNullOrEmpty(pastedText)) return;
 
-        string dedentedText = DedentMultipleLines(pastedText);
-        this.Document.InsertAtCaret(dedentedText, GetSelectionSpan());
+        var filteredText = DedentMultipleLinesAndFilter(pastedText);
+        this.Document.InsertAtCaret(filteredText, GetSelectionSpan());
+
+        /// <summary>
+        /// If we have text with consistent, leading indentation, trim that indentation ("dedent" it).
+        /// This handles the scenario where users are pasting from an IDE.
+        /// Also replaces tabs as spaces and filtrs out special characters.
+        /// </summary>
+        static string DedentMultipleLinesAndFilter(string text)
+        {
+            var sb = new StringBuilder();
+            var lines = text.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
+            if (lines.Length > 1)
+            {
+                var nonEmptyLines = lines
+                    .Where(line => line.Length > 0)
+                    .ToList();
+
+                if (!nonEmptyLines.Any())
+                {
+                    return text;
+                }
+
+                var leadingIndent = nonEmptyLines
+                    .Select(line => line.TakeWhile(char.IsWhiteSpace).Count())
+                    .Min();
+
+                for (var i = 0; i < lines.Length; i++)
+                {
+                    var line = lines[i].Substring(Math.Min(lines[i].Length, leadingIndent));
+                    AppendFiltered(sb, line);
+                    if (i != lines.Length - 1) sb.Append('\n');
+                }
+            }
+            else
+            {
+                AppendFiltered(sb, lines[0]);
+            }
+            return sb.ToString();
+        }
+
+        static void AppendFiltered(StringBuilder sb, string line)
+        {
+            foreach (var c in line)
+            {
+                if (c == '\t')
+                {
+                    sb.Append(Document.TabSpaces);
+                }
+                else
+                {
+                    if (UnicodeWidth.GetWidth(c) >= 1)
+                    {
+                        sb.Append(c);
+                    }
+                    else
+                    {
+                        continue;
+                    }
+                }
+            }
+        }
     }
 
     internal void MeasureConsole(IConsole console, string prompt)
@@ -281,35 +343,6 @@ internal class CodePane : IKeyPressHandler
         await selectionHandler.OnKeyUp(key).ConfigureAwait(false);
 
         CheckConsistency();
-    }
-
-    /// <summary>
-    /// If we have text with consistent, leading indentation, trim that indentation ("dedent" it).
-    /// This handles the scenario where users are pasting from an IDE.
-    /// </summary>
-    private static string DedentMultipleLines(string text)
-    {
-        var lines = text.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
-        if (lines.Length > 1)
-        {
-            var nonEmptyLines = lines
-                .Where(line => line != string.Empty)
-                .ToList();
-
-            if (!nonEmptyLines.Any())
-                return text;
-
-            var leadingIndent = nonEmptyLines
-                .Select(line => line.TakeWhile(char.IsWhiteSpace).Count())
-                .Min();
-
-            for (var i = 0; i < lines.Length; i++)
-            {
-                lines[i] = lines[i].Substring(Math.Min(lines[i].Length, leadingIndent));
-            }
-        }
-        var pastedText = string.Join('\n', lines);
-        return pastedText;
     }
 
     [Conditional("DEBUG")]
