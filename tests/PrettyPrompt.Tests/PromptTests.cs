@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using NSubstitute;
+using PrettyPrompt.Documents;
 using PrettyPrompt.Highlighting;
 using TextCopy;
 using Xunit;
@@ -168,7 +169,7 @@ public class PromptTests
         var prompt = new Prompt(console: console);
         var result = await prompt.ReadLineAsync();
 
-        Assert.Equal($"aaaa bbbb 5555{NewLine}dddd x5x5    foo.lumbar{NewLine}", result.Text);
+        Assert.Equal($"aaaa bbbb 5555{NewLine}dddd x5x5{Document.TabSpaces}foo.lumbar{NewLine}", result.Text);
     }
 
     [Fact]
@@ -268,7 +269,6 @@ public class PromptTests
     /// <summary>
     /// Triggered issue: https://github.com/waf/PrettyPrompt/issues/63
     /// </summary>
-    /// <returns></returns>
     [Fact]
     public async Task ReadLine_PasteMultipleLines()
     {
@@ -282,6 +282,24 @@ public class PromptTests
             var result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal(Text, result.Text);
+        }
+    }
+
+    /// <summary>
+    /// Triggered issue: https://github.com/waf/PrettyPrompt/issues/55
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_PasteTabWithChar()
+    {
+        var console = ConsoleStub.NewConsole();
+        using (console.ProtectClipboard())
+        {
+            console.Clipboard.SetText("\ta");
+            console.StubInput($"{Control}{V}{Enter}");
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal($"{Document.TabSpaces}a", result.Text);
         }
     }
 

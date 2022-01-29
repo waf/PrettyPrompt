@@ -46,7 +46,14 @@ internal static class WordWrapping
                 line.Append(character);
                 bool isCursorPastCharacter = initialCaretPosition > textIndex;
 
-                currentLineLength += UnicodeWidth.GetWidth(character);
+                Debug.Assert(character != '\t', "tabs should be replaced by spaces");
+                int unicodeWidth = UnicodeWidth.GetWidth(character);
+                if (unicodeWidth < 1)
+                {
+                    Debug.Fail("such character should not be present");
+                    continue;
+                }
+                currentLineLength += unicodeWidth;
                 textIndex++;
 
                 if (isCursorPastCharacter && !char.IsControl(character))
