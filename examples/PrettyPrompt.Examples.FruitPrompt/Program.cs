@@ -16,21 +16,7 @@ internal static class Program
         Console.WriteLine("Welcome! Try typing some fruit names.");
         Console.WriteLine();
 
-        var prompt = new Prompt(persistentHistoryFilepath: "./history-file", new PromptCallbacks
-        {
-            // populate completions and documentation for autocompletion window
-            CompletionCallback = FindCompletions,
-            // defines syntax highlighting
-            HighlightCallback = Highlight,
-            // registers functions to be called when the user presses a key. The text
-            // currently typed into the prompt, along with the caret position within
-            // that text are provided as callback parameters.
-            KeyPressCallbacks =
-                {
-                    [(ConsoleModifiers.Control, ConsoleKey.F1)] = ShowFruitDocumentation // could also just provide a ConsoleKey, instead of a tuple.
-                }
-        });
-
+        var prompt = new Prompt(persistentHistoryFilepath: "./history-file", new FruitPromptCallbacks());
         while (true)
         {
             var response = await prompt.ReadLineAsync().ConfigureAwait(false);
@@ -72,34 +58,6 @@ internal static class Program
             ("purple", AnsiColor.Rgb(72, 0, 255)),
             ("orange", AnsiColor.Rgb(255, 165, 0) ),
         };
-
-    // demo completion algorithm callback
-    private static Task<IReadOnlyList<CompletionItem>> FindCompletions(string typedInput, int caret, TextSpan spanToBeReplaced)
-    {
-        var typedWord = typedInput.AsSpan(spanToBeReplaced.Start, spanToBeReplaced.Length).ToString();
-        return Task.FromResult<IReadOnlyList<CompletionItem>>(
-            Fruits
-            .Where(fruit => fruit.Name.StartsWith(typedWord, StringComparison.InvariantCultureIgnoreCase))
-            .Select(fruit =>
-            {
-                var displayText = new FormattedString(fruit.Name, new FormatSpan(0, fruit.Name.Length, new ConsoleFormat(Foreground: fruit.Highlight)));
-                var description = GetFormattedString(fruit.Description);
-                return new CompletionItem(
-                    replacementText: fruit.Name,
-                    displayText: displayText,
-                    extendedDescription: new Lazy<Task<FormattedString>>(() => Task.FromResult(description))
-                );
-            })
-            .ToArray()
-        );
-    }
-
-    // demo syntax highlighting callback
-    private static Task<IReadOnlyCollection<FormatSpan>> Highlight(string text)
-    {
-        IReadOnlyCollection<FormatSpan> spans = EnumerateFormatSpans(text, Fruits.Select(f => (f.Name, f.Highlight))).ToList();
-        return Task.FromResult(spans);
-    }
 
     private static FormattedString GetFormattedString(string text)
         => new(text, EnumerateFormatSpans(text, ColorsToHighlight));
@@ -161,6 +119,48 @@ internal static class Program
                 new ProcessStartInfo("xdg-open", url); //linux, unix-like
 
             Process.Start(browser)?.WaitForExit();
+        }
+    }
+
+    class FruitPromptCallbacks : PromptCallbacks
+    {
+        public FruitPromptCallbacks()
+        {
+            // registers functions to be called when the user presses a key. The text
+            // currently typed into the prompt, along with the caret position within
+            // that text are provided as callback parameters.
+            keyPressCallbacks.Add(
+                (ConsoleModifiers.Control, ConsoleKey.F1), // could also just provide a ConsoleKey, instead of a tuple
+                ShowFruitDocumentation);
+        }
+
+        public override Task<IReadOnlyList<CompletionItem>> GetCompletionItemsAsync(string text, int caret, TextSpan spanToBeReplaced)
+        {
+            // demo completion algorithm callback
+            // populate completions and documentation for autocompletion window
+            var typedWord = text.AsSpan(spanToBeReplaced.Start, spanToBeReplaced.Length).ToString();
+            return Task.FromResult<IReadOnlyList<CompletionItem>>(
+                Fruits
+                .Where(fruit => fruit.Name.StartsWith(typedWord, StringComparison.InvariantCultureIgnoreCase))
+                .Select(fruit =>
+                {
+                    var displayText = new FormattedString(fruit.Name, new FormatSpan(0, fruit.Name.Length, new ConsoleFormat(Foreground: fruit.Highlight)));
+                    var description = GetFormattedString(fruit.Description);
+                    return new CompletionItem(
+                        replacementText: fruit.Name,
+                        displayText: displayText,
+                        extendedDescription: new Lazy<Task<FormattedString>>(() => Task.FromResult(description))
+                    );
+                })
+                .ToArray()
+            );
+        }
+
+        public override Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text)
+        {
+            // demo syntax highlighting callback
+            IReadOnlyCollection<FormatSpan> spans = EnumerateFormatSpans(text, Fruits.Select(f => (f.Name, f.Highlight))).ToList();
+            return Task.FromResult(spans);
         }
     }
 }

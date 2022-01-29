@@ -22,7 +22,7 @@ namespace PrettyPrompt.Panes;
 
 internal class CodePane : IKeyPressHandler
 {
-    private readonly ForceSoftEnterCallbackAsync shouldForceSoftEnterAsync;
+    private readonly IPromptCallbacks promptCallbacks;
     private readonly IClipboard clipboard;
     private readonly SelectionKeyPressHandler selectionHandler;
     private int topCoordinate;
@@ -89,10 +89,10 @@ internal class CodePane : IKeyPressHandler
         set => wordWrappedText.Cursor = value;
     }
 
-    public CodePane(int topCoordinate, ForceSoftEnterCallbackAsync shouldForceSoftEnterAsync, IClipboard clipboard)
+    public CodePane(int topCoordinate, IPromptCallbacks promptCallbacks, IClipboard clipboard)
     {
         this.TopCoordinate = topCoordinate;
-        this.shouldForceSoftEnterAsync = shouldForceSoftEnterAsync;
+        this.promptCallbacks = promptCallbacks;
         this.clipboard = clipboard;
         this.Document = new Document();
         this.Document.Changed += WordWrap;
@@ -117,7 +117,7 @@ internal class CodePane : IKeyPressHandler
             case (Control, L):
                 TopCoordinate = 0; // actually clearing the screen is handled in the renderer.
                 break;
-            case Enter when await shouldForceSoftEnterAsync(Document.GetText()).ConfigureAwait(false):
+            case Enter when await promptCallbacks.ForceSoftEnterAsync(Document.GetText()).ConfigureAwait(false):
             case (Shift, Enter):
                 Document.InsertAtCaret('\n', selection);
                 break;
@@ -241,11 +241,9 @@ internal class CodePane : IKeyPressHandler
         var filteredText = DedentMultipleLinesAndFilter(pastedText);
         this.Document.InsertAtCaret(filteredText, GetSelectionSpan());
 
-        /// <summary>
-        /// If we have text with consistent, leading indentation, trim that indentation ("dedent" it).
-        /// This handles the scenario where users are pasting from an IDE.
-        /// Also replaces tabs as spaces and filtrs out special characters.
-        /// </summary>
+        //If we have text with consistent, leading indentation, trim that indentation ("dedent" it).
+        //This handles the scenario where users are pasting from an IDE.
+        //Also replaces tabs as spaces and filtrs out special characters.
         static string DedentMultipleLinesAndFilter(string text)
         {
             var sb = new StringBuilder();

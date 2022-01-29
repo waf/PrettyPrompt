@@ -230,7 +230,7 @@ public class CompletionTests
 
     public static Prompt ConfigurePrompt(IConsole console, PromptConfiguration? configuration = null, string[]? completions = null) =>
         new(
-            callbacks: new PromptCallbacks
+            callbacks: new TestPromptCallbacks
             {
                 CompletionCallback = new CompletionTestData(completions).CompletionHandlerAsync
             },

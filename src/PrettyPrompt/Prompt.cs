@@ -28,12 +28,7 @@ public sealed class Prompt : IPrompt
     private readonly CancellationManager cancellationManager;
     private readonly IClipboard clipboard;
     private readonly SyntaxHighlighter highlighter;
-
-    private readonly CompletionCallbackAsync completionCallback;
-    private readonly OpenCompletionWindowCallbackAsync? shouldOpenCompletionWindow;
-    private readonly SpanToReplaceByCompletionCallbackAsync getSpanToReplaceByCompletion;
-    private readonly ForceSoftEnterCallbackAsync detectSoftEnterCallback;
-    private readonly Dictionary<object, KeyPressCallbackAsync> keyPressCallbacks;
+    private readonly IPromptCallbacks promptCallbacks;
 
     /// <summary>
     /// Instantiates a prompt object. This object can be re-used for multiple invocations of <see cref="ReadLineAsync()"/>.
@@ -56,15 +51,8 @@ public sealed class Prompt : IPrompt
         this.cancellationManager = new CancellationManager(this.console);
         this.clipboard = (console is IConsoleWithClipboard consoleWithClipboard) ? consoleWithClipboard.Clipboard : new Clipboard();
 
-        callbacks ??= new PromptCallbacks();
-        this.completionCallback = callbacks.CompletionCallback;
-        this.shouldOpenCompletionWindow = callbacks.OpenCompletionWindowCallback;
-        this.getSpanToReplaceByCompletion= callbacks.SpanToReplaceByCompletionCallback;
-        this.detectSoftEnterCallback = callbacks.ForceSoftEnterCallback;
-        this.keyPressCallbacks = callbacks.KeyPressCallbacks;
-
-        var highlightCallback = callbacks.HighlightCallback;
-        this.highlighter = new SyntaxHighlighter(highlightCallback, PromptConfiguration.HasUserOptedOutFromColor);
+        promptCallbacks = callbacks ?? new PromptCallbacks();
+        this.highlighter = new SyntaxHighlighter(promptCallbacks, PromptConfiguration.HasUserOptedOutFromColor);
     }
 
     /// <inheritdoc cref="IPrompt.ReadLineAsync()" />
@@ -74,15 +62,13 @@ public sealed class Prompt : IPrompt
         renderer.RenderPrompt();
 
         // code pane contains the code the user is typing. It does not include the prompt (i.e. "> ")
-        var codePane = new CodePane(topCoordinate: console.CursorTop, detectSoftEnterCallback, clipboard);
+        var codePane = new CodePane(topCoordinate: console.CursorTop, promptCallbacks, clipboard);
         codePane.MeasureConsole(console, configuration.Prompt);
 
         // completion pane is the pop-up window that shows potential autocompletions.
         var completionPane = new CompletionPane(
             codePane,
-            completionCallback,
-            shouldOpenCompletionWindow,
-            getSpanToReplaceByCompletion,
+            promptCallbacks,
             configuration.MinCompletionItemsCount,
             configuration.MaxCompletionItemsCount);
 
@@ -132,7 +118,7 @@ public sealed class Prompt : IPrompt
     private async Task<PromptResult?> GetResult(CodePane codePane, KeyPress key, string inputText)
     {
         // process any user-defined keyboard shortcuts
-        if (keyPressCallbacks.TryGetValue(key.Pattern, out var callback))
+        if (promptCallbacks.KeyPressCallbacks.TryGetValue(key.Pattern, out var callback))
         {
             var result = await callback.Invoke(inputText, codePane.Document.Caret).ConfigureAwait(false);
             if (result is not null)
