@@ -23,29 +23,14 @@ sealed class HistoryLog : IKeyPressHandler
     private const int MaxHistoryEntries = 500;
     private const int HistoryTrimInterval = 100;
 
-    /// <summary>
-    /// The actual history, stored as a linked list so we can efficiently go next/prev
-    /// </summary>
-    private readonly LinkedList<Document> history = new();
-
-    /// <summary>
-    /// The currently active history item. Usually, it's the last element of <see cref="history"/>, unless
-    /// the user is navigating next/prev in history.
-    /// </summary>
-    private LinkedListNode<Document>? current;
-
-    /// <summary>
-    /// The currently code pane being edited. The contents of this pane will be changed when
-    /// navigating through the history.
-    /// </summary>
-    private CodePane? latestCodePane;
+    private readonly List<string> history = new();
 
     /// <summary>
     /// In the case where the user leaves some unsubmitted text on their prompt (the latestCodePane), we capture
     /// it so we can restore it when the user stops navigating through history (i.e. they press Down Arrow until
     /// they're back to their current prompt).
     /// </summary>
-    private Document? unsubmittedBuffer;
+    private readonly StringBuilder unsubmittedBuffer = new();
 
     /// <summary>
     /// Filepath of the history storage file. If null, history is not saved. History is stored as base64 encoded lines,
@@ -53,6 +38,14 @@ sealed class HistoryLog : IKeyPressHandler
     /// </summary>
     private readonly string? persistentHistoryFilepath;
     private readonly Task loadPersistentHistoryTask;
+
+    private int currentIndex = -1;
+
+    /// <summary>
+    /// The currently code pane being edited. The contents of this pane will be changed when
+    /// navigating through the history.
+    /// </summary>
+    private CodePane? codePane;
 
     public HistoryLog(string? persistentHistoryFilepath)
     {
@@ -71,10 +64,10 @@ sealed class HistoryLog : IKeyPressHandler
         var loadedHistoryLines = allHistoryLines.TakeLast(MaxHistoryEntries).ToArray();
 
         // populate history
-        for (int i = loadedHistoryLines.Length - 1; i >= 0; i--)
+        foreach (var line in loadedHistoryLines)
         {
-            var entry = Encoding.UTF8.GetString(Convert.FromBase64String(loadedHistoryLines[i]));
-            history.AddFirst(new Document(entry, 0));
+            var entry = Encoding.UTF8.GetString(Convert.FromBase64String(line));
+            history.Add(entry);
         }
 
         // trim history.
@@ -90,7 +83,7 @@ sealed class HistoryLog : IKeyPressHandler
 
     public async Task OnKeyUp(KeyPress key)
     {
-        if (latestCodePane is null || current is null) return;
+        if (codePane is null) return;
 
         await loadPersistentHistoryTask.ConfigureAwait(false);
 
@@ -98,32 +91,35 @@ sealed class HistoryLog : IKeyPressHandler
 
         switch (key.Pattern)
         {
-            case UpArrow when current.Previous is not null:
-                if (current == history.Last)
-                {
-                    unsubmittedBuffer = history.Last.Value?.Clone();
-                }
-                var matchingPreviousEntry = FindPreviousMatchingEntry(unsubmittedBuffer, current);
-                SetContents(latestCodePane, matchingPreviousEntry.Value);
-                current = matchingPreviousEntry;
-                key.Handled = true;
-                break;
-            case DownArrow when current.Next is not null:
-                SetContents(
-                    latestCodePane,
-                    current.Next == history.Last && unsubmittedBuffer is not null
-                        ? unsubmittedBuffer
-                        : current.Next.Value
-                );
-                current = current.Next;
-                key.Handled = true;
-                break;
             case UpArrow:
+                if (currentIndex == -1)
+                {
+                    currentIndex = history.Count - 1;
+                    unsubmittedBuffer.SetContents(codePane.Document.Buffer);
+                }
+                else if (currentIndex > 0)
+                {
+                    currentIndex--;
+                }
+
+                if (TryGetPreviousMatchingEntry(unsubmittedBuffer, out var matchingPreviousEntryIndex))
+                {
+                    SetContents(codePane, history[matchingPreviousEntryIndex]);
+                    currentIndex = matchingPreviousEntryIndex;
+                    key.Handled = true;
+                }
+                break;
             case DownArrow:
+                if (currentIndex != -1)
+                {
+                    Debug.Assert(currentIndex < history.Count);
+                    var result = currentIndex < history.Count - 1 ? history[++currentIndex] : unsubmittedBuffer.ToString();
+                    SetContents(codePane, result);
+                    key.Handled = true;
+                }
                 break;
             default:
-                unsubmittedBuffer = null;
-                current = history.Last;
+                currentIndex = -1;
                 key.Handled = false;
                 break;
         }
@@ -132,27 +128,34 @@ sealed class HistoryLog : IKeyPressHandler
     }
 
     /// <summary>
-    /// Starting at the <paramref name="currentEntry"/> node, search backwards for a node
+    /// Starting at the <see cref="currentIndex"/> node, search backwards for a node
     /// that starts with <paramref name="prefix"/>
     /// </summary>
-    private static LinkedListNode<Document> FindPreviousMatchingEntry(Document? prefix, LinkedListNode<Document> currentEntry)
+    private bool TryGetPreviousMatchingEntry(ReadOnlyStringBuilder prefix, out int historyIndex)
     {
-        Debug.Assert(currentEntry.Previous is not null);
-
-        if (prefix is null || prefix.Length == 0) return currentEntry.Previous;
-
-        string prefixText = prefix.GetText();
-        for (var node = currentEntry.Previous; node is not null; node = node.Previous)
+        var startIndex = currentIndex == -1 ? history.Count - 1 : currentIndex;
+        if (prefix.Length > 0)
         {
-            if (node.Value.StartsWith(prefixText))
+            Debug.Assert(currentIndex < history.Count);
+            for (int i = startIndex; i >= 0; i--)
             {
-                return node;
+                if (history[i].StartsWith(prefix))
+                {
+                    historyIndex = i;
+                    return true;
+                }
             }
+            historyIndex = -1;
+            return false;
         }
-        return currentEntry;
+        else
+        {
+            historyIndex = startIndex;
+            return true;
+        }
     }
 
-    private static void SetContents(CodePane codepane, Document contents)
+    private static void SetContents(CodePane codepane, string contents)
     {
         if (codepane.Document.Equals(contents)) return;
 
@@ -161,33 +164,35 @@ sealed class HistoryLog : IKeyPressHandler
 
     internal void Track(CodePane codePane)
     {
+        var oldDocument = this.codePane?.Document;
+        if (oldDocument is not null)
+        {
+            oldDocument.ClearUndoRedoHistory(); // discard undo/redo history to reduce memory usage
+            if (oldDocument.Buffer.Length > 0)
+            {
+                history.Add(oldDocument.GetText()); 
+            }
+        }
         PruneHistory(history);
-        current = history.AddLast(codePane.Document);
-        latestCodePane = codePane;
+        currentIndex = -1;
+        this.codePane = codePane;
     }
 
     /// <summary>
-    /// Remove the latest history entry, if it's empty or duplicate.
+    /// Remove the latest history entry, if it's duplicate.
     /// </summary>
-    private static void PruneHistory(LinkedList<Document> history)
+    private static void PruneHistory(List<string> history)
     {
         if (!history.Any())
         {
             return;
         }
 
-        var previousEntry = history.Last?.Value.GetText();
-        var penultimateEntry = history.Last?.Previous?.Value.GetText();
-        if (string.IsNullOrEmpty(previousEntry) || previousEntry == penultimateEntry)
+        if (history.Count > 1 &&
+            history[^1] == history[^2])
         {
-            // Remove last empty/duplicate history.
-            history.RemoveLast();
-        }
-
-        // discard undo/redo history to reduce memory usage
-        if (history.Last is not null)
-        {
-            history.Last.Value.ClearUndoRedoHistory();
+            // Remove last duplicate history.
+            history.RemoveAt(history.Count - 1);
         }
     }
 

@@ -46,6 +46,8 @@ internal class StringBuilderWithCaret
         Caret = caret;
     }
 
+    public static implicit operator ReadOnlyStringBuilder(StringBuilderWithCaret sb) => new(sb.sb);
+
     public char this[int index] => sb[index];
     public int Length => sb.Length;
 
@@ -59,10 +61,9 @@ internal class StringBuilderWithCaret
         }
     }
 
-    public void SetContents(StringBuilderWithCaret content)
+    public void SetContents(string contents)
     {
-        sb.Clear();
-        sb.Append(content.sb);
+        sb.SetContents(contents);
         Caret = sb.Length;
         InvokeChangedEvent();
     }
@@ -93,7 +94,6 @@ internal class StringBuilderWithCaret
     public override string ToString() => sb.ToString();
     public string ToString(int startIndex, int length) => sb.ToString(startIndex, length);
     public bool EqualsText(StringBuilderWithCaret other) => sb.Equals(other.sb);
-    public StringBuilderWithCaret Clone() => new(sb.ToString(), caret);
     private string GetDebuggerDisplay() => sb.ToString().Insert(Caret, "|");
 
     public void SuspendChangedEvents()

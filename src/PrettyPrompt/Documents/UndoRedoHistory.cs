@@ -19,19 +19,19 @@ namespace PrettyPrompt.Documents;
 /// </remarks>
 internal sealed class UndoRedoHistory
 {
-    private readonly List<StringBuilderWithCaret> history = new();
+    private readonly List<string> history = new();
     private int currentIndex;
 
-    public UndoRedoHistory(StringBuilderWithCaret text)
+    public UndoRedoHistory(string text)
     {
-        history.Add(text.Clone());
+        history.Add(text);
     }
 
-    internal void Track(StringBuilderWithCaret text)
+    internal void Track(ReadOnlyStringBuilder text)
     {
         CheckValidity();
 
-        if (!history[currentIndex].EqualsText(text))
+        if (!text.Equals(history[currentIndex]))
         {
             if (currentIndex != history.Count - 1)
 
@@ -41,12 +41,12 @@ internal sealed class UndoRedoHistory
                 history.RemoveRange(1, itemsToRemove);
             }
 
-            history.Add(text.Clone());
+            history.Add(text.ToString());
             currentIndex = history.Count - 1;
         }
     }
 
-    public StringBuilderWithCaret Undo()
+    public string Undo()
     {
         CheckValidity();
 
@@ -55,10 +55,10 @@ internal sealed class UndoRedoHistory
             --currentIndex;
         }
 
-        return history[currentIndex].Clone();
+        return history[currentIndex];
     }
 
-    public StringBuilderWithCaret Redo()
+    public string Redo()
     {
         CheckValidity();
 
@@ -67,7 +67,7 @@ internal sealed class UndoRedoHistory
             ++currentIndex;
         }
 
-        return history[currentIndex].Clone();
+        return history[currentIndex];
     }
 
     internal void Clear()
