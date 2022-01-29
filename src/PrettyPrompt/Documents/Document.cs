@@ -28,11 +28,13 @@ internal class Document : IEquatable<Document>
         set => stringBuilder.Caret = value;
     }
 
+    public ReadOnlyStringBuilder Buffer => stringBuilder;
+
     public Document() : this(string.Empty, 0) { }
     public Document(string text, int caret)
     {
         this.stringBuilder = new StringBuilderWithCaret(text, caret);
-        this.undoRedoHistory = new UndoRedoHistory(stringBuilder);
+        this.undoRedoHistory = new UndoRedoHistory(text);
     }
 
     public void InsertAtCaret(char character, TextSpan? selection)
@@ -87,11 +89,11 @@ internal class Document : IEquatable<Document>
         }
     }
 
-    public void SetContents(Document document)
+    public void SetContents(string contents)
     {
         using (BeginChanges())
         {
-            stringBuilder.SetContents(document.stringBuilder);
+            stringBuilder.SetContents(contents);
         }
     }
 
@@ -194,7 +196,6 @@ internal class Document : IEquatable<Document>
         }
     }
 
-    public Document Clone() => new(stringBuilder.ToString(), Caret);
     public void Undo() => stringBuilder.SetContents(undoRedoHistory.Undo());
     public void Redo() => stringBuilder.SetContents(undoRedoHistory.Redo());
     public void ClearUndoRedoHistory() => undoRedoHistory.Clear();
@@ -213,7 +214,6 @@ internal class Document : IEquatable<Document>
     public string GetText() => this.stringBuilder.ToString();
     public string GetText(TextSpan span) => GetText(span.Start, span.Length);
     public string GetText(int startIndex, int length) => this.stringBuilder.ToString(startIndex, length);
-    public bool StartsWith(string prefix) => prefix.Length <= this.stringBuilder.Length && this.stringBuilder.ToString(0, prefix.Length).Equals(prefix);
     public override bool Equals(object? obj) => Equals(obj as Document);
     public bool Equals(Document? other) => other != null && other.stringBuilder.Equals(this.stringBuilder);
     public override int GetHashCode() => this.stringBuilder.GetHashCode();

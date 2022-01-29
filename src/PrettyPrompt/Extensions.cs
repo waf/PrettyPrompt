@@ -7,6 +7,8 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text;
+using PrettyPrompt.Documents;
 
 namespace PrettyPrompt;
 
@@ -80,5 +82,27 @@ internal static class Extensions
     {
         Debug.Assert(min <= max);
         return value < min ? min : (value > max ? max : value);
+    }
+
+    public static void SetContents(this StringBuilder sb, ReadOnlyStringBuilder contents)
+    {
+        sb.Clear();
+        contents.AppendTo(sb);
+    }
+
+    public static void SetContents(this StringBuilder sb, string contents)
+    {
+        sb.Clear();
+        sb.Append(contents);
+    }
+
+    public static bool StartsWith(this string text, ReadOnlyStringBuilder prefix)
+    {
+        if (prefix.Length > text.Length) return false;
+        for (int i = 0; i < prefix.Length; i++)
+        {
+            if (text[i] != prefix[i]) return false;
+        }
+        return true;
     }
 }
