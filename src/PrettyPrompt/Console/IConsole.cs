@@ -20,10 +20,10 @@ public interface IConsole
     int WindowHeight { get; }
     int WindowTop { get; }
 
-    void Write(string value);
-    void WriteLine(string value);
-    void WriteError(string value);
-    void WriteErrorLine(string value);
+    void Write(string? value);
+    void WriteLine(string? value);
+    void WriteError(string? value);
+    void WriteErrorLine(string? value);
     void Clear();
     void ShowCursor();
     void HideCursor();
