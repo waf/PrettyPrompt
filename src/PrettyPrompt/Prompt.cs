@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using PrettyPrompt.Cancellation;
@@ -194,4 +195,4 @@ public record PromptResult(bool IsSuccess, string Text, bool IsHardEnter)
 /// </summary>
 /// <param name="Input">The current input on the prompt when the user pressed the keybinding</param>
 /// <param name="Output">Any output the consuming application wants to display as a result of the keybinding</param>
-public record KeyPressCallbackResult(string Input, string Output) : PromptResult(true, Input, false);
+public record KeyPressCallbackResult(string Input, string? Output) : PromptResult(true, Input, false);

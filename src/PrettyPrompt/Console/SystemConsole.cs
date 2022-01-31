@@ -19,11 +19,10 @@ public class SystemConsole : IConsole
     public int WindowHeight => Console.WindowHeight;
     public int WindowTop => Console.WindowTop;
 
-
-    public void Write(string value) => Console.Write(value);
-    public void WriteLine(string value) => Console.WriteLine(value);
-    public void WriteError(string value) => Console.Error.Write(value);
-    public void WriteErrorLine(string value) => Console.Error.WriteLine(value);
+    public void Write(string? value) => Console.Write(value);
+    public void WriteLine(string? value) => Console.WriteLine(value);
+    public void WriteError(string? value) => Console.Error.Write(value);
+    public void WriteErrorLine(string? value) => Console.Error.WriteLine(value);
     public void Clear() => Console.Clear();
     public void ShowCursor() => Console.CursorVisible = true;
     public void HideCursor() => Console.CursorVisible = false;

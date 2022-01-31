@@ -47,7 +47,7 @@ public readonly struct AnsiColor : IEquatable<AnsiColor>
         this.friendlyName = friendlyName;
     }
 
-    public string GetAnsiEscapeSequence(Type type = Type.Foreground) => AnsiEscapeCodes.ToAnsiEscapeSequence(GetCode(type));
+    public string GetEscapeSequence(Type type = Type.Foreground) => AnsiEscapeCodes.ToAnsiEscapeSequence(GetCode(type));
     internal string GetCode(Type type = Type.Foreground) => type == Type.Foreground ? foregroundCode : backgroundCode;
 
     public override bool Equals(object? obj) => obj is AnsiColor other && Equals(other);
