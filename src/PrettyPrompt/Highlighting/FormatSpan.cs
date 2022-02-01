@@ -48,10 +48,15 @@ public readonly record struct FormatSpan
        int start,
        int length,
        ConsoleFormat formatting)
-    {
-        Span = new TextSpan(start, length);
-        Formatting = formatting;
-    }
+        : this(new TextSpan(start, length), formatting)
+    { }
+
+    public FormatSpan(
+      int start,
+      int length,
+      AnsiColor foregroundColor)
+        : this(start, length, new ConsoleFormat(Foreground: foregroundColor))
+    { }
 
     public static FormatSpan FromBounds(int start, int end, ConsoleFormat formatting) => new(TextSpan.FromBounds(start, end), formatting);
 

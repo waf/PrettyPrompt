@@ -19,9 +19,9 @@ public class PromptConfiguration
     public static bool HasUserOptedOutFromColor { get; } = Environment.GetEnvironmentVariable("NO_COLOR") is not null;
 
     /// <summary>
-    /// The prompt string to draw (e.g. "> ")
+    /// Formatted prompt string to draw (e.g. "> ")
     /// </summary>
-    public string Prompt { get; }
+    public FormattedString Prompt { get; }
 
     public ConsoleFormat CompletionBoxBorderFormat { get; }
     public AnsiColor? CompletionItemDescriptionPaneBackground { get; }
@@ -44,7 +44,7 @@ public class PromptConfiguration
     public double ProportionOfWindowHeightForCompletionPane { get; }
 
     public PromptConfiguration(
-        string prompt = "> ",
+        FormattedString? prompt = null,
         ConsoleFormat? completionBoxBorderFormat = null,
         AnsiColor? completionItemDescriptionPaneBackground = null,
         FormattedString? selectedCompletionItemMarkSymbol = null,
@@ -57,12 +57,12 @@ public class PromptConfiguration
         if (maxCompletionItemsCount < minCompletionItemsCount) throw new ArgumentException("must be >=minCompletionItemsCount", nameof(maxCompletionItemsCount));
         if (proportionOfWindowHeightForCompletionPane is <= 0 or >= 1) throw new ArgumentException("must be >0 and <1", nameof(proportionOfWindowHeightForCompletionPane));
 
-        Prompt = prompt;
+        Prompt = prompt ?? "> ";
 
         CompletionBoxBorderFormat = GetFormat(completionBoxBorderFormat ?? new ConsoleFormat(Foreground: AnsiColor.Blue));
         CompletionItemDescriptionPaneBackground = GetColor(completionItemDescriptionPaneBackground);
 
-        SelectedCompletionItemMarker = selectedCompletionItemMarkSymbol ?? new FormattedString(">", new FormatSpan(0, 1, new ConsoleFormat(Foreground: AnsiColor.Cyan)));
+        SelectedCompletionItemMarker = selectedCompletionItemMarkSymbol ?? new FormattedString(">", new FormatSpan(0, 1, AnsiColor.Cyan));
         UnselectedCompletionItemMarker = new string(' ', SelectedCompletionItemMarker.Length);
         SelectedCompletionItemBackground = GetColor(selectedCompletionItemBackground);
 

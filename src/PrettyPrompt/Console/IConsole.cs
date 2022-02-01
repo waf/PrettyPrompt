@@ -5,6 +5,7 @@
 #endregion
 
 using System;
+using PrettyPrompt.Highlighting;
 using TextCopy;
 
 namespace PrettyPrompt.Consoles;
@@ -33,6 +34,27 @@ public interface IConsole
 
     event ConsoleCancelEventHandler CancelKeyPress;
     bool CaptureControlC { get; set; }
+}
+
+public static class IConsoleX
+{
+    public static void Write(this IConsole console, FormattedString value)
+    {
+        if (!PromptConfiguration.HasUserOptedOutFromColor &&
+            value.FormatSpans.Count > 0)
+        {
+            foreach (var (element, formatting) in value.EnumerateTextElements())
+            {
+                console.Write(AnsiEscapeCodes.ToAnsiEscapeSequence(formatting));
+                console.Write(element);
+            }
+            console.Write(AnsiEscapeCodes.Reset);
+        }
+        else
+        {
+            console.Write(value.Text);
+        }
+    }
 }
 
 internal interface IConsoleWithClipboard : IConsole

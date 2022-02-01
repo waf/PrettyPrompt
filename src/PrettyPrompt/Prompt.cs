@@ -64,7 +64,7 @@ public sealed class Prompt : IPrompt
 
         // code pane contains the code the user is typing. It does not include the prompt (i.e. "> ")
         var codePane = new CodePane(topCoordinate: console.CursorTop, promptCallbacks, clipboard);
-        codePane.MeasureConsole(console, configuration.Prompt);
+        codePane.MeasureConsole(console, configuration.Prompt.Length);
 
         // completion pane is the pop-up window that shows potential autocompletions.
         var completionPane = new CompletionPane(
@@ -79,12 +79,12 @@ public sealed class Prompt : IPrompt
         foreach (var key in KeyPress.ReadForever(console))
         {
             // grab the code area width every key press, so we rerender appropriately when the console is resized.
-            codePane.MeasureConsole(console, configuration.Prompt);
+            codePane.MeasureConsole(console, configuration.Prompt.Length);
 
             await InterpretKeyPress(key, codePane, completionPane).ConfigureAwait(false);
 
             // typing / word-wrapping may have scrolled the console, giving us more room.
-            codePane.MeasureConsole(console, configuration.Prompt);
+            codePane.MeasureConsole(console, configuration.Prompt.Length);
 
             // render the typed input, with syntax highlighting
             var inputText = codePane.Document.GetText();

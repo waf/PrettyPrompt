@@ -300,13 +300,13 @@ internal class CodePane : IKeyPressHandler
         }
     }
 
-    internal void MeasureConsole(IConsole console, string prompt)
+    internal void MeasureConsole(IConsole console, int promptLength)
     {
         var windowTopChange = console.WindowTop - this.windowTop;
         this.TopCoordinate = Math.Max(0, this.TopCoordinate - windowTopChange);
         this.windowTop = console.WindowTop;
 
-        this.CodeAreaWidth = Math.Max(0, console.BufferWidth - prompt.Length);
+        this.CodeAreaWidth = Math.Max(0, console.BufferWidth - promptLength);
         this.CodeAreaHeight = Math.Max(0, console.WindowHeight - this.TopCoordinate);
     }
 

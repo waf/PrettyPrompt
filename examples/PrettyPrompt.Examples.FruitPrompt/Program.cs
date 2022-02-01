@@ -20,6 +20,7 @@ internal static class Program
             persistentHistoryFilepath: "./history-file", 
             callbacks: new FruitPromptCallbacks(),
             configuration: new PromptConfiguration(
+                prompt: new FormattedString(">>> ", new FormatSpan(0, 1, AnsiColor.Red), new FormatSpan(1, 1, AnsiColor.Yellow), new FormatSpan(2, 1, AnsiColor.Green)),
                 completionItemDescriptionPaneBackground: AnsiColor.Rgb(30, 30, 30),
                 selectedCompletionItemBackground: AnsiColor.Rgb(30, 30, 30)));
         while (true)
@@ -75,7 +76,7 @@ internal static class Program
             int offset = 0;
             while ((startIndex = text.AsSpan(offset).IndexOf(textToFormat)) != -1)
             {
-                yield return new FormatSpan(offset + startIndex, textToFormat.Length, new ConsoleFormat(Foreground: color));
+                yield return new FormatSpan(offset + startIndex, textToFormat.Length, color);
                 offset += startIndex + textToFormat.Length;
             }
         }
@@ -149,7 +150,7 @@ internal static class Program
                 .Where(fruit => fruit.Name.StartsWith(typedWord, StringComparison.InvariantCultureIgnoreCase))
                 .Select(fruit =>
                 {
-                    var displayText = new FormattedString(fruit.Name, new FormatSpan(0, fruit.Name.Length, new ConsoleFormat(Foreground: fruit.Highlight)));
+                    var displayText = new FormattedString(fruit.Name, new FormatSpan(0, fruit.Name.Length, fruit.Highlight));
                     var description = GetFormattedString(fruit.Description);
                     return new CompletionItem(
                         replacementText: fruit.Name,

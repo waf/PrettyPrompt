@@ -433,8 +433,8 @@ public class SelectionTests
         var result = await prompt.ReadLineAsync();
         Assert.True(result.IsSuccess);
         var outputs = console.GetAllOutput();
-        Assert.Equal("a", outputs[1]);
-        Assert.Equal("\u001b[1D\u001b[39;49;7ma\u001b[0m\u001b[1D", outputs[2]); //move left, rewrite 'a' with reverse colors, reset, move left
-        Assert.Equal("b", outputs[3]);
+        Assert.Equal("a", outputs[2]);
+        Assert.Equal("\u001b[1D\u001b[39;49;7ma\u001b[0m\u001b[1D", outputs[3]); //move left, rewrite 'a' with reverse colors, reset, move left
+        Assert.Equal("b", outputs[4]);
     }
 }
