@@ -320,7 +320,7 @@ internal class Renderer
             .Select(line =>
             {
                 var cells = Cell.FromText(" " + line.Trim() + new string(' ', actualTextWidth - line.GetUnicodeWidth() + 1));
-                TransformBackground(cells, configuration.CompletionItemDocumentationPaneBackground);
+                TransformBackground(cells, configuration.CompletionItemDescriptionPaneBackground);
                 cells.AddRange(Cell.FromText(BoxDrawing.EdgeVertical, configuration.CompletionBoxBorderFormat));
                 return new Row(cells);
             }
