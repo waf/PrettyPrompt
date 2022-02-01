@@ -60,9 +60,9 @@ public class UndoRedoTests
         Assert.Equal("a", result.Text);
 
         var outputs = console.GetAllOutput();
-        Assert.Equal("a", outputs[1]);
-        Assert.Equal($"{MoveCursorLeft(1)} {MoveCursorLeft(1)}", outputs[2]); //delete of 'a'
-        Assert.Equal("a", outputs[3]);
+        Assert.Equal("a", outputs[2]);
+        Assert.Equal($"{MoveCursorLeft(1)} {MoveCursorLeft(1)}", outputs[3]); //delete of 'a'
+        Assert.Equal("a", outputs[4]);
 
         //---------------------------------------------
 
@@ -228,10 +228,10 @@ public class UndoRedoTests
         Assert.Equal("", result.Text);
 
         var outputs = console.GetAllOutput();
-        Assert.Equal("a", outputs[1]);
-        Assert.Equal($"{MoveCursorLeft(1)} {MoveCursorLeft(1)}", outputs[2]); //delete of 'a'
-        Assert.Equal("b", outputs[3]);
-        Assert.Equal($"{MoveCursorLeft(1)} {MoveCursorLeft(1)}", outputs[4]); //delete of 'b'
+        Assert.Equal("a", outputs[2]);
+        Assert.Equal($"{MoveCursorLeft(1)} {MoveCursorLeft(1)}", outputs[3]); //delete of 'a'
+        Assert.Equal("b", outputs[4]);
+        Assert.Equal($"{MoveCursorLeft(1)} {MoveCursorLeft(1)}", outputs[5]); //delete of 'b'
     }
 
     //Reproduces bug from https://github.com/waf/PrettyPrompt/issues/77

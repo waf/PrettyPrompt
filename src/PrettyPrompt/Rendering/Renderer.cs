@@ -45,7 +45,8 @@ internal class Renderer
         var min = CompletionPane.VerticalBordersHeight + configuration.MinCompletionItemsCount;
         var max = CompletionPane.VerticalBordersHeight + configuration.MaxCompletionItemsCount;
         var newLinesCount = ((int)(configuration.ProportionOfWindowHeightForCompletionPane * console.WindowHeight)).Clamp(min, max);
-        console.Write(new string('\n', newLinesCount) + MoveCursorUp(newLinesCount) + MoveCursorToColumn(1) + Reset + configuration.Prompt);
+        console.Write(new string('\n', newLinesCount) + MoveCursorUp(newLinesCount) + MoveCursorToColumn(1) + Reset);
+        console.Write(configuration.Prompt);
     }
 
     public async Task RenderOutput(PromptResult? result, CodePane codePane, CompletionPane completionPane, IReadOnlyCollection<FormatSpan> highlights, KeyPress key)
@@ -79,7 +80,7 @@ internal class Renderer
                 console.Clear(); // for some reason, using escape codes (ClearEntireScreen and MoveCursorToPosition) leaves
                                  // CursorTop in an old (cached?) state. Using Console.Clear() works around this.
                 RenderPrompt();
-                codePane.MeasureConsole(console, configuration.Prompt); // our code pane will have more room to render, it now renders at the top of the screen.
+                codePane.MeasureConsole(console, configuration.Prompt.Length); // our code pane will have more room to render, it now renders at the top of the screen.
             }
 
             await Redraw().ConfigureAwait(false);

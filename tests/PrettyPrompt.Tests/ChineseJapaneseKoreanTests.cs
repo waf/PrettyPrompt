@@ -49,11 +49,11 @@ public class ChineseJapaneseKoreanTests
         var output = console.GetAllOutput();
 
         // we should render character by character as we're typing, with no extra rerenders happening on each keypress
-        Assert.EndsWith("> ", output[0]);
-        Assert.Equal("书", output[1]);
-        Assert.Equal("桌", output[2]);
-        Assert.Equal("上", output[3]);
-        Assert.Equal("有", output[4]);
+        Assert.Equal("> ", output[1]);
+        Assert.Equal("书", output[2]);
+        Assert.Equal("桌", output[3]);
+        Assert.Equal("上", output[4]);
+        Assert.Equal("有", output[5]);
     }
 
     [Fact]
@@ -85,10 +85,10 @@ public class ChineseJapaneseKoreanTests
         var output = console.GetAllOutput();
 
         Assert.Equal("书桌上有", result.Text);
-        Assert.EndsWith("> ", output[0]);
-        Assert.Equal("书", output[1]);
-        Assert.Equal("桌", output[2]);
-        Assert.Equal("上\n" + AnsiEscapeCodes.MoveCursorLeft(5), output[3]);
-        Assert.Equal("有", output[4]);
+        Assert.Equal("> ", output[1]);
+        Assert.Equal("书", output[2]);
+        Assert.Equal("桌", output[3]);
+        Assert.Equal("上\n" + AnsiEscapeCodes.MoveCursorLeft(5), output[4]);
+        Assert.Equal("有", output[5]);
     }
 }
