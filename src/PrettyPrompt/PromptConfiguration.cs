@@ -24,14 +24,15 @@ public class PromptConfiguration
     public string Prompt { get; }
 
     public ConsoleFormat CompletionBoxBorderFormat { get; }
-    public AnsiColor? CompletionItemDocumentationPaneBackground { get; }
+    public AnsiColor? CompletionItemDescriptionPaneBackground { get; }
 
     public FormattedString SelectedCompletionItemMarker { get; }
     public string UnselectedCompletionItemMarker { get; }
     public AnsiColor? SelectedCompletionItemBackground { get; }
 
     /// <summary>
-    /// How few completion items we are willing to render.
+    /// How few completion items we are willing to render. If we do not have a space for rendering of
+    /// completion list with <see cref="MinCompletionItemsCount"/>
     /// </summary>
     public int MinCompletionItemsCount { get; }
 
@@ -45,7 +46,7 @@ public class PromptConfiguration
     public PromptConfiguration(
         string prompt = "> ",
         ConsoleFormat? completionBoxBorderFormat = null,
-        AnsiColor? completionItemDocumentationPaneBackground = null,
+        AnsiColor? completionItemDescriptionPaneBackground = null,
         FormattedString? selectedCompletionItemMarkSymbol = null,
         AnsiColor? selectedCompletionItemBackground = null,
         int minCompletionItemsCount = 1,
@@ -59,14 +60,14 @@ public class PromptConfiguration
         Prompt = prompt;
 
         CompletionBoxBorderFormat = GetFormat(completionBoxBorderFormat ?? new ConsoleFormat(Foreground: AnsiColor.Blue));
-        CompletionItemDocumentationPaneBackground = GetColor(completionItemDocumentationPaneBackground ?? AnsiColor.Rgb(30, 30, 30));
+        CompletionItemDescriptionPaneBackground = GetColor(completionItemDescriptionPaneBackground);
 
         SelectedCompletionItemMarker = selectedCompletionItemMarkSymbol ?? new FormattedString(">", new FormatSpan(0, 1, new ConsoleFormat(Foreground: AnsiColor.Cyan)));
         UnselectedCompletionItemMarker = new string(' ', SelectedCompletionItemMarker.Length);
-        SelectedCompletionItemBackground = GetColor(selectedCompletionItemBackground ?? AnsiColor.Rgb(30, 30, 30));
+        SelectedCompletionItemBackground = GetColor(selectedCompletionItemBackground);
 
         ConsoleFormat GetFormat(ConsoleFormat format) => HasUserOptedOutFromColor ? ConsoleFormat.None : format;
-        AnsiColor? GetColor(AnsiColor color) => HasUserOptedOutFromColor ? null : color;
+        AnsiColor? GetColor(AnsiColor? color) => HasUserOptedOutFromColor ? null : color;
 
         MinCompletionItemsCount = minCompletionItemsCount;
         MaxCompletionItemsCount = maxCompletionItemsCount;

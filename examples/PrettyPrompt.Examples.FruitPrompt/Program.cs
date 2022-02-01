@@ -16,7 +16,12 @@ internal static class Program
         Console.WriteLine("Welcome! Try typing some fruit names.");
         Console.WriteLine();
 
-        var prompt = new Prompt(persistentHistoryFilepath: "./history-file", new FruitPromptCallbacks());
+        var prompt = new Prompt(
+            persistentHistoryFilepath: "./history-file", 
+            callbacks: new FruitPromptCallbacks(),
+            configuration: new PromptConfiguration(
+                completionItemDescriptionPaneBackground: AnsiColor.Rgb(30, 30, 30),
+                selectedCompletionItemBackground: AnsiColor.Rgb(30, 30, 30)));
         while (true)
         {
             var response = await prompt.ReadLineAsync().ConfigureAwait(false);
