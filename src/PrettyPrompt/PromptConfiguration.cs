@@ -17,6 +17,7 @@ public class PromptConfiguration
     /// your application.
     /// </summary>
     public static bool HasUserOptedOutFromColor { get; } = Environment.GetEnvironmentVariable("NO_COLOR") is not null;
+    public KeyBindings KeyBindings { get; }
 
     /// <summary>
     /// Formatted prompt string to draw (e.g. "> ")
@@ -44,6 +45,7 @@ public class PromptConfiguration
     public double ProportionOfWindowHeightForCompletionPane { get; }
 
     public PromptConfiguration(
+        KeyBindings? keyBindings = null,
         FormattedString? prompt = null,
         ConsoleFormat? completionBoxBorderFormat = null,
         AnsiColor? completionItemDescriptionPaneBackground = null,
@@ -57,6 +59,7 @@ public class PromptConfiguration
         if (maxCompletionItemsCount < minCompletionItemsCount) throw new ArgumentException("must be >=minCompletionItemsCount", nameof(maxCompletionItemsCount));
         if (proportionOfWindowHeightForCompletionPane is <= 0 or >= 1) throw new ArgumentException("must be >0 and <1", nameof(proportionOfWindowHeightForCompletionPane));
 
+        KeyBindings = keyBindings ?? new KeyBindings();
         Prompt = prompt ?? "> ";
 
         CompletionBoxBorderFormat = GetFormat(completionBoxBorderFormat ?? new ConsoleFormat(Foreground: AnsiColor.Blue));

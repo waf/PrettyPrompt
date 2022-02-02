@@ -36,8 +36,7 @@ internal class CompletionPane : IKeyPressHandler
 
     private readonly CodePane codePane;
     private readonly IPromptCallbacks promptCallbacks;
-    private readonly int minCompletionItemsCount;
-    private readonly int maxCompletionItemsCount;
+    private readonly PromptConfiguration configuration;
 
     /// <summary>
     /// The index of the caret when the pane was opened
@@ -62,13 +61,11 @@ internal class CompletionPane : IKeyPressHandler
     public CompletionPane(
         CodePane codePane,
         IPromptCallbacks promptCallbacks,
-        int minCompletionItemsCount,
-        int maxCompletionItemsCount)
+        PromptConfiguration configuration)
     {
         this.codePane = codePane;
         this.promptCallbacks = promptCallbacks;
-        this.minCompletionItemsCount = minCompletionItemsCount;
-        this.maxCompletionItemsCount = maxCompletionItemsCount;
+        this.configuration = configuration;
     }
 
     private void Open(int caret)
@@ -117,15 +114,12 @@ internal class CompletionPane : IKeyPressHandler
                 this.FilteredView.DecrementSelectedIndex();
                 key.Handled = true;
                 break;
-            case Enter:
-            case RightArrow:
-            case Tab:
-            case (Control, Spacebar) when FilteredView.Count == 1:
+            case var pattern when configuration.KeyBindings.CommitCompletion.Matches(pattern):
                 Debug.Assert(!FilteredView.IsEmpty);
                 await InsertCompletion(codePane.Document, FilteredView.SelectedItem).ConfigureAwait(false);
                 key.Handled = true;
                 break;
-            case (Control, Spacebar):
+            case var pattern when configuration.KeyBindings.TriggerCompletionList.Matches(pattern):
                 key.Handled = true;
                 break;
             case Home or (_, Home):
@@ -150,7 +144,7 @@ internal class CompletionPane : IKeyPressHandler
     }
 
     private bool EnoughRoomToDisplay(CodePane codePane) =>
-        codePane.CodeAreaHeight - codePane.Cursor.Row >= VerticalPaddingHeight + minCompletionItemsCount; // offset + top border + MinCompletionItemsCount + bottom border
+        codePane.CodeAreaHeight - codePane.Cursor.Row >= VerticalPaddingHeight + configuration.MinCompletionItemsCount; // offset + top border + MinCompletionItemsCount + bottom border
 
     async Task IKeyPressHandler.OnKeyUp(KeyPress key)
     {
@@ -215,7 +209,7 @@ internal class CompletionPane : IKeyPressHandler
 
     private void FilterCompletions(TextSpan spanToReplace, CodePane codePane)
     {
-        int height = Math.Min(codePane.CodeAreaHeight - VerticalPaddingHeight, maxCompletionItemsCount);
+        int height = Math.Min(codePane.CodeAreaHeight - VerticalPaddingHeight, configuration.MaxCompletionItemsCount);
         var filtered = new List<CompletionItem>();
         var previouslySelectedItem = this.FilteredView.SelectedItem;
         int selectedIndex = -1;
