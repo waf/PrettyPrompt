@@ -19,7 +19,8 @@ internal class KeyPress
 
     /// <summary>
     /// A tuple that represents the key press.
-    /// Intended to be pattern matched, e.g. (A) or (Ctrl, A) or (Ctrl | Shift, A) 
+    /// Intended to be pattern matched, e.g. (A) or (Ctrl, A) or (Ctrl | Shift, A).
+    /// It's either <see cref="ConsoleKey"/> or (<see cref="ConsoleModifiers"/>, <see cref="ConsoleKey"/>).
     /// </summary>
     public object Pattern { get; }
 

@@ -37,7 +37,7 @@ public class CompletionTests
     {
         var console = ConsoleStub.NewConsole();
         // complete 3 animals. For the third animal, start completing Alligator, but then backspace, navigate the completion menu and complete as Alpaca instead.
-        console.StubInput($"Aa{Enter} Z{Tab} Alli{Backspace}{Backspace}{DownArrow}{UpArrow}{DownArrow}{DownArrow}{RightArrow}{Enter}");
+        console.StubInput($"Aa{Enter} Z{Tab} Alli{Backspace}{Backspace}{DownArrow}{UpArrow}{DownArrow}{DownArrow}{Enter}{Enter}");
 
         var prompt = ConfigurePrompt(console);
 

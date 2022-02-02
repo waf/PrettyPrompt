@@ -26,6 +26,7 @@ public sealed class Prompt : IPrompt
     private readonly IConsole console;
     private readonly HistoryLog history;
     private readonly PromptConfiguration configuration;
+    private readonly KeyBindings? keyBindings;
     private readonly CancellationManager cancellationManager;
     private readonly IClipboard clipboard;
     private readonly SyntaxHighlighter highlighter;
@@ -49,6 +50,7 @@ public sealed class Prompt : IPrompt
 
         this.history = new HistoryLog(persistentHistoryFilepath);
         this.configuration = configuration ?? new PromptConfiguration();
+        this.keyBindings = keyBindings ?? new KeyBindings();
         this.cancellationManager = new CancellationManager(this.console);
         this.clipboard = (console is IConsoleWithClipboard consoleWithClipboard) ? consoleWithClipboard.Clipboard : new Clipboard();
 
@@ -70,8 +72,7 @@ public sealed class Prompt : IPrompt
         var completionPane = new CompletionPane(
             codePane,
             promptCallbacks,
-            configuration.MinCompletionItemsCount,
-            configuration.MaxCompletionItemsCount);
+            configuration);
 
         history.Track(codePane);
         cancellationManager.CaptureControlC();
