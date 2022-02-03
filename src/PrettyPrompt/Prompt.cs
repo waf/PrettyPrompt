@@ -7,7 +7,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using System.Threading.Tasks;
 using PrettyPrompt.Cancellation;
@@ -65,7 +64,7 @@ public sealed class Prompt : IPrompt
         renderer.RenderPrompt();
 
         // code pane contains the code the user is typing. It does not include the prompt (i.e. "> ")
-        var codePane = new CodePane(topCoordinate: console.CursorTop, promptCallbacks, clipboard);
+        var codePane = new CodePane(topCoordinate: console.CursorTop, configuration, promptCallbacks, clipboard);
         codePane.MeasureConsole(console, configuration.Prompt.Length);
 
         // completion pane is the pop-up window that shows potential autocompletions.
@@ -176,24 +175,49 @@ public interface IPrompt
 
 /// <summary>
 /// Represents the user's input from the prompt.
-/// If the user successfully submitted text, <paramref name="IsSuccess"/> will be true and <paramref name="Text"/> will contain the input.
-/// If the user cancelled (via ctrl-c), <paramref name="IsSuccess"/> will be false and <paramref name="Text"/> will be an empty string.
+/// If the user successfully submitted text, <see cref="IsSuccess"/> will be true and <see cref="Text"/> will contain the input.
+/// If the user cancelled (via ctrl-c), <see cref="IsSuccess"/> will be false and <see cref="Text"/> will be an empty string.
 /// </summary>
-public record PromptResult(bool IsSuccess, string Text, bool IsHardEnter)
+public class PromptResult
 {
+    public bool IsSuccess { get; }
+
+    /// <summary>
+    /// The current input on the prompt when the user submited the prompt or pressed the keybinding.
+    /// </summary>
+    public string Text { get; }
+
+    public KeyPressPattern SubmitPattern { get; }
+
     internal CancellationTokenSource? CancellationTokenSource { get; set; }
 
     /// <summary>
     /// If your user presses ctrl-c while your application is processing the user's input, this CancellationToken will be
-    /// signalled (i.e. IsCancellationRequested will be set to true)
+    /// signaled (i.e. IsCancellationRequested will be set to true)
     /// </summary>
     public CancellationToken CancellationToken => CancellationTokenSource?.Token ?? CancellationToken.None;
+
+    public PromptResult(bool isSuccess, string text, KeyPressPattern submitPattern)
+    {
+        IsSuccess = isSuccess;
+        Text = text;
+        SubmitPattern = submitPattern;
+    }
 }
 
 /// <summary>
 /// Represents the result of a user's key press, when they pressed a keybinding from <see cref="PromptCallbacks.KeyPressCallbacks"/>.
-/// If the keybinding should submit the current prompt (e.g. so the consuming application can 
 /// </summary>
-/// <param name="Input">The current input on the prompt when the user pressed the keybinding</param>
-/// <param name="Output">Any output the consuming application wants to display as a result of the keybinding</param>
-public record KeyPressCallbackResult(string Input, string? Output) : PromptResult(true, Input, false);
+public class KeyPressCallbackResult : PromptResult
+{
+    /// <summary>
+    /// Any output the consuming application wants to display as a result of the keybinding.
+    /// </summary>
+    public string? Output { get; }
+
+    public KeyPressCallbackResult(string input, string? output)
+        : base(isSuccess: true, input, submitPattern: default)
+    {
+        Output = output;
+    }
+}

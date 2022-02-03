@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 using PrettyPrompt.Completion;
+using PrettyPrompt.Consoles;
 using PrettyPrompt.Documents;
 using PrettyPrompt.Highlighting;
 
@@ -10,7 +11,7 @@ internal delegate Task<TextSpan> SpanToReplaceByCompletionCallbackAsync(string t
 internal delegate Task<IReadOnlyList<CompletionItem>> CompletionCallbackAsync(string text, int caret, TextSpan spanToBeReplaced);
 internal delegate Task<bool> OpenCompletionWindowCallbackAsync(string text, int caret);
 internal delegate Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text);
-internal delegate Task<bool> ForceSoftEnterCallbackAsync(string text);
+internal delegate Task<bool> ForceSoftEnterCallbackAsync(string text, int caret, KeyPressPattern keyPress);
 
 internal class TestPromptCallbacks : PromptCallbacks
 {
@@ -18,7 +19,7 @@ internal class TestPromptCallbacks : PromptCallbacks
     public CompletionCallbackAsync? CompletionCallback { get; set; }
     public OpenCompletionWindowCallbackAsync? OpenCompletionWindowCallback { get; set; }
     public HighlightCallbackAsync? HighlightCallback { get; set; }
-    public ForceSoftEnterCallbackAsync? ForceSoftEnterCallback { get; set; }
+    public ForceSoftEnterCallbackAsync? InterpretKeyPressAsInputSubmitCallback { get; set; }
 
     public TestPromptCallbacks(Dictionary<object, KeyPressCallbackAsync>? keyPressCallbacks = null)
     {
@@ -63,11 +64,11 @@ internal class TestPromptCallbacks : PromptCallbacks
             HighlightCallback(text);
     }
 
-    public override Task<bool> ForceSoftEnterAsync(string text)
+    public override Task<bool> InterpretKeyPressAsInputSubmit(string text, int caret, KeyPressPattern keyPress)
     {
         return
-            ForceSoftEnterCallback is null ?
-            base.ForceSoftEnterAsync(text) :
-            ForceSoftEnterCallback(text);
+            InterpretKeyPressAsInputSubmitCallback is null ?
+            base.InterpretKeyPressAsInputSubmit(text, caret, keyPress) :
+            InterpretKeyPressAsInputSubmitCallback(text, caret, keyPress);
     }
 }
