@@ -8,7 +8,7 @@ using System;
 
 namespace PrettyPrompt.Consoles;
 
-public readonly struct KeyPressPattern
+public readonly struct KeyPressPattern : IEquatable<KeyPressPattern>
 {
     public readonly ConsoleModifiers Modifiers;
     public readonly ConsoleKey Key;
@@ -25,13 +25,34 @@ public readonly struct KeyPressPattern
         Key = key;
     }
 
-    /// <summary>
-    /// See <see cref="KeyPress.Pattern"/>.
-    /// </summary>
-    public bool EqualsObjectPattern(object? pattern) => pattern switch
+    internal KeyPressPattern(object pattern)
     {
-        ConsoleKey key => Modifiers == default && Key == key,
-        (ConsoleModifiers modifiers, ConsoleKey key) => Modifiers == modifiers && Key == key,
-        _ => throw new InvalidOperationException("invalid format of key pattern"),
-    };
+        if (pattern is ConsoleKey key)
+        {
+            Modifiers = default;
+            Key = key;
+        }
+        else if (pattern is (ConsoleModifiers modifiers, ConsoleKey key2))
+        {
+            Modifiers = modifiers;
+            Key = key2;
+        }
+        else
+        {
+            throw new InvalidOperationException("invalid format of key pattern");
+        }
+    }
+
+    public static bool operator !=(KeyPressPattern left, KeyPressPattern right) => !(left == right);
+    public static bool operator ==(KeyPressPattern left, KeyPressPattern right) => left.Modifiers == right.Modifiers && left.Key == right.Key;
+
+    public static bool operator !=(KeyPressPattern left, ConsoleKey right) => !(left == right);
+    public static bool operator ==(KeyPressPattern left, ConsoleKey right) => left == new KeyPressPattern(right);
+
+    public static bool operator !=(KeyPressPattern left, (ConsoleModifiers Modifiers, ConsoleKey Key) right) => !(left == right);
+    public static bool operator ==(KeyPressPattern left, (ConsoleModifiers Modifiers, ConsoleKey Key) right) => left == new KeyPressPattern(right.Modifiers, right.Key);
+
+    public bool Equals(KeyPressPattern pattern) => this == pattern;
+    public override bool Equals(object? obj) => obj is KeyPressPattern other && this == other;
+    public override int GetHashCode() => (Modifiers, Key).GetHashCode();
 }

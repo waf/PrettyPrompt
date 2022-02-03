@@ -22,6 +22,7 @@ namespace PrettyPrompt.Panes;
 
 internal class CodePane : IKeyPressHandler
 {
+    private readonly PromptConfiguration configuration;
     private readonly IPromptCallbacks promptCallbacks;
     private readonly IClipboard clipboard;
     private readonly SelectionKeyPressHandler selectionHandler;
@@ -89,9 +90,10 @@ internal class CodePane : IKeyPressHandler
         set => wordWrappedText.Cursor = value;
     }
 
-    public CodePane(int topCoordinate, IPromptCallbacks promptCallbacks, IClipboard clipboard)
+    public CodePane(int topCoordinate, PromptConfiguration configuration, IPromptCallbacks promptCallbacks, IClipboard clipboard)
     {
         this.TopCoordinate = topCoordinate;
+        this.configuration = configuration;
         this.promptCallbacks = promptCallbacks;
         this.clipboard = clipboard;
         this.Document = new Document();
@@ -109,24 +111,22 @@ internal class CodePane : IKeyPressHandler
 
         await selectionHandler.OnKeyDown(key).ConfigureAwait(false);
         var selection = GetSelectionSpan();
+        var keyPattern = new KeyPressPattern(key.Pattern);
         switch (key.Pattern)
         {
             case (Control, C) when selection is null:
-                Result = new PromptResult(IsSuccess: false, string.Empty, IsHardEnter: false);
+                Result = new PromptResult(isSuccess: false, string.Empty, keyPattern);
                 break;
             case (Control, L):
                 TopCoordinate = 0; // actually clearing the screen is handled in the renderer.
                 break;
-            case Enter when await promptCallbacks.ForceSoftEnterAsync(Document.GetText()).ConfigureAwait(false):
-            case (Shift, Enter):
+            case var _ when
+                    configuration.KeyBindings.NewLine.Matches(keyPattern) ||
+                    await promptCallbacks.InterpretKeyPressAsInputSubmit(Document.GetText(), Document.Caret, keyPattern).ConfigureAwait(false):
                 Document.InsertAtCaret('\n', selection);
                 break;
-            case (Control, Enter):
-            case (Control | Alt, Enter):
-                Result = new PromptResult(IsSuccess: true, Document.GetText().EnvironmentNewlines(), IsHardEnter: true);
-                break;
-            case Enter:
-                Result = new PromptResult(IsSuccess: true, Document.GetText().EnvironmentNewlines(), IsHardEnter: false);
+            case var _ when configuration.KeyBindings.SubmitPrompt.Matches(keyPattern):
+                Result = new PromptResult(isSuccess: true, Document.GetText().EnvironmentNewlines(), keyPattern);
                 break;
             case Home or (Shift, Home):
                 Document.MoveToLineBoundary(-1);

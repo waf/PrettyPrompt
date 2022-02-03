@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using PrettyPrompt.Completion;
+using PrettyPrompt.Consoles;
 using PrettyPrompt.Documents;
 using PrettyPrompt.Highlighting;
 
@@ -37,7 +38,7 @@ public delegate Task<KeyPressCallbackResult?> KeyPressCallbackAsync(string text,
 internal interface IPromptCallbacks
 {
     IReadOnlyDictionary<object, KeyPressCallbackAsync> KeyPressCallbacks { get; }
-    Task<bool> ForceSoftEnterAsync(string text);
+    Task<bool> InterpretKeyPressAsInputSubmit(string text, int caret, KeyPressPattern keyPress);
     Task<IReadOnlyList<CompletionItem>> GetCompletionItemsAsync(string text, int caret, TextSpan spanToBeReplaced);
     Task<TextSpan> GetSpanToReplaceByCompletionkAsync(string text, int caret);
     Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text);
@@ -154,14 +155,16 @@ public class PromptCallbacks : IPromptCallbacks
         => Task.FromResult<IReadOnlyCollection<FormatSpan>>(Array.Empty<FormatSpan>());
 
     /// <summary>
-    /// Defines whether pressing "Enter" should insert a
-    /// newline ("soft-enter") or if the prompt should be submitted instead.
+    /// Defines whether given <see cref="KeyPressPattern"/> should be interpreted as
+    /// the prompt input submit.
     /// </summary>
-    /// <param name="text">The current input text on the prompt.</param>
+    /// <param name="text">The user's input text</param>
+    /// <param name="caret">The index of the text caret in the input text</param>
+    /// <param name="keyPress">Key press pattern in question</param>
     /// <returns>
-    /// true if a newline should be inserted ("soft-enter") or false if the prompt should be submitted.
+    /// <see langword="true"/> if the prompt should be submitted or <see langword="false"/> newline should be inserted ("soft-enter").
     /// </returns>
-    public virtual Task<bool> ForceSoftEnterAsync(string text)
+    public virtual Task<bool> InterpretKeyPressAsInputSubmit(string text, int caret, KeyPressPattern keyPress)
         => Task.FromResult(false);
 
     /// <summary>

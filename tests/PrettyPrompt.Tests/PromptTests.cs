@@ -44,7 +44,8 @@ public class PromptTests
         var result = await prompt.ReadLineAsync();
 
         Assert.True(result.IsSuccess);
-        Assert.True(result.IsHardEnter);
+        Assert.Equal(Control, result.SubmitPattern.Modifiers);
+        Assert.Equal(Enter, result.SubmitPattern.Key);
         Assert.Equal("Hello World", result.Text);
     }
 
@@ -311,14 +312,14 @@ public class PromptTests
         var prompt = new Prompt(callbacks: new TestPromptCallbacks(
             new Dictionary<object, KeyPressCallbackAsync>()
             {
-                [F2] = (inputArg, caretArg) => {
+                [F2] = (inputArg, caretArg) =>
+                {
                     return Task.FromResult<KeyPressCallbackResult?>(callbackOutput);
                 }
-            }), 
+            }),
             console: console);
 
         var result = await prompt.ReadLineAsync();
-
         Assert.Equal(callbackOutput, result);
     }
 }

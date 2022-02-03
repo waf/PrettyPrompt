@@ -15,10 +15,14 @@ public class KeyBindings
 {
     public KeyPressPatterns CommitCompletion { get; }
     public KeyPressPatterns TriggerCompletionList { get; }
+    public KeyPressPatterns NewLine { get; }
+    public KeyPressPatterns SubmitPrompt { get; }
 
     public KeyBindings(
         KeyPressPattern[]? commitCompletion = null,
-        KeyPressPattern[]? triggerCompletionList = null)
+        KeyPressPattern[]? triggerCompletionList = null,
+        KeyPressPattern[]? newLine = null,
+        KeyPressPattern[]? submitPrompt = null)
     {
         CommitCompletion = commitCompletion ?? new KeyPressPattern[]
         {
@@ -30,31 +34,17 @@ public class KeyBindings
         {
             new(Control, Spacebar),
         };
-    }
 
-    public readonly struct KeyPressPatterns
-    {
-        private readonly KeyPressPattern[] definedPatterns;
-
-        public KeyPressPatterns(KeyPressPattern[] definedPatterns)
-            => this.definedPatterns = definedPatterns;
-
-        public static implicit operator KeyPressPatterns(KeyPressPattern[] definedPatterns)
-            => new(definedPatterns);
-
-        /// <summary>
-        /// See <see cref="KeyPress.Pattern"/>.
-        /// </summary>
-        public bool Matches(object pattern)
+        NewLine = newLine ?? new KeyPressPattern[]
         {
-            foreach (var definedPattern in definedPatterns)
-            {
-                if (definedPattern.EqualsObjectPattern(pattern))
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
+            new(Shift, Enter),
+        };
+
+        SubmitPrompt = submitPrompt ?? new KeyPressPattern[]
+        {
+            new(Enter),
+            new(Control, Enter),
+            new(Control | Alt, Enter),
+        };
     }
 }

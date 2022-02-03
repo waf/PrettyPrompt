@@ -104,6 +104,7 @@ internal class CompletionPane : IKeyPressHandler
             return;
         }
 
+        var keyPattern = new KeyPressPattern(key.Pattern);
         switch (key.Pattern)
         {
             case DownArrow:
@@ -114,12 +115,12 @@ internal class CompletionPane : IKeyPressHandler
                 this.FilteredView.DecrementSelectedIndex();
                 key.Handled = true;
                 break;
-            case var pattern when configuration.KeyBindings.CommitCompletion.Matches(pattern):
+            case var _ when configuration.KeyBindings.CommitCompletion.Matches(keyPattern):
                 Debug.Assert(!FilteredView.IsEmpty);
                 await InsertCompletion(codePane.Document, FilteredView.SelectedItem).ConfigureAwait(false);
                 key.Handled = true;
                 break;
-            case var pattern when configuration.KeyBindings.TriggerCompletionList.Matches(pattern):
+            case var _ when configuration.KeyBindings.TriggerCompletionList.Matches(keyPattern):
                 key.Handled = true;
                 break;
             case Home or (_, Home):
