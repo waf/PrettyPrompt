@@ -112,6 +112,13 @@ internal class CodePane : IKeyPressHandler
         await selectionHandler.OnKeyDown(key).ConfigureAwait(false);
         var selection = GetSelectionSpan();
         var keyPattern = new KeyPressPattern(key.Pattern);
+
+        if (await promptCallbacks.InterpretKeyPressAsInputSubmit(Document.GetText(), Document.Caret, keyPattern).ConfigureAwait(false))
+        {
+            Result = new PromptResult(isSuccess: true, Document.GetText().EnvironmentNewlines(), keyPattern);
+            return;
+        }
+
         switch (key.Pattern)
         {
             case (Control, C) when selection is null:
@@ -120,9 +127,7 @@ internal class CodePane : IKeyPressHandler
             case (Control, L):
                 TopCoordinate = 0; // actually clearing the screen is handled in the renderer.
                 break;
-            case var _ when
-                    configuration.KeyBindings.NewLine.Matches(keyPattern) ||
-                    await promptCallbacks.InterpretKeyPressAsInputSubmit(Document.GetText(), Document.Caret, keyPattern).ConfigureAwait(false):
+            case var _ when configuration.KeyBindings.NewLine.Matches(keyPattern):
                 Document.InsertAtCaret('\n', selection);
                 break;
             case var _ when configuration.KeyBindings.SubmitPrompt.Matches(keyPattern):

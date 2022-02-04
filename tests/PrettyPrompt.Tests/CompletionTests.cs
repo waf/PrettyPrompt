@@ -217,14 +217,14 @@ public class CompletionTests
 
             var input = new List<FormattableString>() { $"{Text}" };
             input.AddRange(Enumerable.Repeat<FormattableString>($"{LeftArrow}", count: Text.Length - insertCaretPosition));
-            input.Add($"{Enter}{Enter}"); //invoke completion list
-            input.Add($"{Enter}{Enter}"); //insert completion
+            input.Add($"{Control}{Spacebar}"); //show completion list
+            input.Add($"{Enter}{Enter}"); //insert completion and submit prompt
 
             console.StubInput(input.ToArray());
-            var prompt = ConfigurePrompt(console, completions: new[] { Text });
+            var prompt = ConfigurePrompt(console, completions: new[] { Text.ToUpper() });
             var result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
-            Assert.Equal(Text, result.Text);
+            Assert.Equal(Text.ToUpper(), result.Text);
         }
     }
 
