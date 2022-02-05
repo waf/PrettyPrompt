@@ -9,7 +9,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 using NSubstitute;
 using NSubstitute.Core;
 using PrettyPrompt.Consoles;
@@ -177,6 +176,9 @@ internal static class ConsoleStub
             case ConsoleKey consoleKey:
                 var parsed = char.TryParse(key.Value, out char character);
                 list.Add(consoleKey.ToKeyInfo(parsed ? character : MapSpecialKey(consoleKey), modifiersPressed));
+                return 0;
+            case char c:
+                list.Add(CharToConsoleKey(c).ToKeyInfo(c, modifiersPressed));
                 return 0;
             case string text:
                 if (text.Length > 0)
