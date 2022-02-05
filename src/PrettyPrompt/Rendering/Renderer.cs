@@ -74,7 +74,7 @@ internal class Renderer
         }
         else
         {
-            if (key.Pattern is (Control, L))
+            if (key.ObjectPattern is (Control, L))
             {
                 previouslyRenderedScreen = new Screen(0, 0, ConsoleCoordinate.Zero);
                 console.Clear(); // for some reason, using escape codes (ClearEntireScreen and MoveCursorToPosition) leaves

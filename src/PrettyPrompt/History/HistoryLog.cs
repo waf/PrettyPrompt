@@ -89,7 +89,7 @@ sealed class HistoryLog : IKeyPressHandler
 
         if (history.Count == 0 || key.Handled) return;
 
-        switch (key.Pattern)
+        switch (key.ObjectPattern)
         {
             case UpArrow:
                 if (currentIndex == -1)

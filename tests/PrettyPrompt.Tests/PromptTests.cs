@@ -45,8 +45,8 @@ public class PromptTests
         var result = await prompt.ReadLineAsync();
 
         Assert.True(result.IsSuccess);
-        Assert.Equal(Control, result.SubmitPattern.Modifiers);
-        Assert.Equal(Enter, result.SubmitPattern.Key);
+        Assert.Equal(Control, result.SubmitKeyInfo.Modifiers);
+        Assert.Equal(Enter, result.SubmitKeyInfo.Key);
         Assert.Equal("Hello World", result.Text);
     }
 

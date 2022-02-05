@@ -111,27 +111,26 @@ internal class CodePane : IKeyPressHandler
 
         await selectionHandler.OnKeyDown(key).ConfigureAwait(false);
         var selection = GetSelectionSpan();
-        var keyPattern = new KeyPressPattern(key.Pattern);
 
-        if (await promptCallbacks.InterpretKeyPressAsInputSubmit(Document.GetText(), Document.Caret, keyPattern).ConfigureAwait(false))
+        if (await promptCallbacks.InterpretKeyPressAsInputSubmit(Document.GetText(), Document.Caret, key.ConsoleKeyInfo).ConfigureAwait(false))
         {
-            Result = new PromptResult(isSuccess: true, Document.GetText().EnvironmentNewlines(), keyPattern);
+            Result = new PromptResult(isSuccess: true, Document.GetText().EnvironmentNewlines(), key.ConsoleKeyInfo);
             return;
         }
 
-        switch (key.Pattern)
+        switch (key.ObjectPattern)
         {
             case (Control, C) when selection is null:
-                Result = new PromptResult(isSuccess: false, string.Empty, keyPattern);
+                Result = new PromptResult(isSuccess: false, string.Empty, key.ConsoleKeyInfo);
                 break;
             case (Control, L):
                 TopCoordinate = 0; // actually clearing the screen is handled in the renderer.
                 break;
-            case var _ when configuration.KeyBindings.NewLine.Matches(keyPattern):
+            case var _ when configuration.KeyBindings.NewLine.Matches(key.ConsoleKeyInfo):
                 Document.InsertAtCaret('\n', selection);
                 break;
-            case var _ when configuration.KeyBindings.SubmitPrompt.Matches(keyPattern):
-                Result = new PromptResult(isSuccess: true, Document.GetText().EnvironmentNewlines(), keyPattern);
+            case var _ when configuration.KeyBindings.SubmitPrompt.Matches(key.ConsoleKeyInfo):
+                Result = new PromptResult(isSuccess: true, Document.GetText().EnvironmentNewlines(), key.ConsoleKeyInfo);
                 break;
             case Home or (Shift, Home):
                 Document.MoveToLineBoundary(-1);
@@ -319,7 +318,7 @@ internal class CodePane : IKeyPressHandler
     {
         if (key.Handled) return;
 
-        switch (key.Pattern)
+        switch (key.ObjectPattern)
         {
             case (Shift, UpArrow) when Cursor.Row > 0:
             case UpArrow when Cursor.Row > 0:

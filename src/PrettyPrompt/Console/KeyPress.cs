@@ -22,23 +22,26 @@ internal class KeyPress
     /// Intended to be pattern matched, e.g. (A) or (Ctrl, A) or (Ctrl | Shift, A).
     /// It's either <see cref="ConsoleKey"/> or (<see cref="ConsoleModifiers"/>, <see cref="ConsoleKey"/>).
     /// </summary>
-    public object Pattern { get; }
+    public object ObjectPattern { get; }
 
     /// <summary>
     /// Text that was pasted as a result of this key press.
     /// </summary>
     public string? PastedText { get; }
 
+    public bool Handled { get; internal set; }
+
     public KeyPress(ConsoleKeyInfo consoleKeyInfo, string? pastedText = null)
     {
         this.ConsoleKeyInfo = consoleKeyInfo;
-        this.Pattern = consoleKeyInfo.Modifiers == 0
-            ? consoleKeyInfo.Key
-            : (consoleKeyInfo.Modifiers, consoleKeyInfo.Key);
+        
+        this.ObjectPattern = 
+            consoleKeyInfo.Modifiers == 0 ?
+            consoleKeyInfo.Key:
+            (consoleKeyInfo.Modifiers, consoleKeyInfo.Key);
+
         this.PastedText = pastedText;
     }
-
-    public bool Handled { get; internal set; }
 
     public static IEnumerable<KeyPress> ReadForever(IConsole console)
     {
