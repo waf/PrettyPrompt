@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using NSubstitute;
+using PrettyPrompt.Consoles;
 using PrettyPrompt.Documents;
 using PrettyPrompt.Highlighting;
 using Xunit;
@@ -253,11 +254,11 @@ public class PromptTests
         string? input = null;
         int? caret = null;
         var prompt = new Prompt(callbacks: new TestPromptCallbacks(
-            new Dictionary<object, KeyPressCallbackAsync>()
-            {
-                [F1] = (inputArg, caretArg) => { input = inputArg; caret = caretArg; return Task.FromResult<KeyPressCallbackResult?>(null); }
-            }
-        ), console: console);
+            (
+                new KeyPressPattern(F1),
+                (inputArg, caretArg) => { input = inputArg; caret = caretArg; return Task.FromResult<KeyPressCallbackResult?>(null); }
+        )),
+            console: console);
 
         _ = await prompt.ReadLineAsync();
 
@@ -310,13 +311,13 @@ public class PromptTests
 
         var callbackOutput = new KeyPressCallbackResult("", "Callback output!");
         var prompt = new Prompt(callbacks: new TestPromptCallbacks(
-            new Dictionary<object, KeyPressCallbackAsync>()
-            {
-                [F2] = (inputArg, caretArg) =>
+            (
+                new KeyPressPattern(F2),
+                (inputArg, caretArg) =>
                 {
                     return Task.FromResult<KeyPressCallbackResult?>(callbackOutput);
                 }
-            }),
+        )),
             console: console);
 
         var result = await prompt.ReadLineAsync();

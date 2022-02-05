@@ -39,7 +39,7 @@ public readonly struct KeyPressPattern : IEquatable<KeyPressPattern>
         }
         else
         {
-            throw new InvalidOperationException("invalid format of key pattern");
+            throw new InvalidOperationException("Invalid format of key pattern. It has to be ConsoleKey or ValueTuple<ConsoleModifiers, ConsoleKey>.");
         }
     }
 

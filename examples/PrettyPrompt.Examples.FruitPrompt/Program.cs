@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using PrettyPrompt.Completion;
+using PrettyPrompt.Consoles;
 using PrettyPrompt.Documents;
 using PrettyPrompt.Highlighting;
 
@@ -17,7 +18,7 @@ internal static class Program
         Console.WriteLine();
 
         var prompt = new Prompt(
-            persistentHistoryFilepath: "./history-file", 
+            persistentHistoryFilepath: "./history-file",
             callbacks: new FruitPromptCallbacks(),
             configuration: new PromptConfiguration(
                 prompt: new FormattedString(">>> ", new FormatSpan(0, 1, AnsiColor.Red), new FormatSpan(1, 1, AnsiColor.Yellow), new FormatSpan(2, 1, AnsiColor.Green)),
@@ -130,17 +131,15 @@ internal static class Program
 
     class FruitPromptCallbacks : PromptCallbacks
     {
-        public FruitPromptCallbacks()
+        protected override IEnumerable<(KeyPressPattern Pattern, KeyPressCallbackAsync Callback)> GetKeyPressCallbacks()
         {
             // registers functions to be called when the user presses a key. The text
             // currently typed into the prompt, along with the caret position within
             // that text are provided as callback parameters.
-            keyPressCallbacks.Add(
-                (ConsoleModifiers.Control, ConsoleKey.F1), // could also just provide a ConsoleKey, instead of a tuple
-                ShowFruitDocumentation);
+            yield return (new(ConsoleModifiers.Control, ConsoleKey.F1), ShowFruitDocumentation);
         }
 
-        public override Task<IReadOnlyList<CompletionItem>> GetCompletionItemsAsync(string text, int caret, TextSpan spanToBeReplaced)
+        protected override Task<IReadOnlyList<CompletionItem>> GetCompletionItemsAsync(string text, int caret, TextSpan spanToBeReplaced)
         {
             // demo completion algorithm callback
             // populate completions and documentation for autocompletion window
@@ -162,7 +161,7 @@ internal static class Program
             );
         }
 
-        public override Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text)
+        protected override Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text)
         {
             // demo syntax highlighting callback
             IReadOnlyCollection<FormatSpan> spans = EnumerateFormatSpans(text, Fruits.Select(f => (f.Name, f.Highlight))).ToList();
