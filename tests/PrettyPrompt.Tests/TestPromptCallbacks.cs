@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using PrettyPrompt.Completion;
 using PrettyPrompt.Consoles;
@@ -15,22 +16,20 @@ internal delegate Task<bool> ForceSoftEnterCallbackAsync(string text, int caret,
 
 internal class TestPromptCallbacks : PromptCallbacks
 {
+    private readonly (KeyPressPattern, KeyPressCallbackAsync)[] keyPressCallbacks;
+
     public SpanToReplaceByCompletionCallbackAsync? SpanToReplaceByCompletionCallback { get; set; }
     public CompletionCallbackAsync? CompletionCallback { get; set; }
     public OpenCompletionWindowCallbackAsync? OpenCompletionWindowCallback { get; set; }
     public HighlightCallbackAsync? HighlightCallback { get; set; }
     public ForceSoftEnterCallbackAsync? InterpretKeyPressAsInputSubmitCallback { get; set; }
 
-    public TestPromptCallbacks(Dictionary<object, KeyPressCallbackAsync>? keyPressCallbacks = null)
+    public TestPromptCallbacks(params (KeyPressPattern Pattern, KeyPressCallbackAsync Callback)[]? keyPressCallbacks)
     {
-        if (keyPressCallbacks != null)
-        {
-            foreach (var (key, value) in keyPressCallbacks)
-            {
-                base.keyPressCallbacks.Add(key, value);
-            }
-        }
+        this.keyPressCallbacks = keyPressCallbacks ?? Array.Empty<(KeyPressPattern, KeyPressCallbackAsync)>();
     }
+
+    protected override IEnumerable<(KeyPressPattern Pattern, KeyPressCallbackAsync Callback)> GetKeyPressCallbacks() => keyPressCallbacks;
 
     protected override Task<TextSpan> GetSpanToReplaceByCompletionkAsync(string text, int caret)
     {
@@ -40,7 +39,7 @@ internal class TestPromptCallbacks : PromptCallbacks
             SpanToReplaceByCompletionCallback(text, caret);
     }
 
-    public override Task<IReadOnlyList<CompletionItem>> GetCompletionItemsAsync(string text, int caret, TextSpan spanToBeReplaced)
+    protected override Task<IReadOnlyList<CompletionItem>> GetCompletionItemsAsync(string text, int caret, TextSpan spanToBeReplaced)
     {
         return
             CompletionCallback is null ?
@@ -48,7 +47,7 @@ internal class TestPromptCallbacks : PromptCallbacks
             CompletionCallback(text, caret, spanToBeReplaced);
     }
 
-    public override Task<bool> ShouldOpenCompletionWindowAsync(string text, int caret)
+    protected override Task<bool> ShouldOpenCompletionWindowAsync(string text, int caret)
     {
         return
             OpenCompletionWindowCallback is null ?
@@ -56,7 +55,7 @@ internal class TestPromptCallbacks : PromptCallbacks
             OpenCompletionWindowCallback(text, caret);
     }
 
-    public override Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text)
+    protected override Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text)
     {
         return
             HighlightCallback is null ?
@@ -64,7 +63,7 @@ internal class TestPromptCallbacks : PromptCallbacks
             HighlightCallback(text);
     }
 
-    public override Task<bool> InterpretKeyPressAsInputSubmit(string text, int caret, KeyPressPattern keyPress)
+    protected override Task<bool> InterpretKeyPressAsInputSubmit(string text, int caret, KeyPressPattern keyPress)
     {
         return
             InterpretKeyPressAsInputSubmitCallback is null ?

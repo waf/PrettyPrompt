@@ -119,7 +119,7 @@ public sealed class Prompt : IPrompt
     private async Task<PromptResult?> GetResult(CodePane codePane, KeyPress key, string inputText)
     {
         // process any user-defined keyboard shortcuts
-        if (promptCallbacks.KeyPressCallbacks.TryGetValue(key.Pattern, out var callback))
+        if (promptCallbacks.KeyPressCallbacks.TryGetValue(new KeyPressPattern(key.Pattern), out var callback))
         {
             var result = await callback.Invoke(inputText, codePane.Document.Caret).ConfigureAwait(false);
             if (result is not null)
@@ -206,7 +206,7 @@ public class PromptResult
 }
 
 /// <summary>
-/// Represents the result of a user's key press, when they pressed a keybinding from <see cref="PromptCallbacks.KeyPressCallbacks"/>.
+/// Represents the result of a user's key press, when they pressed a keybinding from <see cref="PromptCallbacks.GetKeyPressCallbacks"/>.
 /// </summary>
 public class KeyPressCallbackResult : PromptResult
 {

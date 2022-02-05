@@ -58,7 +58,7 @@ public readonly struct TextSpan : IEquatable<TextSpan>
     /// <summary>
     /// Determines whether the position lies within the span.
     /// </summary>
-    public bool Contains(int index) => index >= Start && index < Start + Length;
+    public bool Contains(int index) => index >= Start && index < End;
 
     /// <summary>
     /// Determines whether span falls completely within this span.
