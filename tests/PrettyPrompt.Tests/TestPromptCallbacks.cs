@@ -12,7 +12,7 @@ internal delegate Task<TextSpan> SpanToReplaceByCompletionCallbackAsync(string t
 internal delegate Task<IReadOnlyList<CompletionItem>> CompletionCallbackAsync(string text, int caret, TextSpan spanToBeReplaced);
 internal delegate Task<bool> OpenCompletionWindowCallbackAsync(string text, int caret);
 internal delegate Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text);
-internal delegate Task<bool> ForceSoftEnterCallbackAsync(string text, int caret, KeyPressPattern keyPress);
+internal delegate Task<bool> InterpretKeyPressAsInputSubmitCallbackAsync(string text, int caret, ConsoleKeyInfo keyInfo);
 
 internal class TestPromptCallbacks : PromptCallbacks
 {
@@ -22,7 +22,7 @@ internal class TestPromptCallbacks : PromptCallbacks
     public CompletionCallbackAsync? CompletionCallback { get; set; }
     public OpenCompletionWindowCallbackAsync? OpenCompletionWindowCallback { get; set; }
     public HighlightCallbackAsync? HighlightCallback { get; set; }
-    public ForceSoftEnterCallbackAsync? InterpretKeyPressAsInputSubmitCallback { get; set; }
+    public InterpretKeyPressAsInputSubmitCallbackAsync? InterpretKeyPressAsInputSubmitCallback { get; set; }
 
     public TestPromptCallbacks(params (KeyPressPattern Pattern, KeyPressCallbackAsync Callback)[]? keyPressCallbacks)
     {
@@ -63,11 +63,11 @@ internal class TestPromptCallbacks : PromptCallbacks
             HighlightCallback(text);
     }
 
-    protected override Task<bool> InterpretKeyPressAsInputSubmit(string text, int caret, KeyPressPattern keyPress)
+    protected override Task<bool> InterpretKeyPressAsInputSubmit(string text, int caret, ConsoleKeyInfo keyInfo)
     {
         return
             InterpretKeyPressAsInputSubmitCallback is null ?
-            base.InterpretKeyPressAsInputSubmit(text, caret, keyPress) :
-            InterpretKeyPressAsInputSubmitCallback(text, caret, keyPress);
+            base.InterpretKeyPressAsInputSubmit(text, caret, keyInfo) :
+            InterpretKeyPressAsInputSubmitCallback(text, caret, keyInfo);
     }
 }

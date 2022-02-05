@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Threading.Tasks;
 using PrettyPrompt.Completion;
@@ -40,14 +41,14 @@ public delegate Task<KeyPressCallbackResult?> KeyPressCallbackAsync(string text,
 public interface IPromptCallbacks
 {
     /// <summary>
-    /// Provides list of key press patterns with "Callback Functions".
+    /// Looks up "Callback Functions" for  particular key press.
     /// The callback function will be invoked when the keys are pressed, with the current prompt
     /// text and the caret position within the text. ConsoleModifiers can be omitted if not required.
     /// </summary>
     /// If the prompt should be submitted as a result of the user's key press, then a non-null <see cref="KeyPressCallbackResult"/> may
     /// be returned from the <see cref="KeyPressCallbackAsync"/> function. If a null result is returned, then the user will remain on
     /// the current input prompt.
-    IReadOnlyDictionary<KeyPressPattern, KeyPressCallbackAsync> KeyPressCallbacks { get; }
+    bool TryGetKeyPressCallbacks(ConsoleKeyInfo keyInfo, [NotNullWhen(true)] out KeyPressCallbackAsync? result);
 
     /// <summary>
     /// Provides syntax-highlighting for input text.
@@ -91,19 +92,31 @@ public interface IPromptCallbacks
     /// </summary>
     /// <param name="text">The user's input text</param>
     /// <param name="caret">The index of the text caret in the input text</param>
-    /// <param name="keyPress">Key press pattern in question</param>
+    /// <param name="keyInfo">Key press pattern in question</param>
     /// <returns>
     /// <see langword="true"/> if the prompt should be submitted or <see langword="false"/> newline should be inserted ("soft-enter").
     /// </returns>
-    Task<bool> InterpretKeyPressAsInputSubmit(string text, int caret, KeyPressPattern keyPress);
+    Task<bool> InterpretKeyPressAsInputSubmit(string text, int caret, ConsoleKeyInfo keyInfo);
 }
 
 public class PromptCallbacks : IPromptCallbacks
 {
-    private Dictionary<KeyPressPattern, KeyPressCallbackAsync>? keyPressCallbacks;
+    private (KeyPressPattern Pattern, KeyPressCallbackAsync Callback)[]? keyPressCallbacks;
 
-    IReadOnlyDictionary<KeyPressPattern, KeyPressCallbackAsync> IPromptCallbacks.KeyPressCallbacks 
-        => keyPressCallbacks ??= GetKeyPressCallbacks().ToDictionary(t => t.Pattern, t => t.Callback);
+    bool IPromptCallbacks.TryGetKeyPressCallbacks(ConsoleKeyInfo keyInfo, [NotNullWhen(true)]out KeyPressCallbackAsync? result)
+    {
+        keyPressCallbacks ??= GetKeyPressCallbacks().ToArray();
+        foreach (var (pattern, callback) in keyPressCallbacks)
+        {
+            if (pattern.Matches(keyInfo))
+            {
+                result = callback;
+                return true;
+            }
+        }
+        result = null;
+        return false;
+    }
 
     Task<IReadOnlyCollection<FormatSpan>> IPromptCallbacks.HighlightCallbackAsync(string text)
         => HighlightCallbackAsync(text);
@@ -138,19 +151,22 @@ public class PromptCallbacks : IPromptCallbacks
         return ShouldOpenCompletionWindowAsync(text, caret);
     }
 
-    Task<bool> IPromptCallbacks.InterpretKeyPressAsInputSubmit(string text, int caret, KeyPressPattern keyPress)
+    Task<bool> IPromptCallbacks.InterpretKeyPressAsInputSubmit(string text, int caret, ConsoleKeyInfo keyInfo)
     {
         Debug.Assert(caret >= 0 && caret <= text.Length);
 
-        return InterpretKeyPressAsInputSubmit(text, caret, keyPress);
+        return InterpretKeyPressAsInputSubmit(text, caret, keyInfo);
     }
 
 
     /// <summary>
-    /// This method is called only once.
-    /// <inheritdoc cref="IPromptCallbacks.KeyPressCallbacks"/>
+    /// This method is called only once and provides list of key press patterns with "Callback Functions".
+    /// The callback function will be invoked when the keys are pressed, with the current prompt
+    /// text and the caret position within the text. ConsoleModifiers can be omitted if not required.
     /// </summary>
-    /// <returns></returns>
+    /// If the prompt should be submitted as a result of the user's key press, then a non-null <see cref="KeyPressCallbackResult"/> may
+    /// be returned from the <see cref="KeyPressCallbackAsync"/> function. If a null result is returned, then the user will remain on
+    /// the current input prompt.
     protected virtual IEnumerable<(KeyPressPattern Pattern, KeyPressCallbackAsync Callback)> GetKeyPressCallbacks()
         => Array.Empty<(KeyPressPattern, KeyPressCallbackAsync)>();
 
@@ -216,6 +232,6 @@ public class PromptCallbacks : IPromptCallbacks
     }
 
     /// <inheritdoc cref="IPromptCallbacks.InterpretKeyPressAsInputSubmit"/>
-    protected virtual Task<bool> InterpretKeyPressAsInputSubmit(string text, int caret, KeyPressPattern keyPress)
+    protected virtual Task<bool> InterpretKeyPressAsInputSubmit(string text, int caret, ConsoleKeyInfo keyInfo)
         => Task.FromResult(false);
 }

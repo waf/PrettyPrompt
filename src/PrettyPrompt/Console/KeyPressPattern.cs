@@ -8,51 +8,45 @@ using System;
 
 namespace PrettyPrompt.Consoles;
 
-public readonly struct KeyPressPattern : IEquatable<KeyPressPattern>
+public readonly struct KeyPressPattern
 {
+    private readonly KeyPressPatternType type;
+
     public readonly ConsoleModifiers Modifiers;
     public readonly ConsoleKey Key;
+    public readonly char Character;
 
     public KeyPressPattern(ConsoleKey key)
-    {
-        Modifiers = default;
-        Key = key;
-    }
+        : this(modifiers: default, key)
+    { }
 
     public KeyPressPattern(ConsoleModifiers modifiers, ConsoleKey key)
     {
+        type = KeyPressPatternType.ConsoleKey;
         Modifiers = modifiers;
         Key = key;
+        Character = default;
     }
 
-    internal KeyPressPattern(object pattern)
+    public KeyPressPattern(char character)
     {
-        if (pattern is ConsoleKey key)
-        {
-            Modifiers = default;
-            Key = key;
-        }
-        else if (pattern is (ConsoleModifiers modifiers, ConsoleKey key2))
-        {
-            Modifiers = modifiers;
-            Key = key2;
-        }
-        else
-        {
-            throw new InvalidOperationException("Invalid format of key pattern. It has to be ConsoleKey or ValueTuple<ConsoleModifiers, ConsoleKey>.");
-        }
+        type = KeyPressPatternType.Character;
+        Modifiers = default;
+        Key = default;
+        Character = character;
     }
 
-    public static bool operator !=(KeyPressPattern left, KeyPressPattern right) => !(left == right);
-    public static bool operator ==(KeyPressPattern left, KeyPressPattern right) => left.Modifiers == right.Modifiers && left.Key == right.Key;
+    public bool Matches(ConsoleKeyInfo keyInfo)
+    {
+        return
+            type == KeyPressPatternType.ConsoleKey ?
+            Modifiers == keyInfo.Modifiers && Key == keyInfo.Key :
+            Character == keyInfo.KeyChar;
+    }
+}
 
-    public static bool operator !=(KeyPressPattern left, ConsoleKey right) => !(left == right);
-    public static bool operator ==(KeyPressPattern left, ConsoleKey right) => left == new KeyPressPattern(right);
-
-    public static bool operator !=(KeyPressPattern left, (ConsoleModifiers Modifiers, ConsoleKey Key) right) => !(left == right);
-    public static bool operator ==(KeyPressPattern left, (ConsoleModifiers Modifiers, ConsoleKey Key) right) => left == new KeyPressPattern(right.Modifiers, right.Key);
-
-    public bool Equals(KeyPressPattern pattern) => this == pattern;
-    public override bool Equals(object? obj) => obj is KeyPressPattern other && this == other;
-    public override int GetHashCode() => (Modifiers, Key).GetHashCode();
+public enum KeyPressPatternType
+{
+    ConsoleKey,
+    Character
 }

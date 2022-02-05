@@ -88,7 +88,7 @@ internal class CompletionPane : IKeyPressHandler
 
         if (!IsOpen)
         {
-            if (key.Pattern is (Control, Spacebar))
+            if (key.ObjectPattern is (Control, Spacebar))
             {
                 Open(codePane.Document.Caret);
                 key.Handled = true;
@@ -104,8 +104,7 @@ internal class CompletionPane : IKeyPressHandler
             return;
         }
 
-        var keyPattern = new KeyPressPattern(key.Pattern);
-        switch (key.Pattern)
+        switch (key.ObjectPattern)
         {
             case DownArrow:
                 this.FilteredView.IncrementSelectedIndex();
@@ -115,12 +114,12 @@ internal class CompletionPane : IKeyPressHandler
                 this.FilteredView.DecrementSelectedIndex();
                 key.Handled = true;
                 break;
-            case var _ when configuration.KeyBindings.CommitCompletion.Matches(keyPattern):
+            case var _ when configuration.KeyBindings.CommitCompletion.Matches(key.ConsoleKeyInfo):
                 Debug.Assert(!FilteredView.IsEmpty);
                 await InsertCompletion(codePane.Document, FilteredView.SelectedItem).ConfigureAwait(false);
                 key.Handled = true;
                 break;
-            case var _ when configuration.KeyBindings.TriggerCompletionList.Matches(keyPattern):
+            case var _ when configuration.KeyBindings.TriggerCompletionList.Matches(key.ConsoleKeyInfo):
                 key.Handled = true;
                 break;
             case Home or (_, Home):
@@ -195,7 +194,7 @@ internal class CompletionPane : IKeyPressHandler
     }
 
     private static bool ShouldCancelOpenMenu(KeyPress key) =>
-        key.Pattern is LeftArrow or (_, LeftArrow);
+        key.ObjectPattern is LeftArrow or (_, LeftArrow);
 
     private async Task SetCompletions(string documentText, int documentCaret, IReadOnlyList<CompletionItem> completions, CodePane codePane)
     {

@@ -19,32 +19,17 @@ public class KeyBindings
     public KeyPressPatterns SubmitPrompt { get; }
 
     public KeyBindings(
-        KeyPressPattern[]? commitCompletion = null,
-        KeyPressPattern[]? triggerCompletionList = null,
-        KeyPressPattern[]? newLine = null,
-        KeyPressPattern[]? submitPrompt = null)
+        KeyPressPatterns commitCompletion = default,
+        KeyPressPatterns triggerCompletionList = default,
+        KeyPressPatterns newLine = default,
+        KeyPressPatterns submitPrompt = default)
     {
-        CommitCompletion = commitCompletion ?? new KeyPressPattern[]
-        {
-            new(Enter),
-            new(Tab)
-        };
+        CommitCompletion = Get(commitCompletion, new(Enter), new(Tab));
+        TriggerCompletionList = Get(triggerCompletionList, new KeyPressPattern(Control, Spacebar));
+        NewLine = Get(newLine, new KeyPressPattern(Shift, Enter));
+        SubmitPrompt = Get(submitPrompt, new(Enter), new(Control, Enter), new(Control | Alt, Enter));
 
-        TriggerCompletionList = triggerCompletionList ?? new KeyPressPattern[]
-        {
-            new(Control, Spacebar),
-        };
-
-        NewLine = newLine ?? new KeyPressPattern[]
-        {
-            new(Shift, Enter),
-        };
-
-        SubmitPrompt = submitPrompt ?? new KeyPressPattern[]
-        {
-            new(Enter),
-            new(Control, Enter),
-            new(Control | Alt, Enter),
-        };
+        static KeyPressPatterns Get(KeyPressPatterns patterns, params KeyPressPattern[] defaultPatterns)
+            => patterns.HasAny ? patterns : new(defaultPatterns);
     }
 }

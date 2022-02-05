@@ -27,7 +27,7 @@ class SelectionKeyPressHandler : IKeyPressHandler
     {
         this.previousCursorLocation = codePane.Cursor;
 
-        if (key.Pattern is (Control, A))
+        if (key.ObjectPattern is (Control, A))
         {
             codePane.Document.Caret = codePane.Document.Length;
         }
@@ -36,14 +36,14 @@ class SelectionKeyPressHandler : IKeyPressHandler
 
     public Task OnKeyUp(KeyPress key)
     {
-        if (key.Pattern is (Control, C))
+        if (key.ObjectPattern is (Control, C))
 
         {
             // as a special case, even though Ctrl+C isn't related to selection, it should keep the current selected text.
             return Task.CompletedTask;
         }
 
-        if (key.Pattern is (Control, A))
+        if (key.ObjectPattern is (Control, A))
         {
             var start = ConsoleCoordinate.Zero;
             var end = new ConsoleCoordinate(codePane.WordWrappedLines.Count - 1, codePane.WordWrappedLines[^1].Content.Length);
@@ -55,7 +55,7 @@ class SelectionKeyPressHandler : IKeyPressHandler
         }
 
         var cursor = codePane.Cursor;
-        switch (key.Pattern)
+        switch (key.ObjectPattern)
         {
             case
                 (Shift, End) or

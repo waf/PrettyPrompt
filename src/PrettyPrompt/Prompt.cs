@@ -119,7 +119,7 @@ public sealed class Prompt : IPrompt
     private async Task<PromptResult?> GetResult(CodePane codePane, KeyPress key, string inputText)
     {
         // process any user-defined keyboard shortcuts
-        if (promptCallbacks.KeyPressCallbacks.TryGetValue(new KeyPressPattern(key.Pattern), out var callback))
+        if (promptCallbacks.TryGetKeyPressCallbacks(key.ConsoleKeyInfo, out var callback))
         {
             var result = await callback.Invoke(inputText, codePane.Document.Caret).ConfigureAwait(false);
             if (result is not null)
@@ -187,7 +187,7 @@ public class PromptResult
     /// </summary>
     public string Text { get; }
 
-    public KeyPressPattern SubmitPattern { get; }
+    public ConsoleKeyInfo SubmitKeyInfo { get; }
 
     internal CancellationTokenSource? CancellationTokenSource { get; set; }
 
@@ -197,11 +197,11 @@ public class PromptResult
     /// </summary>
     public CancellationToken CancellationToken => CancellationTokenSource?.Token ?? CancellationToken.None;
 
-    public PromptResult(bool isSuccess, string text, KeyPressPattern submitPattern)
+    public PromptResult(bool isSuccess, string text, ConsoleKeyInfo submitKeyInfo)
     {
         IsSuccess = isSuccess;
         Text = text;
-        SubmitPattern = submitPattern;
+        SubmitKeyInfo = submitKeyInfo;
     }
 }
 
@@ -216,7 +216,7 @@ public class KeyPressCallbackResult : PromptResult
     public string? Output { get; }
 
     public KeyPressCallbackResult(string input, string? output)
-        : base(isSuccess: true, input, submitPattern: default)
+        : base(isSuccess: true, input, submitKeyInfo: default)
     {
         Output = output;
     }
