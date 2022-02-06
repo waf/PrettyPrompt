@@ -44,6 +44,8 @@ public class PromptConfiguration
     /// </summary>
     public double ProportionOfWindowHeightForCompletionPane { get; }
 
+    public int TabSize { get; }
+
     public PromptConfiguration(
         KeyBindings? keyBindings = null,
         FormattedString? prompt = null,
@@ -53,7 +55,8 @@ public class PromptConfiguration
         AnsiColor? selectedCompletionItemBackground = null,
         int minCompletionItemsCount = 1,
         int maxCompletionItemsCount = 9, //9 is VS default
-        double proportionOfWindowHeightForCompletionPane = 0.9)
+        double proportionOfWindowHeightForCompletionPane = 0.9,
+        int tabSize = 4)
     {
         if (minCompletionItemsCount < 1) throw new ArgumentException("must be >=1", nameof(minCompletionItemsCount));
         if (maxCompletionItemsCount < minCompletionItemsCount) throw new ArgumentException("must be >=minCompletionItemsCount", nameof(maxCompletionItemsCount));
@@ -75,5 +78,7 @@ public class PromptConfiguration
         MinCompletionItemsCount = minCompletionItemsCount;
         MaxCompletionItemsCount = maxCompletionItemsCount;
         ProportionOfWindowHeightForCompletionPane = proportionOfWindowHeightForCompletionPane;
+
+        TabSize = tabSize;
     }
 }

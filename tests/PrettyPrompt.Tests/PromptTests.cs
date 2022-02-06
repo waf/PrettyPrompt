@@ -22,6 +22,8 @@ namespace PrettyPrompt.Tests;
 
 public class PromptTests
 {
+    private static readonly string DefaultTabSpaces= new(' ', new PromptConfiguration().TabSize);
+
     [Fact]
     public async Task ReadLine_TypeSimpleString_GetSimpleString()
     {
@@ -170,7 +172,7 @@ public class PromptTests
         var prompt = new Prompt(console: console);
         var result = await prompt.ReadLineAsync();
 
-        Assert.Equal($"aaaa bbbb 5555{NewLine}dddd x5x5{Document.TabSpaces}foo.lumbar{NewLine}", result.Text);
+        Assert.Equal($"aaaa bbbb 5555{NewLine}dddd x5x5{DefaultTabSpaces}foo.lumbar{NewLine}", result.Text);
     }
 
     [Fact]
@@ -299,7 +301,7 @@ public class PromptTests
             var prompt = new Prompt(console: console);
             var result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
-            Assert.Equal($"{Document.TabSpaces}a", result.Text);
+            Assert.Equal($"{DefaultTabSpaces}a", result.Text);
         }
     }
 

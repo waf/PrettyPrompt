@@ -90,6 +90,8 @@ internal class CodePane : IKeyPressHandler
         set => wordWrappedText.Cursor = value;
     }
 
+    public string TabSpaces { get; }
+
     public CodePane(int topCoordinate, PromptConfiguration configuration, IPromptCallbacks promptCallbacks, IClipboard clipboard)
     {
         this.TopCoordinate = topCoordinate;
@@ -99,6 +101,7 @@ internal class CodePane : IKeyPressHandler
         this.Document = new Document();
         this.Document.Changed += WordWrap;
         this.selectionHandler = new SelectionKeyPressHandler(this);
+        TabSpaces = new string(' ', configuration.TabSize);
 
         WordWrap();
 
@@ -180,7 +183,7 @@ internal class CodePane : IKeyPressHandler
                 }
                 break;
             case Tab:
-                Document.InsertAtCaret(Document.TabSpaces, selection);
+                Document.InsertAtCaret(TabSpaces, selection);
                 break;
             case (Control, X) when selection.TryGet(out var selectionValue):
                 {
@@ -248,7 +251,7 @@ internal class CodePane : IKeyPressHandler
         //If we have text with consistent, leading indentation, trim that indentation ("dedent" it).
         //This handles the scenario where users are pasting from an IDE.
         //Also replaces tabs as spaces and filtrs out special characters.
-        static string DedentMultipleLinesAndFilter(string text)
+        string DedentMultipleLinesAndFilter(string text)
         {
             var sb = new StringBuilder();
             var lines = text.Split(new[] { "\r\n", "\n", "\r" }, StringSplitOptions.None);
@@ -281,13 +284,13 @@ internal class CodePane : IKeyPressHandler
             return sb.ToString();
         }
 
-        static void AppendFiltered(StringBuilder sb, string line)
+        void AppendFiltered(StringBuilder sb, string line)
         {
             foreach (var c in line)
             {
                 if (c == '\t')
                 {
-                    sb.Append(Document.TabSpaces);
+                    sb.Append(TabSpaces);
                 }
                 else
                 {
