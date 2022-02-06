@@ -228,6 +228,183 @@ public class CompletionTests
         }
     }
 
+    /// <summary>
+    /// Tests bug from https://github.com/waf/PrettyPrompt/issues/95.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_WriteWordNotInCompletionList_TriggerCompletionList_ShouldNotWriteSpace()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput(
+            $"abc",
+            $"{Escape}", //close completion list
+            $"{Control}{Spacebar}", //trigger new one
+            $"{Escape}", //close completion list
+            $"{Enter}");
+        var prompt = ConfigurePrompt(console, completions: new[] { "aaa" });
+        var result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal("abc", result.Text);
+    }
+
+    /// <summary>
+    /// Test behaviour described in https://github.com/waf/PrettyPrompt/issues/67.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_CaretMovingInsideWord_WhileCompletionListIsOpen_WontCloseTheList()
+    {
+        const string TextPrefix = "abc ";
+        const string TextSuffix = " ijk";
+        const string MainWord = "defgh";
+        const string Text = $"{TextPrefix}{MainWord}{TextSuffix}";
+        //leftmost and rightmost caret positions: "abc |defgh| ijk"
+        for (int caretPosition = TextPrefix.Length; caretPosition <= TextPrefix.Length + MainWord.Length; caretPosition++)
+        {
+            var console = ConsoleStub.NewConsole();
+
+            var input = new List<FormattableString>() { $"{Text}" };
+            input.AddRange(Enumerable.Repeat<FormattableString>($"{LeftArrow}", count: Text.Length - caretPosition)); //setup starting caret position
+            input.Add($"{Control}{Spacebar}"); //show completion list
+            input.AddRange(Enumerable.Repeat<FormattableString>($"{LeftArrow}", count: caretPosition - TextPrefix.Length)); //move with caret to the left word border
+            input.AddRange(Enumerable.Repeat<FormattableString>($"{RightArrow}", count: caretPosition - TextPrefix.Length)); //move with caret to the right word border
+            input.Add($"{Enter}{Enter}"); //insert completion and submit prompt
+
+            console.StubInput(input.ToArray());
+            var prompt = ConfigurePrompt(console, completions: new[] { MainWord.ToUpper() });
+            var result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal("abc DEFGH ijk", result.Text);
+        }
+    }
+
+    /// <summary>
+    /// Tests bug from https://github.com/waf/PrettyPrompt/issues/96.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_StartWritingWord_NonWordCharacterShouldCloseCompletion()
+    {
+        var spacebarIsNotCommitCharacterCfg = new PromptConfiguration(
+            keyBindings: new KeyBindings(
+                commitCompletion: new[] { new KeyPressPattern(Enter) }));
+
+        var console = ConsoleStub.NewConsole();
+        console.StubInput(
+            $"ab",
+            $"{Spacebar}", //this should close completion list (without insertion) and write space
+            $"{Enter}");
+        var prompt = ConfigurePrompt(console, completions: new[] { "abcd" }, configuration: spacebarIsNotCommitCharacterCfg);
+        var result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal("ab ", result.Text);
+
+        //------------------------------------------
+
+        var spacebarIsCommitCharacterCfg = new PromptConfiguration(
+         keyBindings: new KeyBindings(
+             commitCompletion: new[] { new KeyPressPattern(Spacebar) }));
+
+        console = ConsoleStub.NewConsole();
+        console.StubInput(
+            $"ab",
+            $"{Spacebar}", //this should insert completion item and write space
+            $"{Enter}");
+        prompt = ConfigurePrompt(console, completions: new[] { "abcd" }, configuration: spacebarIsCommitCharacterCfg);
+        result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal("abcd ", result.Text);
+    }
+
+    /// <summary>
+    /// Tests bug from https://github.com/waf/PrettyPrompt/issues/99.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_CommitCompletionItemByCharacter_ShouldInsertCompletion_And_InsertPressedCharacter()
+    {
+        foreach (var commitChar in new[] { ' ', '.', '(' })
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput(
+                $"ab",
+                $"{commitChar}", //should insert completion
+                $"{Escape}", //to be sure that following Enter won't insert completion
+                $"{Enter}"); //submit prompt
+            var prompt = ConfigurePrompt(
+                console,
+                completions: new[] { "abcd" },
+                configuration: new PromptConfiguration(
+                    keyBindings: new KeyBindings(
+                        commitCompletion: new KeyPressPatterns(
+                            new(Enter), new(Tab), new(' '), new('.'), new('(')))
+                    ));
+            var result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal($"abcd{commitChar}", result.Text);
+        }
+
+        foreach (var commitKey in new[] { Tab, Enter })
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput(
+                $"ab",
+                $"{commitKey}", //should insert completion
+                $"{Escape}", //to be sure that following Enter won't insert completion
+                $"{Enter}"); //submit prompt
+            var prompt = ConfigurePrompt(
+                console,
+                completions: new[] { "abcd" },
+                configuration: new PromptConfiguration(
+                    keyBindings: new KeyBindings(
+                        commitCompletion: new KeyPressPatterns(
+                            new(Enter), new(Tab), new(' '), new('.'), new('(')))
+                    ));
+            var result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal($"abcd", result.Text);
+        }
+    }
+
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/100 was causing this test to fail.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_GetFilteredCompletionListOnSecondWord_SelectAll_WriteLetter_CompletionListShouldBeRefreshed()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput(
+            $"aaa b",
+            $"{Escape}{Control}{Spacebar}", //to be sure completion list is shown
+            $"{Control}{A}", //select all
+            $"a",
+            $"{Enter}", //insert completion
+            $"{Enter}"); //submit prompt
+        var prompt = ConfigurePrompt(
+            console,
+            completions: new[] { "aaa", "bbb" });
+        var result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal($"aaa", result.Text);
+    }
+
+    [Fact]
+    public async Task ReadLine_TriggerCompletionListInWord_PressHomeOrEndToGetToAnotherWord_ListShouldClose()
+    {
+        foreach (var homeOrEnd in new[] { Home, End })
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput(
+                $"abc defg hij",
+                $"{LeftArrow}{LeftArrow}{LeftArrow}{LeftArrow}{LeftArrow}{LeftArrow}", // move caret -> "abc de|fg hij"
+                $"{Escape}", //close completion list
+                $"{Control}{Spacebar}", //show completion list
+                $"{homeOrEnd}", //should close completion list
+                $"{Enter}"); //submit prompt
+            var prompt = ConfigurePrompt(console, completions: new[] { "abc", "defg", "hij" });
+            var result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal("abc defg hij", result.Text);
+        }
+    }
+
     public static Prompt ConfigurePrompt(IConsole console, PromptConfiguration? configuration = null, string[]? completions = null) =>
         new(
             callbacks: new TestPromptCallbacks

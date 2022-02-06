@@ -114,6 +114,11 @@ public sealed class Prompt : IPrompt
 
         foreach (var panes in new IKeyPressHandler[] { completionPane, codePane, history })
             await panes.OnKeyUp(key).ConfigureAwait(false);
+
+        //we don't support text selection while completion list is open
+        //text selection can put completion list into broken state, where filtering does not work
+        //so we want this assert to be true
+        Debug.Assert(!completionPane.IsOpen || (codePane.Selection is null));
     }
 
     private async Task<PromptResult?> GetResult(CodePane codePane, KeyPress key, string inputText)

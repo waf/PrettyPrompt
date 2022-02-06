@@ -38,10 +38,8 @@ internal class CompletionPane : IKeyPressHandler
     private readonly IPromptCallbacks promptCallbacks;
     private readonly PromptConfiguration configuration;
 
-    /// <summary>
-    /// The index of the caret when the pane was opened
-    /// </summary>
-    private int openedCaretIndex;
+    private int lastDocumentCaretOnKeyDown;
+    private bool lastOnKeyDownWasInsertingItem;
 
     /// <summary>
     /// All completions available. Called once when the window is initially opened
@@ -68,17 +66,15 @@ internal class CompletionPane : IKeyPressHandler
         this.configuration = configuration;
     }
 
-    private void Open(int caret)
+    private void Open()
     {
         this.IsOpen = true;
-        this.openedCaretIndex = caret;
         this.allCompletions = Array.Empty<CompletionItem>();
     }
 
     private void Close()
     {
         this.IsOpen = false;
-        this.openedCaretIndex = int.MinValue;
         this.FilteredView = new SlidingArrayWindow<CompletionItem>();
     }
 
@@ -86,24 +82,76 @@ internal class CompletionPane : IKeyPressHandler
     {
         if (!EnoughRoomToDisplay(this.codePane)) return;
 
-        if (!IsOpen)
+        var completionListTriggered = configuration.KeyBindings.TriggerCompletionList.Matches(key.ConsoleKeyInfo);
+        lastDocumentCaretOnKeyDown = codePane.Document.Caret;
+        lastOnKeyDownWasInsertingItem = false;
+
+        if (IsOpen)
         {
-            if (key.ObjectPattern is (Control, Spacebar))
+            switch (key.ObjectPattern)
             {
-                Open(codePane.Document.Caret);
-                key.Handled = true;
-                return;
+                case Home or (_, Home):
+                case End or (_, End):
+                case (Shift, LeftArrow or RightArrow or UpArrow or DownArrow or Home or End) or
+                     (Control | Shift, LeftArrow or RightArrow or UpArrow or DownArrow or Home or End) or
+                     (Control, A):
+                    Close();
+                    key.Handled = false;
+                    return;
+                case LeftArrow or RightArrow:
+                    var documentText = codePane.Document.GetText();
+                    int documentCaret = codePane.Document.Caret;
+                    var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(documentText, documentCaret).ConfigureAwait(false);
+                    int caretNew = documentCaret + (key.ConsoleKeyInfo.Key == LeftArrow ? -1 : 1);
+                    if (caretNew < spanToReplace.Start || caretNew > spanToReplace.Start + spanToReplace.Length)
+                    {
+                        Close();
+                        key.Handled = false;
+                        return;
+                    }
+                    break;
+                case Escape:
+                    Close();
+                    key.Handled = true;
+                    return;
+                default:
+                    break;
             }
-            key.Handled = false;
-            return;
         }
-
-        if (FilteredView is null || FilteredView.Count == 0)
+        else
         {
-            key.Handled = false;
+            if (completionListTriggered)
+            {
+                if (codePane.Selection is null)
+                {
+                    Open();
+                }
+                key.Handled = true;
+            }
+            else
+            {
+                key.Handled = false;
+            }
             return;
         }
 
+        Debug.Assert(IsOpen);
+        if (FilteredView.Count == 0)
+        {
+            if (completionListTriggered)
+            {
+                Close();
+                Open();
+                key.Handled = true;
+            }
+            else
+            {
+                key.Handled = false;
+            }
+            return;
+        }
+
+        //completion list is open and thera some items
         switch (key.ObjectPattern)
         {
             case DownArrow:
@@ -117,21 +165,10 @@ internal class CompletionPane : IKeyPressHandler
             case var _ when configuration.KeyBindings.CommitCompletion.Matches(key.ConsoleKeyInfo):
                 Debug.Assert(!FilteredView.IsEmpty);
                 await InsertCompletion(codePane.Document, FilteredView.SelectedItem).ConfigureAwait(false);
-                key.Handled = true;
+                key.Handled = char.IsControl(key.ConsoleKeyInfo.KeyChar);
+                lastOnKeyDownWasInsertingItem = true;
                 break;
             case var _ when configuration.KeyBindings.TriggerCompletionList.Matches(key.ConsoleKeyInfo):
-                key.Handled = true;
-                break;
-            case Home or (_, Home):
-            case End or (_, End):
-            case (Shift, LeftArrow or RightArrow or UpArrow or DownArrow or Home or End)
-                 or (Control | Shift, LeftArrow or RightArrow or UpArrow or DownArrow or Home or End):
-            case LeftArrow:
-                Close();
-                key.Handled = false;
-                break;
-            case Escape:
-                Close();
                 key.Handled = true;
                 break;
             default:
@@ -139,8 +176,6 @@ internal class CompletionPane : IKeyPressHandler
                 key.Handled = false;
                 break;
         }
-
-        return;
     }
 
     private bool EnoughRoomToDisplay(CodePane codePane) =>
@@ -148,24 +183,40 @@ internal class CompletionPane : IKeyPressHandler
 
     async Task IKeyPressHandler.OnKeyUp(KeyPress key)
     {
-        if (!EnoughRoomToDisplay(this.codePane)) return;
-
-        if (!char.IsControl(key.ConsoleKeyInfo.KeyChar) &&
-            await promptCallbacks.ShouldOpenCompletionWindowAsync(codePane.Document.GetText(), codePane.Document.Caret).ConfigureAwait(false))
+        if (lastOnKeyDownWasInsertingItem ||
+            !EnoughRoomToDisplay(codePane))
         {
-            Close();
-            Open(codePane.Document.Caret);
+            return;
         }
 
-        if (codePane.Document.Caret < openedCaretIndex)
+        bool wasAlreadyOpen = IsOpen;
+
+        if (!IsOpen)
         {
-            Close();
+            if (!char.IsControl(key.ConsoleKeyInfo.KeyChar) &&
+                await promptCallbacks.ShouldOpenCompletionWindowAsync(codePane.Document.GetText(), codePane.Document.Caret).ConfigureAwait(false))
+            {
+                Open();
+            }
         }
-        else if (IsOpen)
+
+        if (IsOpen)
         {
             var documentText = codePane.Document.GetText();
             int documentCaret = codePane.Document.Caret;
             var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(documentText, documentCaret).ConfigureAwait(false);
+
+            if (wasAlreadyOpen)
+            {
+                var caretOld = Math.Min(lastDocumentCaretOnKeyDown, documentText.Length);
+                var spanToReplaceOld = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(documentText, caretOld).ConfigureAwait(false);
+                if (spanToReplace.Start != spanToReplaceOld.Start && spanToReplace.End != spanToReplaceOld.End)
+                {
+                    Close();
+                    return;
+                }
+            }
+
             if (allCompletions.Count == 0)
             {
                 var completions = await promptCallbacks.GetCompletionItemsAsync(documentText, documentCaret, spanToReplace).ConfigureAwait(false);
@@ -181,20 +232,9 @@ internal class CompletionPane : IKeyPressHandler
             else if (!key.Handled)
             {
                 FilterCompletions(spanToReplace, codePane);
-                if (HasTypedPastCompletion() || ShouldCancelOpenMenu(key))
-                {
-                    Close();
-                }
             }
         }
-
-        bool HasTypedPastCompletion() =>
-            !FilteredView.IsEmpty
-            && FilteredView.SelectedItem.ReplacementText.Length < (codePane.Document.Caret - openedCaretIndex);
     }
-
-    private static bool ShouldCancelOpenMenu(KeyPress key) =>
-        key.ObjectPattern is LeftArrow or (_, LeftArrow);
 
     private async Task SetCompletions(string documentText, int documentCaret, IReadOnlyList<CompletionItem> completions, CodePane codePane)
     {
@@ -203,7 +243,6 @@ internal class CompletionPane : IKeyPressHandler
         {
             var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(documentText, documentCaret).ConfigureAwait(false);
             FilterCompletions(spanToReplace, codePane);
-            openedCaretIndex = spanToReplace.Start;
         }
     }
 
@@ -245,7 +284,6 @@ internal class CompletionPane : IKeyPressHandler
     {
         var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(document.GetText(), document.Caret).ConfigureAwait(false);
         document.Remove(spanToReplace);
-        codePane.Selection = null;
         document.InsertAtCaret(completion.ReplacementText, codePane.GetSelectionSpan());
         document.Caret = spanToReplace.Start + completion.ReplacementText.Length;
         Close();
