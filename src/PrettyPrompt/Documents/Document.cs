@@ -16,8 +16,6 @@ namespace PrettyPrompt.Documents;
 [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
 internal class Document : IEquatable<Document>
 {
-    public const string TabSpaces = "    ";
-
     private readonly StringBuilderWithCaret stringBuilder;
     private readonly UndoRedoHistory undoRedoHistory;
 
