@@ -39,7 +39,6 @@ internal class CompletionPane : IKeyPressHandler
     private readonly PromptConfiguration configuration;
 
     private int lastDocumentCaretOnKeyDown;
-    private bool lastOnKeyDownWasInsertingItem;
 
     /// <summary>
     /// All completions available. Called once when the window is initially opened
@@ -84,7 +83,6 @@ internal class CompletionPane : IKeyPressHandler
 
         var completionListTriggered = configuration.KeyBindings.TriggerCompletionList.Matches(key.ConsoleKeyInfo);
         lastDocumentCaretOnKeyDown = codePane.Document.Caret;
-        lastOnKeyDownWasInsertingItem = false;
 
         if (IsOpen)
         {
@@ -96,7 +94,6 @@ internal class CompletionPane : IKeyPressHandler
                      (Control | Shift, LeftArrow or RightArrow or UpArrow or DownArrow or Home or End) or
                      (Control, A):
                     Close();
-                    key.Handled = false;
                     return;
                 case LeftArrow or RightArrow:
                     var documentText = codePane.Document.GetText();
@@ -106,7 +103,6 @@ internal class CompletionPane : IKeyPressHandler
                     if (caretNew < spanToReplace.Start || caretNew > spanToReplace.Start + spanToReplace.Length)
                     {
                         Close();
-                        key.Handled = false;
                         return;
                     }
                     break;
@@ -128,15 +124,11 @@ internal class CompletionPane : IKeyPressHandler
                 }
                 key.Handled = true;
             }
-            else
-            {
-                key.Handled = false;
-            }
             return;
         }
 
         Debug.Assert(IsOpen);
-        if (FilteredView.Count == 0)
+        if (FilteredView.IsEmpty)
         {
             if (completionListTriggered)
             {
@@ -144,14 +136,10 @@ internal class CompletionPane : IKeyPressHandler
                 Open();
                 key.Handled = true;
             }
-            else
-            {
-                key.Handled = false;
-            }
             return;
         }
 
-        //completion list is open and thera some items
+        //completion list is open and ther are some items
         switch (key.ObjectPattern)
         {
             case DownArrow:
@@ -166,14 +154,12 @@ internal class CompletionPane : IKeyPressHandler
                 Debug.Assert(!FilteredView.IsEmpty);
                 await InsertCompletion(codePane.Document, FilteredView.SelectedItem).ConfigureAwait(false);
                 key.Handled = char.IsControl(key.ConsoleKeyInfo.KeyChar);
-                lastOnKeyDownWasInsertingItem = true;
                 break;
             case var _ when configuration.KeyBindings.TriggerCompletionList.Matches(key.ConsoleKeyInfo):
                 key.Handled = true;
                 break;
             default:
                 this.FilteredView.ResetSelectedIndex();
-                key.Handled = false;
                 break;
         }
     }
@@ -183,11 +169,7 @@ internal class CompletionPane : IKeyPressHandler
 
     async Task IKeyPressHandler.OnKeyUp(KeyPress key)
     {
-        if (lastOnKeyDownWasInsertingItem ||
-            !EnoughRoomToDisplay(codePane))
-        {
-            return;
-        }
+        if (!EnoughRoomToDisplay(codePane)) return;
 
         bool wasAlreadyOpen = IsOpen;
 
