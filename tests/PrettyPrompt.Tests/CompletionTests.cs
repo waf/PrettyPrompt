@@ -405,6 +405,32 @@ public class CompletionTests
         }
     }
 
+    /// <summary>
+    /// Tests bug from https://github.com/waf/PrettyPrompt/issues/102.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_CompeltionList_AutoReopen_After_InsertionWithNonControlCharacter()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput(
+            $"a",
+            $".", //insert completion - completion list should immediately reopen after
+            $"{DownArrow}", //select next completion item
+            $"{Enter}", //insert completion
+            $"{Enter}"); //submit prompt
+        var prompt = ConfigurePrompt(
+            console,
+            completions: new[] { "aaa", "bbb" },
+            configuration: new PromptConfiguration(
+            keyBindings: new KeyBindings(
+                commitCompletion: new KeyPressPatterns(
+                    new(Enter), new(Tab), new(' '), new('.'), new('(')))
+            ));
+        var result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal($"aaa.bbb", result.Text);
+    }
+
     public static Prompt ConfigurePrompt(IConsole console, PromptConfiguration? configuration = null, string[]? completions = null) =>
         new(
             callbacks: new TestPromptCallbacks
