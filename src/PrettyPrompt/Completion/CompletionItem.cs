@@ -21,22 +21,41 @@ public class CompletionItem
     public string ReplacementText { get; }
 
     /// <summary>
-    /// This text will be displayed in the completion menu. If not specified, the replacement text will be used.
+    /// This text will be displayed in the completion menu.
     /// </summary>
-    public FormattedString DisplayText { get; }
+    public FormattedString DisplayTextFormatted { get; }
 
     /// <summary>
-    /// This lazy task will be executed when the item is selected, to display the extended "tool tip" description to the right of the menu.
+    /// This text will be displayed in the completion menu.
     /// </summary>
-    public Lazy<Task<FormattedString>>? ExtendedDescription { get; }
+    public string DisplayText => DisplayTextFormatted.Text!;
+
+    /// <summary>
+    /// The text used to determine if the item matches the filter in the list.
+    /// </summary>
+    public string FilterText { get; }
+
+    /// <summary>
+    /// This task will be executed when the item is selected, to display the extended "tool tip" description to the right of the menu.
+    /// </summary>
+    public Task<FormattedString> GetExtendedDescriptionAsync()
+        => extendedDescription?.Value ?? Task.FromResult(FormattedString.Empty);
+
+    private readonly Lazy<Task<FormattedString>>? extendedDescription;
 
     /// <param name="replacementText">When the completion item is selected, this text will be inserted into the document at the specified start index.</param>
-    /// <param name="displayText">This text will be displayed in the completion menu. If not specified, the replacement text will be used.</param>
+    /// <param name="displayText">This text will be displayed in the completion menu. If not specified, the <paramref name="replacementText"/> value will be used.</param>
     /// <param name="extendedDescription">This lazy task will be executed when the item is selected, to display the extended "tool tip" description to the right of the menu.</param>
-    public CompletionItem(string replacementText, FormattedString displayText, Lazy<Task<FormattedString>>? extendedDescription)
+    /// <param name="filterText">The text used to determine if the item matches the filter in the list. If not specified the <paramref name="replacementText"/> value is used.</param>
+    public CompletionItem(
+        string replacementText,
+        FormattedString displayText = default,
+        string? filterText = null,
+        Lazy<Task<FormattedString>>? extendedDescription = null)
     {
         ReplacementText = replacementText;
-        DisplayText = displayText;
-        ExtendedDescription = extendedDescription;
+        DisplayTextFormatted = displayText.IsEmpty ? replacementText : displayText;
+        FilterText = filterText ?? replacementText;
+        this.extendedDescription = extendedDescription;
     }
 }

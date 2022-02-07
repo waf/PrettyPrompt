@@ -166,8 +166,7 @@ internal class Renderer
         if (!completionPane.IsOpen || filteredView.IsEmpty)
             return Array.Empty<ScreenArea>();
 
-        int wordWidth = filteredView
-            .Max(w => UnicodeWidth.GetWidth(w.DisplayText.Text ?? w.ReplacementText));
+        int wordWidth = filteredView.Max(w => UnicodeWidth.GetWidth(w.DisplayText));
         int boxWidth = wordWidth + 3 + configuration.SelectedCompletionItemMarker.Length; // 3 = left border + right border + space before right border
 
         var completionStart = new ConsoleCoordinate(
@@ -179,9 +178,7 @@ internal class Renderer
         var completionRows = BuildCompletionRows(completionPane, codeAreaWidth, wordWidth, completionStart);
 
         var documentationStart = new ConsoleCoordinate(cursor.Row + 1, completionStart.Column + boxWidth);
-        var selectedItemDescription = await (
-            filteredView.SelectedItem.ExtendedDescription?.Value ?? Task.FromResult(FormattedString.Empty)
-        ).ConfigureAwait(false);
+        var selectedItemDescription = await filteredView.SelectedItem.GetExtendedDescriptionAsync().ConfigureAwait(false);
         var documentationRows = BuildDocumentationRows(
             documentation: selectedItemDescription,
             maxWidth: codeAreaWidth - completionStart.Column - boxWidth,
@@ -236,7 +233,7 @@ internal class Renderer
         return completionPane.FilteredView
             .Select((completion, index) =>
             {
-                var item = completion.DisplayText.Length > 0 ? completion.DisplayText : completion.ReplacementText;
+                var item = completion.DisplayTextFormatted;
                 var isSelected = selectedItem == completion;
 
                 var rowCells = new List<Cell>();
