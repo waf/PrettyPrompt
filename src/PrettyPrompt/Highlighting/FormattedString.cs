@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Text;
@@ -29,6 +30,9 @@ public readonly struct FormattedString : IEquatable<FormattedString>
 
     private string TextOrEmpty => Text ?? "";
     private FormatSpan[] FormatSpansOrEmpty => formatSpans ?? Array.Empty<FormatSpan>();
+
+    [MemberNotNullWhen(false, nameof(Text))]
+    public bool IsEmpty => Length == 0;
 
     public FormattedString(string? text, IEnumerable<FormatSpan>? formatSpans)
         : this(text, formatSpans?.ToArray())

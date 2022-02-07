@@ -240,7 +240,7 @@ internal class CompletionPane : IKeyPressHandler
             if (!Matches(completion, codePane.Document)) continue;
 
             filtered.Add(completion);
-            if (completion.ReplacementText == previouslySelectedItem?.ReplacementText)
+            if (completion.FilterText == previouslySelectedItem?.FilterText)
             {
                 selectedIndex = filtered.Count - 1;
             }
@@ -256,7 +256,7 @@ internal class CompletionPane : IKeyPressHandler
         );
 
         bool Matches(CompletionItem? completion, Document input) =>
-            completion?.ReplacementText.StartsWith(
+            completion?.FilterText.StartsWith(
                 input.GetText(spanToReplace).Trim(),
                 StringComparison.CurrentCultureIgnoreCase
             ) ?? false;
