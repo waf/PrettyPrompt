@@ -38,7 +38,7 @@ internal class CompletionPane : IKeyPressHandler
     private readonly IPromptCallbacks promptCallbacks;
     private readonly PromptConfiguration configuration;
 
-    private int lastDocumentCaretOnKeyDown;
+    private TextSpan? lastSpanToReplaceOnKeyDown;
 
     /// <summary>
     /// All completions available. Called once when the window is initially opened
@@ -82,10 +82,15 @@ internal class CompletionPane : IKeyPressHandler
         if (!EnoughRoomToDisplay(this.codePane)) return;
 
         var completionListTriggered = configuration.KeyBindings.TriggerCompletionList.Matches(key.ConsoleKeyInfo);
-        lastDocumentCaretOnKeyDown = codePane.Document.Caret;
+        lastSpanToReplaceOnKeyDown = null;
 
         if (IsOpen)
         {
+            var documentText = codePane.Document.GetText();
+            int documentCaret = codePane.Document.Caret;
+            var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(documentText, documentCaret).ConfigureAwait(false);
+            lastSpanToReplaceOnKeyDown = spanToReplace;
+
             switch (key.ObjectPattern)
             {
                 case Home or (_, Home):
@@ -96,9 +101,6 @@ internal class CompletionPane : IKeyPressHandler
                     Close();
                     return;
                 case LeftArrow or RightArrow:
-                    var documentText = codePane.Document.GetText();
-                    int documentCaret = codePane.Document.Caret;
-                    var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(documentText, documentCaret).ConfigureAwait(false);
                     int caretNew = documentCaret + (key.ConsoleKeyInfo.Key == LeftArrow ? -1 : 1);
                     if (caretNew < spanToReplace.Start || caretNew > spanToReplace.Start + spanToReplace.Length)
                     {
@@ -188,10 +190,9 @@ internal class CompletionPane : IKeyPressHandler
             int documentCaret = codePane.Document.Caret;
             var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(documentText, documentCaret).ConfigureAwait(false);
 
-            if (wasAlreadyOpen)
+            if (wasAlreadyOpen &&
+                lastSpanToReplaceOnKeyDown.TryGet(out var spanToReplaceOld))
             {
-                var caretOld = Math.Min(lastDocumentCaretOnKeyDown, documentText.Length);
-                var spanToReplaceOld = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(documentText, caretOld).ConfigureAwait(false);
                 if (spanToReplace.Start != spanToReplaceOld.Start && spanToReplace.End != spanToReplaceOld.End)
                 {
                     Close();

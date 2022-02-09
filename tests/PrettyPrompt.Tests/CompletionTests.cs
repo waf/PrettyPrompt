@@ -409,7 +409,7 @@ public class CompletionTests
     /// Tests bug from https://github.com/waf/PrettyPrompt/issues/102.
     /// </summary>
     [Fact]
-    public async Task ReadLine_CompeltionList_AutoReopen_After_InsertionWithNonControlCharacter()
+    public async Task ReadLine_CompletionList_AutoReopen_After_InsertionWithNonControlCharacter()
     {
         var console = ConsoleStub.NewConsole();
         console.StubInput(
@@ -429,6 +429,32 @@ public class CompletionTests
         var result = await prompt.ReadLineAsync();
         Assert.True(result.IsSuccess);
         Assert.Equal($"aaa.bbb", result.Text);
+    }
+
+    /// <summary>
+    /// Tests bug from https://github.com/waf/PrettyPrompt/issues/105.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_CompletionList_InsertWithNonControlCharacter_Backspace()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput(
+            $"DateTime",
+            $".", //insert completion - completion list should immediately reopen after
+            $"{Backspace}.", //delete dot and enter it again which should open comletion list again
+            $"{DownArrow}{Enter}", //insert second completion
+            $"{Enter}"); //submit prompt
+        var prompt = ConfigurePrompt(
+            console,
+            completions: new[] { "Now" },
+            configuration: new PromptConfiguration(
+            keyBindings: new KeyBindings(
+                commitCompletion: new KeyPressPatterns(
+                    new(Enter), new(Tab), new(' '), new('.'), new('(')))
+            ));
+        var result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal($"DateTime.Now", result.Text);
     }
 
     public static Prompt ConfigurePrompt(IConsole console, PromptConfiguration? configuration = null, string[]? completions = null) =>
