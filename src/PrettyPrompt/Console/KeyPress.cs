@@ -6,10 +6,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 namespace PrettyPrompt.Consoles;
 
+[DebuggerDisplay("{ObjectPattern}")]
 internal class KeyPress
 {
     /// <summary>

@@ -5,6 +5,7 @@
 #endregion
 
 using System;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using PrettyPrompt.Highlighting;
 
@@ -13,6 +14,7 @@ namespace PrettyPrompt.Completion;
 /// <summary>
 /// A menu item in the Completion Menu Pane.
 /// </summary>
+[DebuggerDisplay("{DisplayText}")]
 public class CompletionItem
 {
     /// <summary>
