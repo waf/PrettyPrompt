@@ -8,6 +8,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using PrettyPrompt.Documents;
 
 namespace PrettyPrompt.Completion;
 
@@ -16,38 +18,52 @@ namespace PrettyPrompt.Completion;
 /// also has a concept of the window "sliding" to always keep a selected index in view. This datastructure powers
 /// the auto-complete menu, and the window slides to provide the scrolling of the menu.
 /// </summary>
-sealed class SlidingArrayWindow<T> : IReadOnlyCollection<T>
+sealed class SlidingArrayWindow : IReadOnlyCollection<CompletionItem>
 {
-    private readonly T[] array;
-    private readonly int windowLength;
+    private readonly List<CompletionItem> itemsOriginal = new();
     private readonly int windowBuffer;
+    private int windowLength;
     private int windowStart;
     private int selectedIndex;
+    private List<CompletionItem> itemsSorted=new();
 
-    public SlidingArrayWindow() : this(Array.Empty<T>(), 0) { }
-
-    public SlidingArrayWindow(T[] array, int windowLength = 10, int selectedIndex = 0, int windowBuffer = 3)
+    public SlidingArrayWindow(int windowBuffer = 3)
     {
-        this.array = array;
-        this.windowLength = windowLength;
-        this.windowStart = CalculateWindowStart(array, windowLength, selectedIndex);
-        this.selectedIndex = selectedIndex;
         this.windowBuffer = windowBuffer;
     }
 
     /// <summary>
     /// Is not null when IsEmpty==false.
     /// </summary>
-    public T? SelectedItem => array.Length == 0 ? default : array[selectedIndex];
+    public CompletionItem? SelectedItem => IsEmpty ? default : itemsSorted[selectedIndex];
+
+    public void UpdateItems(IEnumerable<CompletionItem> items, int windowLength)
+    {
+        this.windowLength = windowLength;
+        this.itemsOriginal.Clear();
+        this.itemsOriginal.AddRange(items);
+
+        this.itemsSorted.Clear();
+        this.itemsSorted.AddRange(this.itemsOriginal);
+
+        this.windowStart = CalculateWindowStart(windowLength, selectedIndex);
+    }
+
+    public void Match(string documentText, int caret, TextSpan spanToBeReplaced)
+    {
+        itemsSorted = itemsOriginal
+            .OrderBy(i => i.GetCompletionItemPriority(documentText, caret, spanToBeReplaced))
+            .ToList();
+    }
 
     public void IncrementSelectedIndex()
     {
-        if (selectedIndex == array.Length - 1)
+        if (selectedIndex == Count - 1)
             return;
 
         selectedIndex++;
 
-        if (selectedIndex + windowBuffer >= windowStart + windowLength && windowStart + windowLength < array.Length)
+        if (selectedIndex + windowBuffer >= windowStart + windowLength && windowStart + windowLength < Count)
         {
             windowStart++;
         }
@@ -66,24 +82,33 @@ sealed class SlidingArrayWindow<T> : IReadOnlyCollection<T>
         }
     }
 
+    public void Clear()
+    {
+        itemsOriginal.Clear();
+        itemsSorted.Clear();
+        windowLength = 0;
+        ResetSelectedIndex();
+    }
+
     public void ResetSelectedIndex()
     {
         selectedIndex = 0;
         windowStart = 0;
     }
 
-    private static int CalculateWindowStart(T[] array, int windowLength, int selectedIndex) =>
-        array.Length - windowLength <= 0
+    private int CalculateWindowStart(int windowLength, int selectedIndex) =>
+        Count - windowLength <= 0
         ? 0
-        : Math.Min(selectedIndex, array.Length - windowLength);
+        : Math.Min(selectedIndex, Count - windowLength);
 
-    public IEnumerator<T> GetEnumerator() => AsArraySegment().GetEnumerator();
-    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
-
-    private ArraySegment<T> AsArraySegment() => new(array, windowStart, Math.Min(windowLength, array.Length));
-
-    public int Count => array.Length;
+    public int Count => itemsSorted.Count;
 
     [MemberNotNullWhen(false, nameof(SelectedItem))]
-    public bool IsEmpty => array.Length == 0;
+    public bool IsEmpty => Count == 0;
+
+    int IReadOnlyCollection<CompletionItem>.Count => Count;
+    IEnumerator<CompletionItem> IEnumerable<CompletionItem>.GetEnumerator() => VisibleItems.GetEnumerator();
+    IEnumerator IEnumerable.GetEnumerator() => VisibleItems.GetEnumerator();
+
+    private IEnumerable<CompletionItem> VisibleItems => itemsSorted.Skip(windowStart).Take(Math.Min(windowLength, Count));
 }

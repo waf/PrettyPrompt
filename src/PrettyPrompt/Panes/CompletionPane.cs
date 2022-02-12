@@ -48,7 +48,7 @@ internal class CompletionPane : IKeyPressHandler
     /// <summary>
     /// An "ordered view" over <see cref="allCompletions"/> that shows the list filtered by what the user has typed.
     /// </summary>
-    public SlidingArrayWindow<CompletionItem> FilteredView { get; set; } = new SlidingArrayWindow<CompletionItem>();
+    public SlidingArrayWindow FilteredView { get; set; } = new SlidingArrayWindow();
 
     /// <summary>
     /// Whether or not the window is currently open / visible.
@@ -74,7 +74,7 @@ internal class CompletionPane : IKeyPressHandler
     private void Close()
     {
         this.IsOpen = false;
-        this.FilteredView = new SlidingArrayWindow<CompletionItem>();
+        this.FilteredView.Clear();
     }
 
     async Task IKeyPressHandler.OnKeyDown(KeyPress key)
@@ -205,7 +205,8 @@ internal class CompletionPane : IKeyPressHandler
                 var completions = await promptCallbacks.GetCompletionItemsAsync(documentText, documentCaret, spanToReplace).ConfigureAwait(false);
                 if (completions.Any())
                 {
-                    await SetCompletions(documentText, documentCaret, completions, codePane).ConfigureAwait(false);
+                    SetCompletions(completions, codePane);
+                    FilteredView.Match(documentText, documentCaret, spanToReplace);
                 }
                 else
                 {
@@ -214,53 +215,19 @@ internal class CompletionPane : IKeyPressHandler
             }
             else if (!key.Handled)
             {
-                FilterCompletions(spanToReplace, codePane);
+                FilteredView.Match(documentText, documentCaret, spanToReplace);
             }
         }
     }
 
-    private async Task SetCompletions(string documentText, int documentCaret, IReadOnlyList<CompletionItem> completions, CodePane codePane)
+    private void SetCompletions(IReadOnlyList<CompletionItem> completions, CodePane codePane)
     {
         allCompletions = completions;
         if (completions.Any())
         {
-            var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(documentText, documentCaret).ConfigureAwait(false);
-            FilterCompletions(spanToReplace, codePane);
+            int height = Math.Min(codePane.CodeAreaHeight - VerticalPaddingHeight, configuration.MaxCompletionItemsCount);
+            FilteredView.UpdateItems(completions, height);
         }
-    }
-
-    private void FilterCompletions(TextSpan spanToReplace, CodePane codePane)
-    {
-        int height = Math.Min(codePane.CodeAreaHeight - VerticalPaddingHeight, configuration.MaxCompletionItemsCount);
-        var filtered = new List<CompletionItem>();
-        var previouslySelectedItem = this.FilteredView.SelectedItem;
-        int selectedIndex = -1;
-        for (var i = 0; i < allCompletions.Count; i++)
-        {
-            var completion = allCompletions[i];
-            if (!Matches(completion, codePane.Document)) continue;
-
-            filtered.Add(completion);
-            if (completion.FilterText == previouslySelectedItem?.FilterText)
-            {
-                selectedIndex = filtered.Count - 1;
-            }
-        }
-        if (selectedIndex == -1 || !Matches(previouslySelectedItem, codePane.Document))
-        {
-            selectedIndex = 0;
-        }
-        FilteredView = new SlidingArrayWindow<CompletionItem>(
-            filtered.ToArray(),
-            height,
-            selectedIndex
-        );
-
-        bool Matches(CompletionItem? completion, Document input) =>
-            completion?.FilterText.StartsWith(
-                input.GetText(spanToReplace).Trim(),
-                StringComparison.CurrentCultureIgnoreCase
-            ) ?? false;
     }
 
     private async Task InsertCompletion(Document document, CompletionItem completion)

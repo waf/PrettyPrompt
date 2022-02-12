@@ -63,11 +63,11 @@ internal class TestPromptCallbacks : PromptCallbacks
             HighlightCallback(text);
     }
 
-    protected override Task<bool> InterpretKeyPressAsInputSubmit(string text, int caret, ConsoleKeyInfo keyInfo)
+    protected override Task<bool> InterpretKeyPressAsInputSubmitAsync(string text, int caret, ConsoleKeyInfo keyInfo)
     {
         return
             InterpretKeyPressAsInputSubmitCallback is null ?
-            base.InterpretKeyPressAsInputSubmit(text, caret, keyInfo) :
+            base.InterpretKeyPressAsInputSubmitAsync(text, caret, keyInfo) :
             InterpretKeyPressAsInputSubmitCallback(text, caret, keyInfo);
     }
 }

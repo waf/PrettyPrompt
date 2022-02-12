@@ -81,9 +81,7 @@ public interface IPromptCallbacks
     /// </summary>
     /// <param name="text">The user's input text</param>
     /// <param name="caret">The index of the text caret in the input text</param>
-    /// <returns>
-    /// A value indicating whether the completion window should automatically open.
-    /// </returns>
+    /// <returns>A value indicating whether the completion window should automatically open.</returns>
     Task<bool> ShouldOpenCompletionWindowAsync(string text, int caret);
 
     /// <summary>
@@ -93,17 +91,15 @@ public interface IPromptCallbacks
     /// <param name="text">The user's input text</param>
     /// <param name="caret">The index of the text caret in the input text</param>
     /// <param name="keyInfo">Key press pattern in question</param>
-    /// <returns>
-    /// <see langword="true"/> if the prompt should be submitted or <see langword="false"/> newline should be inserted ("soft-enter").
-    /// </returns>
-    Task<bool> InterpretKeyPressAsInputSubmit(string text, int caret, ConsoleKeyInfo keyInfo);
+    /// <returns><see langword="true"/> if the prompt should be submitted or <see langword="false"/> newline should be inserted ("soft-enter").</returns>
+    Task<bool> InterpretKeyPressAsInputSubmitAsync(string text, int caret, ConsoleKeyInfo keyInfo);
 }
 
 public class PromptCallbacks : IPromptCallbacks
 {
     private (KeyPressPattern Pattern, KeyPressCallbackAsync Callback)[]? keyPressCallbacks;
 
-    bool IPromptCallbacks.TryGetKeyPressCallbacks(ConsoleKeyInfo keyInfo, [NotNullWhen(true)]out KeyPressCallbackAsync? result)
+    bool IPromptCallbacks.TryGetKeyPressCallbacks(ConsoleKeyInfo keyInfo, [NotNullWhen(true)] out KeyPressCallbackAsync? result)
     {
         keyPressCallbacks ??= GetKeyPressCallbacks().ToArray();
         foreach (var (pattern, callback) in keyPressCallbacks)
@@ -151,11 +147,11 @@ public class PromptCallbacks : IPromptCallbacks
         return ShouldOpenCompletionWindowAsync(text, caret);
     }
 
-    Task<bool> IPromptCallbacks.InterpretKeyPressAsInputSubmit(string text, int caret, ConsoleKeyInfo keyInfo)
+    Task<bool> IPromptCallbacks.InterpretKeyPressAsInputSubmitAsync(string text, int caret, ConsoleKeyInfo keyInfo)
     {
         Debug.Assert(caret >= 0 && caret <= text.Length);
 
-        return InterpretKeyPressAsInputSubmit(text, caret, keyInfo);
+        return InterpretKeyPressAsInputSubmitAsync(text, caret, keyInfo);
     }
 
 
@@ -231,7 +227,7 @@ public class PromptCallbacks : IPromptCallbacks
         return Task.FromResult(caret - 2 >= 0 && char.IsWhiteSpace(text[caret - 2]) && char.IsLetter(text[caret - 1]));
     }
 
-    /// <inheritdoc cref="IPromptCallbacks.InterpretKeyPressAsInputSubmit"/>
-    protected virtual Task<bool> InterpretKeyPressAsInputSubmit(string text, int caret, ConsoleKeyInfo keyInfo)
+    /// <inheritdoc cref="IPromptCallbacks.InterpretKeyPressAsInputSubmitAsync"/>
+    protected virtual Task<bool> InterpretKeyPressAsInputSubmitAsync(string text, int caret, ConsoleKeyInfo keyInfo)
         => Task.FromResult(false);
 }

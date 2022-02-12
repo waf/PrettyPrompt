@@ -115,7 +115,7 @@ internal class CodePane : IKeyPressHandler
         await selectionHandler.OnKeyDown(key).ConfigureAwait(false);
         var selection = GetSelectionSpan();
 
-        if (await promptCallbacks.InterpretKeyPressAsInputSubmit(Document.GetText(), Document.Caret, key.ConsoleKeyInfo).ConfigureAwait(false))
+        if (await promptCallbacks.InterpretKeyPressAsInputSubmitAsync(Document.GetText(), Document.Caret, key.ConsoleKeyInfo).ConfigureAwait(false))
         {
             Result = new PromptResult(isSuccess: true, Document.GetText().EnvironmentNewlines(), key.ConsoleKeyInfo);
             return;

@@ -146,7 +146,6 @@ internal static class Program
             var typedWord = text.AsSpan(spanToBeReplaced.Start, spanToBeReplaced.Length).ToString();
             return Task.FromResult<IReadOnlyList<CompletionItem>>(
                 Fruits
-                .Where(fruit => fruit.Name.StartsWith(typedWord, StringComparison.InvariantCultureIgnoreCase))
                 .Select(fruit =>
                 {
                     var displayText = new FormattedString(fruit.Name, new FormatSpan(0, fruit.Name.Length, fruit.Highlight));
