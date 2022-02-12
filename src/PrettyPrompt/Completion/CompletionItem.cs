@@ -7,6 +7,7 @@
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using PrettyPrompt.Documents;
 using PrettyPrompt.Highlighting;
 
 namespace PrettyPrompt.Completion;
@@ -59,5 +60,36 @@ public class CompletionItem
         DisplayTextFormatted = displayText.IsEmpty ? replacementText : displayText;
         FilterText = filterText ?? replacementText;
         this.extendedDescription = extendedDescription;
+    }
+
+    /// <summary>
+    /// Determines the completion item priority in completion list with respect to currently written text.
+    /// </summary>
+    /// <param name="text">The user's input text</param>
+    /// <param name="caret">The index of the text caret in the input text</param>
+    /// <param name="spanToBeReplaced">Span of text that will be replaced by inserted completion item</param>
+    /// <returns>
+    /// Integer representing priority of the item in completion list.
+    /// </returns>
+    public virtual int GetCompletionItemPriority(string text, int caret, TextSpan spanToBeReplaced)
+    {
+        if (spanToBeReplaced.IsEmpty)
+        {
+            return 0;
+        }
+
+        var pattern = text.AsSpan(spanToBeReplaced);
+        var patternCropped = pattern[..Math.Min(pattern.Length, FilterText.Length)];
+        if (FilterText.AsSpan().StartsWith(patternCropped, StringComparison.CurrentCultureIgnoreCase))
+        {
+            return Math.Abs(pattern.Length - FilterText.Length);
+        }
+
+        if (FilterText.AsSpan().Contains(patternCropped, StringComparison.CurrentCultureIgnoreCase))
+        {
+            return 1000 + Math.Abs(pattern.Length - FilterText.Length);
+        }
+
+        return int.MaxValue;
     }
 }

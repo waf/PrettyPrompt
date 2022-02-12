@@ -36,15 +36,15 @@ public class CompletionTests
     public async Task ReadLine_MultipleCompletion()
     {
         var console = ConsoleStub.NewConsole();
-        // complete 3 animals. For the third animal, start completing Alligator, but then backspace, navigate the completion menu and complete as Alpaca instead.
-        console.StubInput($"Aa{Enter} Z{Tab} Alli{Backspace}{Backspace}{DownArrow}{UpArrow}{DownArrow}{DownArrow}{Enter}{Enter}");
+        // complete 3 animals. For the third animal, start completing Alligator, but then backspace, navigate the completion menu and complete as Albatross instead.
+        console.StubInput($"Aa{Enter} Z{Tab} Alli{Backspace}{Backspace}{DownArrow}{UpArrow}{DownArrow}{Enter}{Enter}");
 
         var prompt = ConfigurePrompt(console);
 
         var result = await prompt.ReadLineAsync();
 
         Assert.True(result.IsSuccess);
-        Assert.Equal("Aardvark Zebra Alpaca", result.Text);
+        Assert.Equal("Aardvark Zebra Albatross", result.Text);
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public class CompletionTests
         var result = await prompt.ReadLineAsync();
 
         Assert.True(result.IsSuccess);
-        Assert.Equal($"Aardvark{NewLine}Zebra", result.Text);
+        Assert.Equal($"Ant{NewLine}Zebra", result.Text);
     }
 
     [Fact]
@@ -163,7 +163,7 @@ public class CompletionTests
         var result = await prompt.ReadLineAsync();
 
         Assert.True(result.IsSuccess);
-        Assert.Equal($"Aardvark a", result.Text);
+        Assert.Equal($"Ant a", result.Text);
     }
 
     [Fact]
@@ -177,7 +177,7 @@ public class CompletionTests
         var result = await prompt.ReadLineAsync();
 
         Assert.True(result.IsSuccess);
-        Assert.Equal($"Aardvark Q", result.Text);
+        Assert.Equal($"Ant Q", result.Text);
     }
 
     /// <summary>
