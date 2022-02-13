@@ -32,7 +32,6 @@ public class CompletionTestData
         var typedWord = typedInput.AsSpan(spanToBeReplaced.Start, spanToBeReplaced.Length).ToString();
         return Task.FromResult<IReadOnlyList<CompletionItem>>(
             completions
-                .Where(c => c.StartsWith(typedWord, StringComparison.CurrentCultureIgnoreCase))
                 .Select((c, i) => new CompletionItem(
                     replacementText: c,
                     displayText: i % 2 == 0 ? c : null, // display text is optional, ReplacementText should be used when this is null.

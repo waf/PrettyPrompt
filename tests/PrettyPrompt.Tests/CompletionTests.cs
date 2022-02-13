@@ -457,6 +457,77 @@ public class CompletionTests
         Assert.Equal($"DateTime.Now", result.Text);
     }
 
+    /// <summary>
+    /// Tests bug from https://github.com/waf/PrettyPrompt/issues/112.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_CompletionItemPriority()
+    {
+        string Input = "stringbuilder";
+        for (int i = 1; i <= 6; i++)
+        {
+            await Test(Input.Substring(0, i), "string");
+        }
+
+        for (int i = 7; i <= Input.Length; i++)
+        {
+            await Test(Input.Substring(0, i), "StringBuilder");
+        }
+
+        Input = "builder";
+        for (int i = 1; i <= Input.Length; i++)
+        {
+            await Test(Input.Substring(0, i), "StringBuilder");
+        }
+
+        static async Task Test(string input, string expectedOutput)
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput($"{input}{Enter}{Enter}");
+            var prompt = ConfigurePrompt(console, completions: new[] { "int", "string", "StringBuilder" });
+            var result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal(expectedOutput, result.Text);
+        }
+    }
+
+    /// <summary>
+    /// Tests bug from https://github.com/waf/PrettyPrompt/issues/113.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_NonMatchingCompletionItem_IsNotInserted()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput($"ab{Enter}{Enter}");
+        var prompt = ConfigurePrompt(
+            console,
+            completions: new[] { "aaa" },
+            configuration: new PromptConfiguration(
+            keyBindings: new KeyBindings(
+                commitCompletion: new KeyPressPatterns(
+                    new(Enter), new('.')))
+            ));
+        var result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal("ab", result.Text);
+
+        ////////////////////////////////////////////////////
+        
+         console = ConsoleStub.NewConsole();
+        console.StubInput($"ab.{Escape}{Enter}"); //dot inserts completion; Esc closes newly open list
+         prompt = ConfigurePrompt(
+            console,
+            completions: new[] { "aaa" },
+            configuration: new PromptConfiguration(
+            keyBindings: new KeyBindings(
+                commitCompletion: new KeyPressPatterns(
+                    new(Enter), new('.')))
+            ));
+         result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal("ab.", result.Text);
+    }
+
     public static Prompt ConfigurePrompt(IConsole console, PromptConfiguration? configuration = null, string[]? completions = null) =>
         new(
             callbacks: new TestPromptCallbacks

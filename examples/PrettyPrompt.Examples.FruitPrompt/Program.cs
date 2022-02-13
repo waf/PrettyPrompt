@@ -40,31 +40,31 @@ internal static class Program
     // demo data
     private static readonly (string Name, string Description, AnsiColor Highlight)[] Fruits = new[]
     {
-            ( "apple", "the round fruit of a tree of the rose family, which typically has thin red or green skin and crisp flesh. Many varieties have been developed as dessert or cooking fruit or for making cider.", AnsiColor.BrightRed ),
-            ( "apricot", "a juicy, soft fruit, resembling a small peach, of an orange-yellow color.", AnsiColor.Yellow ),
-            ( "avocado", "a pear-shaped fruit with a rough leathery skin, smooth oily edible flesh, and a large stone.", AnsiColor.Green ),
-            ( "banana", "a long curved fruit which grows in clusters and has soft pulpy flesh and yellow skin when ripe.", AnsiColor.BrightYellow ),
-            ( "cantaloupe", "a small round melon of a variety with orange flesh and ribbed skin.", AnsiColor.Green ),
-            ( "grapefruit", "a large round yellow citrus fruit with an acid juicy pulp.", AnsiColor.Rgb(224, 112, 124) ),
-            ( "grape", "a berry, typically green (classified as white), purple, red, or black, growing in clusters on a grapevine, eaten as fruit, and used in making wine.", AnsiColor.Blue ),
-            ( "mango", "a fleshy, oval, yellowish-red tropical fruit that is eaten ripe or used green for pickles or chutneys.", AnsiColor.Yellow ),
-            ( "melon", "the large round fruit of a plant of the gourd family, with sweet pulpy flesh and many seeds.", AnsiColor.Green ),
-            ( "orange", "a round juicy citrus fruit with a tough bright reddish-yellow rind.", AnsiColor.Rgb(255, 165, 0) ),
-            ( "pear", "a yellowish- or brownish-green edible fruit that is typically narrow at the stalk and wider toward the base, with sweet, slightly gritty flesh.", AnsiColor.Green ),
-            ( "peach", "a round stone fruit with juicy yellow flesh and downy pinkish-yellow skin.", AnsiColor.Rgb(255, 229, 180) ),
-            ( "pineapple", "a large juicy tropical fruit consisting of aromatic edible yellow flesh surrounded by a tough segmented skin and topped with a tuft of stiff leaves.", AnsiColor.BrightYellow ),
-            ( "strawberry", "a sweet soft red fruit with a seed-studded surface.", AnsiColor.BrightRed ),
-        };
+        ("apple", "the round fruit of a tree of the rose family, which typically has thin red or green skin and crisp flesh. Many varieties have been developed as dessert or cooking fruit or for making cider.", AnsiColor.BrightRed ),
+        ("apricot", "a juicy, soft fruit, resembling a small peach, of an orange-yellow color.", AnsiColor.Yellow ),
+        ("avocado", "a pear-shaped fruit with a rough leathery skin, smooth oily edible flesh, and a large stone.", AnsiColor.Green ),
+        ("banana", "a long curved fruit which grows in clusters and has soft pulpy flesh and yellow skin when ripe.", AnsiColor.BrightYellow ),
+        ("cantaloupe", "a small round melon of a variety with orange flesh and ribbed skin.", AnsiColor.Green ),
+        ("grapefruit", "a large round yellow citrus fruit with an acid juicy pulp.", AnsiColor.Rgb(224, 112, 124) ),
+        ("grape", "a berry, typically green (classified as white), purple, red, or black, growing in clusters on a grapevine, eaten as fruit, and used in making wine.", AnsiColor.Blue ),
+        ("mango", "a fleshy, oval, yellowish-red tropical fruit that is eaten ripe or used green for pickles or chutneys.", AnsiColor.Yellow ),
+        ("melon", "the large round fruit of a plant of the gourd family, with sweet pulpy flesh and many seeds.", AnsiColor.Green ),
+        ("orange", "a round juicy citrus fruit with a tough bright reddish-yellow rind.", AnsiColor.Rgb(255, 165, 0) ),
+        ("pear", "a yellowish- or brownish-green edible fruit that is typically narrow at the stalk and wider toward the base, with sweet, slightly gritty flesh.", AnsiColor.Green ),
+        ("peach", "a round stone fruit with juicy yellow flesh and downy pinkish-yellow skin.", AnsiColor.Rgb(255, 229, 180) ),
+        ("pineapple", "a large juicy tropical fruit consisting of aromatic edible yellow flesh surrounded by a tough segmented skin and topped with a tuft of stiff leaves.", AnsiColor.BrightYellow ),
+        ("strawberry", "a sweet soft red fruit with a seed-studded surface.", AnsiColor.BrightRed ),
+    };
 
     private static readonly (string Name, AnsiColor Color)[] ColorsToHighlight = new[]
     {
-            ("red", AnsiColor.Red),
-            ("green", AnsiColor.Green),
-            ("yellow", AnsiColor.Yellow),
-            ("blue", AnsiColor.Blue),
-            ("purple", AnsiColor.Rgb(72, 0, 255)),
-            ("orange", AnsiColor.Rgb(255, 165, 0) ),
-        };
+        ("red", AnsiColor.Red),
+        ("green", AnsiColor.Green),
+        ("yellow", AnsiColor.Yellow),
+        ("blue", AnsiColor.Blue),
+        ("purple", AnsiColor.Rgb(72, 0, 255)),
+        ("orange", AnsiColor.Rgb(255, 165, 0)),
+    };
 
     private static FormattedString GetFormattedString(string text)
         => new(text, EnumerateFormatSpans(text, ColorsToHighlight));

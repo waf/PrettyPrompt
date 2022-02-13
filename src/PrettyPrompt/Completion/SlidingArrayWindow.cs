@@ -52,7 +52,7 @@ sealed class SlidingArrayWindow : IReadOnlyCollection<CompletionItem>
     public void Match(string documentText, int caret, TextSpan spanToBeReplaced)
     {
         itemsSorted = itemsOriginal
-            .OrderBy(i => i.GetCompletionItemPriority(documentText, caret, spanToBeReplaced))
+            .OrderByDescending(i => i.GetCompletionItemPriority(documentText, caret, spanToBeReplaced))
             .ToList();
     }
 

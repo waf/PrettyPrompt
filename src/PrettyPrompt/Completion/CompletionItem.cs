@@ -64,12 +64,14 @@ public class CompletionItem
 
     /// <summary>
     /// Determines the completion item priority in completion list with respect to currently written text.
+    /// Higher numbers represent higher priority. Highest priority item will be on top of the completion list.
     /// </summary>
     /// <param name="text">The user's input text</param>
     /// <param name="caret">The index of the text caret in the input text</param>
     /// <param name="spanToBeReplaced">Span of text that will be replaced by inserted completion item</param>
     /// <returns>
-    /// Integer representing priority of the item in completion list.
+    /// Integer representing priority of the item in completion list. Negative priorities represents
+    /// non-matching items.
     /// </returns>
     public virtual int GetCompletionItemPriority(string text, int caret, TextSpan spanToBeReplaced)
     {
@@ -78,18 +80,24 @@ public class CompletionItem
             return 0;
         }
 
+        const int PriorityChunk = 1000;
         var pattern = text.AsSpan(spanToBeReplaced);
+        var distance = pattern.Length <= FilterText.Length ? 0 : PriorityChunk;
+
         var patternCropped = pattern[..Math.Min(pattern.Length, FilterText.Length)];
         if (FilterText.AsSpan().StartsWith(patternCropped, StringComparison.CurrentCultureIgnoreCase))
         {
-            return Math.Abs(pattern.Length - FilterText.Length);
+            distance += Math.Abs(pattern.Length - FilterText.Length);
         }
-
-        if (FilterText.AsSpan().Contains(patternCropped, StringComparison.CurrentCultureIgnoreCase))
+        else if (FilterText.AsSpan().Contains(patternCropped, StringComparison.CurrentCultureIgnoreCase))
         {
-            return 1000 + Math.Abs(pattern.Length - FilterText.Length);
+            distance += PriorityChunk + Math.Abs(pattern.Length - FilterText.Length);
+        }
+        else
+        {
+            return -1; //non-matching items
         }
 
-        return int.MaxValue;
+        return int.MaxValue - distance;
     }
 }
