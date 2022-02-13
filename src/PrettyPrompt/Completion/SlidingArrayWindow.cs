@@ -7,7 +7,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using PrettyPrompt.Documents;
 
@@ -22,42 +21,54 @@ sealed class SlidingArrayWindow : IReadOnlyCollection<CompletionItem>
 {
     private readonly List<CompletionItem> itemsOriginal = new();
     private readonly int windowBuffer;
+    private List<(CompletionItem Item, bool IsMatching)> itemsSorted = new();
     private int windowLength;
     private int windowStart;
-    private int selectedIndex;
-    private List<CompletionItem> itemsSorted=new();
+    private int? selectedIndex;
 
     public SlidingArrayWindow(int windowBuffer = 3)
     {
         this.windowBuffer = windowBuffer;
     }
 
-    /// <summary>
-    /// Is not null when IsEmpty==false.
-    /// </summary>
-    public CompletionItem? SelectedItem => IsEmpty ? default : itemsSorted[selectedIndex];
+    public CompletionItem? SelectedItem => !IsEmpty && selectedIndex.HasValue ? itemsSorted[selectedIndex.Value].Item : null;
 
-    public void UpdateItems(IEnumerable<CompletionItem> items, int windowLength)
+    public void UpdateItems(IEnumerable<CompletionItem> items, string documentText, int documentCaret, TextSpan spanToReplace, int windowLength)
     {
         this.windowLength = windowLength;
         this.itemsOriginal.Clear();
         this.itemsOriginal.AddRange(items);
 
         this.itemsSorted.Clear();
-        this.itemsSorted.AddRange(this.itemsOriginal);
+        foreach (var item in items)
+        {
+            this.itemsSorted.Add((item, false));
+        }
 
-        this.windowStart = CalculateWindowStart(windowLength, selectedIndex);
+        Match(documentText, documentCaret, spanToReplace);
+
+        ResetSelectedIndex();
     }
 
     public void Match(string documentText, int caret, TextSpan spanToBeReplaced)
     {
         itemsSorted = itemsOriginal
-            .OrderByDescending(i => i.GetCompletionItemPriority(documentText, caret, spanToBeReplaced))
+            .Select(i => (Item: i, Priority: i.GetCompletionItemPriority(documentText, caret, spanToBeReplaced)))
+            .OrderByDescending(t => t.Priority)
+            .Select(t => (t.Item, t.Priority >= 0))
             .ToList();
+
+        ResetSelectedIndex();
     }
 
     public void IncrementSelectedIndex()
     {
+        if (!selectedIndex.HasValue)
+        {
+            selectedIndex = 0;
+            return;
+        }
+
         if (selectedIndex == Count - 1)
             return;
 
@@ -71,6 +82,12 @@ sealed class SlidingArrayWindow : IReadOnlyCollection<CompletionItem>
 
     public void DecrementSelectedIndex()
     {
+        if (!selectedIndex.HasValue)
+        {
+            selectedIndex = 0;
+            return;
+        }
+
         if (selectedIndex == 0)
             return;
 
@@ -90,25 +107,19 @@ sealed class SlidingArrayWindow : IReadOnlyCollection<CompletionItem>
         ResetSelectedIndex();
     }
 
-    public void ResetSelectedIndex()
+    private void ResetSelectedIndex()
     {
-        selectedIndex = 0;
+        selectedIndex = IsEmpty ? null : (itemsSorted[0].IsMatching ? 0 : null);
         windowStart = 0;
     }
 
-    private int CalculateWindowStart(int windowLength, int selectedIndex) =>
-        Count - windowLength <= 0
-        ? 0
-        : Math.Min(selectedIndex, Count - windowLength);
-
     public int Count => itemsSorted.Count;
 
-    [MemberNotNullWhen(false, nameof(SelectedItem))]
     public bool IsEmpty => Count == 0;
 
     int IReadOnlyCollection<CompletionItem>.Count => Count;
     IEnumerator<CompletionItem> IEnumerable<CompletionItem>.GetEnumerator() => VisibleItems.GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => VisibleItems.GetEnumerator();
 
-    private IEnumerable<CompletionItem> VisibleItems => itemsSorted.Skip(windowStart).Take(Math.Min(windowLength, Count));
+    private IEnumerable<CompletionItem> VisibleItems => itemsSorted.Skip(windowStart).Take(Math.Min(windowLength, Count)).Select(t => t.Item);
 }
