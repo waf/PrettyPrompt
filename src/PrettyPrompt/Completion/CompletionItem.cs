@@ -82,22 +82,43 @@ public class CompletionItem
 
         const int PriorityChunk = 1000;
         var pattern = text.AsSpan(spanToBeReplaced);
-        var distance = pattern.Length <= FilterText.Length ? 0 : PriorityChunk;
 
-        var patternCropped = pattern[..Math.Min(pattern.Length, FilterText.Length)];
-        if (FilterText.AsSpan().StartsWith(patternCropped, StringComparison.CurrentCultureIgnoreCase))
+        ReadOnlySpan<char> valueLonger;
+        ReadOnlySpan<char> valueShorter;
+        if (pattern.Length <= FilterText.Length)
         {
-            distance += Math.Abs(pattern.Length - FilterText.Length);
-        }
-        else if (FilterText.AsSpan().Contains(patternCropped, StringComparison.CurrentCultureIgnoreCase))
-        {
-            distance += PriorityChunk + Math.Abs(pattern.Length - FilterText.Length);
+            valueLonger = FilterText;
+            valueShorter = pattern;
         }
         else
         {
-            return -1; //non-matching items
+            valueLonger = pattern;
+            valueShorter = FilterText;
         }
 
-        return int.MaxValue - distance;
+        int distance;
+        if (valueLonger.StartsWith(valueShorter, StringComparison.CurrentCultureIgnoreCase))
+        {
+            distance = Math.Abs(valueShorter.Length - valueLonger.Length);
+        }
+        else if (valueLonger.Contains(valueShorter, StringComparison.CurrentCultureIgnoreCase))
+        {
+            distance = PriorityChunk + Math.Abs(valueShorter.Length - valueLonger.Length);
+        }
+        else
+        {
+            return int.MinValue; //completely non-matching item
+        }
+
+        if (pattern.Length <= FilterText.Length)
+        {
+            //matching item
+            return int.MaxValue - distance;
+        }
+        else
+        {
+            //non-matching item, but it's contained in pattern (which is better than completely unmatching)
+            return -distance;
+        }
     }
 }
