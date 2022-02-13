@@ -512,20 +512,99 @@ public class CompletionTests
         Assert.Equal("ab", result.Text);
 
         ////////////////////////////////////////////////////
-        
-         console = ConsoleStub.NewConsole();
+
+        console = ConsoleStub.NewConsole();
         console.StubInput($"ab.{Escape}{Enter}"); //dot inserts completion; Esc closes newly open list
-         prompt = ConfigurePrompt(
-            console,
-            completions: new[] { "aaa" },
-            configuration: new PromptConfiguration(
-            keyBindings: new KeyBindings(
-                commitCompletion: new KeyPressPatterns(
-                    new(Enter), new('.')))
-            ));
-         result = await prompt.ReadLineAsync();
+        prompt = ConfigurePrompt(
+           console,
+           completions: new[] { "aaa" },
+           configuration: new PromptConfiguration(
+           keyBindings: new KeyBindings(
+               commitCompletion: new KeyPressPatterns(
+                   new(Enter), new('.')))
+           ));
+        result = await prompt.ReadLineAsync();
         Assert.True(result.IsSuccess);
         Assert.Equal("ab.", result.Text);
+    }
+
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/114.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_NonMatchingPattern()
+    {
+        foreach (var arrow in new[] { DownArrow, UpArrow })
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput($"a{arrow}{Enter}");
+            var prompt = ConfigurePrompt(
+                console,
+                completions: new[] { "111", "222", "333" });
+            var result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal("111", result.Text);
+
+            //////////////////////////////////////////////////////
+
+            console = ConsoleStub.NewConsole();
+            console.StubInput($"a{arrow}{DownArrow}{Enter}");
+            prompt = ConfigurePrompt(
+               console,
+               completions: new[] { "111", "222", "333" });
+            result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal("222", result.Text);
+
+            //////////////////////////////////////////////////////
+
+            console = ConsoleStub.NewConsole();
+            console.StubInput($"a{arrow}{UpArrow}{Enter}");
+            prompt = ConfigurePrompt(
+               console,
+               completions: new[] { "111", "222", "333" });
+            result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal("111", result.Text);
+
+            //////////////////////////////////////////////////////
+
+            console = ConsoleStub.NewConsole();
+            console.StubInput($"a{arrow}b{Enter}");
+            prompt = ConfigurePrompt(
+               console,
+               completions: new[] { "111", "222", "333" });
+            result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal("ab", result.Text);
+        }
+    }
+
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/114.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_NonMatchingPattern_ReselectAfterDeleteOfNonMatchingPart()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput($"1a{Backspace}{Enter}{Enter}");
+        var prompt = ConfigurePrompt(
+            console,
+            completions: new[] { "111", "222", "333" });
+        var result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal("111", result.Text);
+
+        //////////////////////////////////////////////////////
+
+        console = ConsoleStub.NewConsole();
+        console.StubInput($"a1{LeftArrow}{LeftArrow}{Delete}{DownArrow}{Enter}{Enter}");
+        prompt = ConfigurePrompt(
+            console,
+            completions: new[] { "111", "222", "333" });
+        result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal("222", result.Text);
     }
 
     public static Prompt ConfigurePrompt(IConsole console, PromptConfiguration? configuration = null, string[]? completions = null) =>

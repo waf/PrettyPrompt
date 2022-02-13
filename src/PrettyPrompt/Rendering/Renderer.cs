@@ -178,7 +178,7 @@ internal class Renderer
         var completionRows = BuildCompletionRows(completionPane, codeAreaWidth, wordWidth, completionStart);
 
         var documentationStart = new ConsoleCoordinate(cursor.Row + 1, completionStart.Column + boxWidth);
-        var selectedItemDescription = await filteredView.SelectedItem.GetExtendedDescriptionAsync().ConfigureAwait(false);
+        var selectedItemDescription = filteredView.SelectedItem != null ? await filteredView.SelectedItem.GetExtendedDescriptionAsync().ConfigureAwait(false) : default;
         var documentationRows = BuildDocumentationRows(
             documentation: selectedItemDescription,
             maxWidth: codeAreaWidth - completionStart.Column - boxWidth,

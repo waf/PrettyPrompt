@@ -141,7 +141,7 @@ internal class CompletionPane : IKeyPressHandler
             return;
         }
 
-        //completion list is open and ther are some items
+        //completion list is open and there are some items
         switch (key.ObjectPattern)
         {
             case DownArrow:
@@ -153,10 +153,7 @@ internal class CompletionPane : IKeyPressHandler
                 key.Handled = true;
                 break;
             case var _ when configuration.KeyBindings.CommitCompletion.Matches(key.ConsoleKeyInfo):
-                var documentText = codePane.Document.GetText();
-                int documentCaret = codePane.Document.Caret;
-                var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(documentText, documentCaret).ConfigureAwait(false);
-                if (FilteredView.SelectedItem.GetCompletionItemPriority(documentText, documentCaret, spanToReplace) >= 0)
+                if (FilteredView.SelectedItem != null)
                 {
                     await InsertCompletion(codePane.Document, FilteredView.SelectedItem).ConfigureAwait(false);
                     key.Handled = char.IsControl(key.ConsoleKeyInfo.KeyChar);
@@ -171,7 +168,6 @@ internal class CompletionPane : IKeyPressHandler
                 key.Handled = true;
                 break;
             default:
-                this.FilteredView.ResetSelectedIndex();
                 break;
         }
     }
@@ -215,8 +211,12 @@ internal class CompletionPane : IKeyPressHandler
                 var completions = await promptCallbacks.GetCompletionItemsAsync(documentText, documentCaret, spanToReplace).ConfigureAwait(false);
                 if (completions.Any())
                 {
-                    SetCompletions(completions, codePane);
-                    FilteredView.Match(documentText, documentCaret, spanToReplace);
+                    allCompletions = completions;
+                    if (completions.Any())
+                    {
+                        int height = Math.Min(codePane.CodeAreaHeight - VerticalPaddingHeight, configuration.MaxCompletionItemsCount);
+                        FilteredView.UpdateItems(completions, documentText, documentCaret, spanToReplace, height);
+                    }
                 }
                 else
                 {
@@ -227,16 +227,6 @@ internal class CompletionPane : IKeyPressHandler
             {
                 FilteredView.Match(documentText, documentCaret, spanToReplace);
             }
-        }
-    }
-
-    private void SetCompletions(IReadOnlyList<CompletionItem> completions, CodePane codePane)
-    {
-        allCompletions = completions;
-        if (completions.Any())
-        {
-            int height = Math.Min(codePane.CodeAreaHeight - VerticalPaddingHeight, configuration.MaxCompletionItemsCount);
-            FilteredView.UpdateItems(completions, height);
         }
     }
 
