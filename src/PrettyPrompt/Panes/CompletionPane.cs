@@ -153,9 +153,19 @@ internal class CompletionPane : IKeyPressHandler
                 key.Handled = true;
                 break;
             case var _ when configuration.KeyBindings.CommitCompletion.Matches(key.ConsoleKeyInfo):
-                Debug.Assert(!FilteredView.IsEmpty);
-                await InsertCompletion(codePane.Document, FilteredView.SelectedItem).ConfigureAwait(false);
-                key.Handled = char.IsControl(key.ConsoleKeyInfo.KeyChar);
+                var documentText = codePane.Document.GetText();
+                int documentCaret = codePane.Document.Caret;
+                var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(documentText, documentCaret).ConfigureAwait(false);
+                if (FilteredView.SelectedItem.GetCompletionItemPriority(documentText, documentCaret, spanToReplace) >= 0)
+                {
+                    await InsertCompletion(codePane.Document, FilteredView.SelectedItem).ConfigureAwait(false);
+                    key.Handled = char.IsControl(key.ConsoleKeyInfo.KeyChar);
+                }
+                else
+                {
+                    Close();
+                    break;
+                }
                 break;
             case var _ when configuration.KeyBindings.TriggerCompletionList.Matches(key.ConsoleKeyInfo):
                 key.Handled = true;
