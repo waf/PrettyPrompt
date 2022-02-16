@@ -36,27 +36,31 @@ class SelectionKeyPressHandler : IKeyPressHandler
 
     public Task OnKeyUp(KeyPress key)
     {
-        if (key.ObjectPattern is (Control, C))
 
-        {
-            // as a special case, even though Ctrl+C isn't related to selection, it should keep the current selected text.
-            return Task.CompletedTask;
-        }
-
-        if (key.ObjectPattern is (Control, A))
-        {
-            var start = ConsoleCoordinate.Zero;
-            var end = new ConsoleCoordinate(codePane.WordWrappedLines.Count - 1, codePane.WordWrappedLines[^1].Content.Length);
-            if (start < end)
-            {
-                codePane.Selection = new SelectionSpan(start, end, SelectionDirection.FromLeftToRight);
-            }
-            return Task.CompletedTask;
-        }
-
-        var cursor = codePane.Cursor;
         switch (key.ObjectPattern)
         {
+            case (Control, C):
+                {
+                    // as a special case, even though Ctrl+C isn't related to selection, it should keep the current selected text.
+                    return Task.CompletedTask;
+                }
+            case (Control, A):
+                {
+                    var start = ConsoleCoordinate.Zero;
+                    var end = new ConsoleCoordinate(codePane.WordWrappedLines.Count - 1, codePane.WordWrappedLines[^1].Content.Length);
+                    if (start < end)
+                    {
+                        codePane.Selection = new SelectionSpan(start, end, SelectionDirection.FromLeftToRight);
+                    }
+                    return Task.CompletedTask;
+                }
+            case 
+                (Control, Z) or
+                (Control, Y):
+                {
+                    //do not reset codePane.Selection
+                    return Task.CompletedTask;
+                }
             case
                 (Shift, End) or
                 (Shift, Home) or
@@ -76,6 +80,7 @@ class SelectionKeyPressHandler : IKeyPressHandler
                 (Control | Shift, DownArrow) or
                 (Control | Shift, LeftArrow):
                 {
+                    var cursor = codePane.Cursor;
                     if (previousCursorLocation < cursor)
                     {
                         UpdateSelection(new SelectionSpan(previousCursorLocation, cursor, SelectionDirection.FromLeftToRight));

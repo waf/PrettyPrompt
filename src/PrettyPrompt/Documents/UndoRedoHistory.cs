@@ -4,9 +4,9 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using PrettyPrompt.TextSelection;
 
 namespace PrettyPrompt.Documents;
 
@@ -19,34 +19,41 @@ namespace PrettyPrompt.Documents;
 /// </remarks>
 internal sealed class UndoRedoHistory
 {
-    private readonly List<string> history = new();
+    private readonly List<Record> history = new();
     private int currentIndex;
 
-    public UndoRedoHistory(string text)
+    public UndoRedoHistory(string text, int caret)
     {
-        history.Add(text);
+        history.Add(new Record(text, caret, null));
     }
 
-    internal void Track(ReadOnlyStringBuilder text)
+    internal void Track(ReadOnlyStringBuilder text, int caret, SelectionSpan? selection)
     {
         CheckValidity();
 
-        if (!text.Equals(history[currentIndex]))
+        var historyItem = history[currentIndex];
+        if (text.Equals(historyItem.Text))
+        {
+            if (caret != historyItem.Caret || selection != historyItem.Selection)
+            {
+                history[currentIndex] = historyItem with { Caret = caret, Selection = selection };
+            }
+        }
+        else
         {
             if (currentIndex != history.Count - 1)
-
             {
                 //edit after undos -> we will throw following redos away
                 var itemsToRemove = history.Count - currentIndex - 1;
                 history.RemoveRange(1, itemsToRemove);
             }
 
-            history.Add(text.ToString());
+            history.Add(new Record(text.ToString(), caret, selection));
             currentIndex = history.Count - 1;
         }
     }
 
-    public string Undo()
+    public Record Undo()
     {
         CheckValidity();
 
@@ -58,7 +65,7 @@ internal sealed class UndoRedoHistory
         return history[currentIndex];
     }
 
-    public string Redo()
+    public Record Redo()
     {
         CheckValidity();
 
@@ -83,4 +90,6 @@ internal sealed class UndoRedoHistory
         Debug.Assert(history.Count > 0);
         Debug.Assert(currentIndex >= 0 && currentIndex < history.Count);
     }
+
+    public readonly record struct Record(string Text, int Caret, SelectionSpan? Selection);
 }

@@ -130,7 +130,7 @@ internal class CodePane : IKeyPressHandler
                 TopCoordinate = 0; // actually clearing the screen is handled in the renderer.
                 break;
             case var _ when configuration.KeyBindings.NewLine.Matches(key.ConsoleKeyInfo):
-                Document.InsertAtCaret('\n', selection);
+                Document.InsertAtCaret(this, '\n');
                 break;
             case var _ when configuration.KeyBindings.SubmitPrompt.Matches(key.ConsoleKeyInfo):
                 Result = new PromptResult(isSuccess: true, Document.GetText().EnvironmentNewlines(), key.ConsoleKeyInfo);
@@ -165,30 +165,30 @@ internal class CodePane : IKeyPressHandler
                 break;
             case (Control, Backspace) when selection is null:
                 var startDeleteIndex = Document.CalculateWordBoundaryIndexNearCaret(-1);
-                Document.Remove(startDeleteIndex, Document.Caret - startDeleteIndex);
+                Document.Remove(this, startDeleteIndex, Document.Caret - startDeleteIndex);
                 break;
             case (Control, Delete) when selection is null:
                 var endDeleteIndex = Document.CalculateWordBoundaryIndexNearCaret(+1);
-                Document.Remove(Document.Caret, endDeleteIndex - Document.Caret);
+                Document.Remove(this, Document.Caret, endDeleteIndex - Document.Caret);
                 break;
             case Backspace when selection is null:
-                Document.Remove(Document.Caret - 1, 1);
+                Document.Remove(this, Document.Caret - 1, 1);
                 break;
             case Delete when selection is null:
-                Document.Remove(Document.Caret, 1);
+                Document.Remove(this, Document.Caret, 1);
                 break;
-            case (_, Delete) or (_, Backspace) or Delete or Backspace when selection.TryGet(out var selectionValue):
+            case (_, Delete) or (_, Backspace) or Delete or Backspace when selection.HasValue:
                 {
-                    Document.DeleteSelectedText(selectionValue);
+                    Document.DeleteSelectedText(this);
                 }
                 break;
             case Tab:
-                Document.InsertAtCaret(TabSpaces, selection);
+                Document.InsertAtCaret(this, TabSpaces);
                 break;
             case (Control, X) when selection.TryGet(out var selectionValue):
                 {
                     var cutContent = Document.GetText(selectionValue);
-                    Document.Remove(selectionValue);
+                    Document.Remove(this, selectionValue);
                     await clipboard.SetTextAsync(cutContent).ConfigureAwait(false);
                     break;
                 }
@@ -216,15 +216,17 @@ internal class CodePane : IKeyPressHandler
                 PasteText(clipboardText);
                 break;
             case (Control, Z):
-                Document.Undo();
+                Document.Undo(out var newSelection);
+                Selection = newSelection;
                 break;
             case (Control, Y):
-                Document.Redo();
+                Document.Redo(out newSelection);
+                Selection = newSelection;
                 break;
             default:
                 if (!char.IsControl(key.ConsoleKeyInfo.KeyChar))
                 {
-                    Document.InsertAtCaret(key.ConsoleKeyInfo.KeyChar, selection);
+                    Document.InsertAtCaret(this, key.ConsoleKeyInfo.KeyChar);
                 }
                 break;
         }
@@ -246,7 +248,7 @@ internal class CodePane : IKeyPressHandler
         if (string.IsNullOrEmpty(pastedText)) return;
 
         var filteredText = DedentMultipleLinesAndFilter(pastedText);
-        this.Document.InsertAtCaret(filteredText, GetSelectionSpan());
+        this.Document.InsertAtCaret(this, filteredText);
 
         //If we have text with consistent, leading indentation, trim that indentation ("dedent" it).
         //This handles the scenario where users are pasting from an IDE.

@@ -14,6 +14,8 @@ public readonly struct FormattedStringBuilder
     private readonly StringBuilder stringBuilder = new();
     private readonly List<FormatSpan> formatSpans = new();
 
+    public FormattedStringBuilder() { } //this line is needed in GitHub CI build, but not needed in VS 17.0.4
+
     public int Length => stringBuilder.Length;
 
     public FormattedStringBuilder Append(FormattedString text)
@@ -40,7 +42,7 @@ public readonly struct FormattedStringBuilder
         stringBuilder.Clear();
         formatSpans.Clear();
     }
-
+    
     public FormattedString ToFormattedString()
         => new(stringBuilder.ToString(), formatSpans);
 }
