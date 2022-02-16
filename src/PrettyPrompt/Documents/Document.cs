@@ -6,6 +6,8 @@
 
 using System;
 using System.Diagnostics;
+using PrettyPrompt.Panes;
+using PrettyPrompt.TextSelection;
 
 namespace PrettyPrompt.Documents;
 
@@ -34,14 +36,14 @@ internal class Document : IEquatable<Document>
     public Document(string text, int caret)
     {
         this.stringBuilder = new StringBuilderWithCaret(text, caret);
-        this.undoRedoHistory = new UndoRedoHistory(text);
+        this.undoRedoHistory = new UndoRedoHistory(text, caret);
     }
 
-    public void InsertAtCaret(char character, TextSpan? selection)
+    public void InsertAtCaret(CodePane codePane, char character)
     {
-        using (BeginChanges())
+        using (BeginChanges(codePane))
         {
-            if (selection.TryGet(out var selectionValue))
+            if (codePane.GetSelectionSpan().TryGet(out var selectionValue))
             {
                 stringBuilder.Remove(selectionValue);
             }
@@ -49,19 +51,22 @@ internal class Document : IEquatable<Document>
         }
     }
 
-    public void DeleteSelectedText(TextSpan span)
+    public void DeleteSelectedText(CodePane codePane)
     {
-        using (BeginChanges())
+        using (BeginChanges(codePane))
         {
-            stringBuilder.Remove(span);
+            if (codePane.GetSelectionSpan().TryGet(out var selectionValue))
+            {
+                stringBuilder.Remove(selectionValue);
+            }
         }
     }
 
-    public void InsertAtCaret(string text, TextSpan? selection)
+    public void InsertAtCaret(CodePane codePane, string text)
     {
-        using (BeginChanges())
+        using (BeginChanges(codePane))
         {
-            if (selection.TryGet(out var selectionValue))
+            if (codePane.GetSelectionSpan().TryGet(out var selectionValue))
             {
                 stringBuilder.Remove(selectionValue);
             }
@@ -69,29 +74,29 @@ internal class Document : IEquatable<Document>
         }
     }
 
-    public void Remove(TextSpan span) => Remove(span.Start, span.Length);
+    public void Remove(CodePane codePane, TextSpan span) => Remove(codePane, span.Start, span.Length);
 
-    public void Remove(int startIndex, int length)
+    public void Remove(CodePane codePane, int startIndex, int length)
     {
         if (startIndex >= stringBuilder.Length || startIndex < 0) return;
 
-        using (BeginChanges())
+        using (BeginChanges(codePane))
         {
             stringBuilder.Remove(startIndex, length);
         }
     }
 
-    public void Clear()
+    public void Clear(CodePane codePane)
     {
-        using (BeginChanges())
+        using (BeginChanges(codePane))
         {
             stringBuilder.Clear();
         }
     }
 
-    public void SetContents(string contents)
+    public void SetContents(CodePane codePane, string contents)
     {
-        using (BeginChanges())
+        using (BeginChanges(codePane))
         {
             stringBuilder.SetContents(contents);
         }
@@ -196,8 +201,22 @@ internal class Document : IEquatable<Document>
         }
     }
 
-    public void Undo() => stringBuilder.SetContents(undoRedoHistory.Undo());
-    public void Redo() => stringBuilder.SetContents(undoRedoHistory.Redo());
+    public void Undo(out SelectionSpan? selection)
+    {
+        var record = undoRedoHistory.Undo();
+        selection = record.Selection;
+        stringBuilder.SetContents(record.Text);
+        Caret = record.Caret;
+    }
+    
+    public void Redo(out SelectionSpan? selection)
+    {
+        var record = undoRedoHistory.Redo();
+        selection = record.Selection;
+        stringBuilder.SetContents(record.Text);
+        Caret = record.Caret;
+    }
+
     public void ClearUndoRedoHistory() => undoRedoHistory.Clear();
 
     public event Action? Changed
@@ -223,23 +242,25 @@ internal class Document : IEquatable<Document>
     /// Accumulates changed events and invokes only one on dispose.
     /// Also takes care of history tracking (before/after).
     /// </summary>
-    private ChangeContext BeginChanges() => new(this);
+    private ChangeContext BeginChanges(CodePane codePane) => new(codePane, this);
 
     private readonly struct ChangeContext : IDisposable
     {
+        private readonly CodePane codePane;
         private readonly Document document;
 
-        public ChangeContext(Document document)
+        public ChangeContext(CodePane codePane, Document document)
         {
+            this.codePane = codePane;
             this.document = document;
             document.stringBuilder.SuspendChangedEvents();
-            document.undoRedoHistory.Track(document.stringBuilder);
+            document.undoRedoHistory.Track(document.stringBuilder, document.Caret, codePane.Selection);
         }
 
         public void Dispose()
         {
             document.stringBuilder.ResumeChangedEvents();
-            document.undoRedoHistory.Track(document.stringBuilder);
+            document.undoRedoHistory.Track(document.stringBuilder, document.Caret, codePane.Selection);
         }
     }
 }

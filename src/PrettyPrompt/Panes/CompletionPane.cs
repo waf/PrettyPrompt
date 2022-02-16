@@ -155,7 +155,7 @@ internal class CompletionPane : IKeyPressHandler
             case var _ when configuration.KeyBindings.CommitCompletion.Matches(key.ConsoleKeyInfo):
                 if (FilteredView.SelectedItem != null)
                 {
-                    await InsertCompletion(codePane.Document, FilteredView.SelectedItem).ConfigureAwait(false);
+                    await InsertCompletion(codePane, FilteredView.SelectedItem).ConfigureAwait(false);
                     key.Handled = char.IsControl(key.ConsoleKeyInfo.KeyChar);
                 }
                 else
@@ -230,11 +230,12 @@ internal class CompletionPane : IKeyPressHandler
         }
     }
 
-    private async Task InsertCompletion(Document document, CompletionItem completion)
+    private async Task InsertCompletion(CodePane codepane, CompletionItem completion)
     {
+        var document = codepane.Document;
         var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(document.GetText(), document.Caret).ConfigureAwait(false);
-        document.Remove(spanToReplace);
-        document.InsertAtCaret(completion.ReplacementText, codePane.GetSelectionSpan());
+        document.Remove(codepane, spanToReplace);
+        document.InsertAtCaret(codepane, completion.ReplacementText);
         document.Caret = spanToReplace.Start + completion.ReplacementText.Length;
         Close();
     }

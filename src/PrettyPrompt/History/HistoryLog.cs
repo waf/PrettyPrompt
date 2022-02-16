@@ -159,7 +159,7 @@ sealed class HistoryLog : IKeyPressHandler
     {
         if (codepane.Document.Equals(contents)) return;
 
-        codepane.Document.SetContents(contents);
+        codepane.Document.SetContents(codepane, contents);
     }
 
     internal void Track(CodePane codePane)

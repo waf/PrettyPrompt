@@ -4,6 +4,9 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
 using static System.ConsoleKey;
@@ -210,7 +213,9 @@ public class UndoRedoTests
         Assert.Equal("abcd", result.Text);
     }
 
-    //Reproduces bug from https://github.com/waf/PrettyPrompt/issues/76
+    /// <summary>
+    /// Reproduces bug from https://github.com/waf/PrettyPrompt/issues/76
+    /// </summary>
     [Fact]
     public async Task ReadLine_Letter_Undo_Letter_Undo_ResultShouldBeEmpty()
     {
@@ -219,7 +224,7 @@ public class UndoRedoTests
             $"a",
             $"{Control}{Z}", //undo
             $"b",
-            $"{Control}{Z}", //redo
+            $"{Control}{Z}", //undo
             $"{Enter}"
         );
         var prompt = new Prompt(console: console);
@@ -234,7 +239,9 @@ public class UndoRedoTests
         Assert.Equal($"{MoveCursorLeft(1)} {MoveCursorLeft(1)}", outputs[5]); //delete of 'b'
     }
 
-    //Reproduces bug from https://github.com/waf/PrettyPrompt/issues/77
+    /// <summary>
+    /// Reproduces bug from https://github.com/waf/PrettyPrompt/issues/77
+    /// </summary>
     [Fact]
     public async Task ReadLine_ReplaceSelectedText_Undo()
     {
@@ -243,7 +250,7 @@ public class UndoRedoTests
             $"abcd",
             $"{LeftArrow}{Shift}{LeftArrow}{Shift}{LeftArrow}", //select 'bc'
             $"x", //replace 'bc' with 'x'
-            $"{Control}{Z}", //redo
+            $"{Control}{Z}", //undo
             $"{Enter}"
         );
         var prompt = new Prompt(console: console);
@@ -261,13 +268,98 @@ public class UndoRedoTests
                 $"abcd",
                 $"{LeftArrow}{Shift}{LeftArrow}{Shift}{LeftArrow}", //select 'bc'
                 $"{Control}{V}", //paste 'xyz' (=replace 'bc' with 'xyz')
-                $"{Control}{Z}", //redo
+                $"{Control}{Z}", //undo
                 $"{Enter}"
             );
             prompt = new Prompt(console: console);
             result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal("abcd", result.Text);
+        }
+    }
+
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/116
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_UndoRedoAndCaretPosition()
+    {
+        for (int i = 1; i <= 4; i++)
+        {
+            var console = ConsoleStub.NewConsole();
+            var inputs = new List<FormattableString>();
+            inputs.Add($"abcd");
+            inputs.AddRange(Enumerable.Repeat<FormattableString>($"{Control}{Z}", i));
+            inputs.Add($"|");
+            inputs.Add($"{Enter}");
+            console.StubInput(inputs.ToArray());
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal("abcd"[..(4 - i)] + "|", result.Text);
+        }
+
+        /////////////////////////////////////////////////////////////
+
+        for (int i = 1; i <= 4; i++)
+        {
+            var console = ConsoleStub.NewConsole();
+            var inputs = new List<FormattableString>();
+            inputs.Add($"abcd");
+            inputs.AddRange(Enumerable.Repeat<FormattableString>($"{LeftArrow}", i));
+            inputs.Add($"x");
+            inputs.Add($"{Control}{Z}");
+            inputs.Add($"|");
+            inputs.Add($"{Enter}");
+            console.StubInput(inputs.ToArray());
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal("abcd".Insert(4 - i, "|"), result.Text);
+        }
+
+        /////////////////////////////////////////////////////////////
+
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput(
+                $"abcd",
+                $"{LeftArrow}{Shift}{LeftArrow}{Shift}{LeftArrow}", //select 'bc'
+                $"{Delete}", //delete 'bc'
+                $"{End}x", //write 'x' at the end
+                $"{Control}{Z}", //undo 'x'
+                $"{Control}{Z}", //undo 'bc' delete - it should be selected again
+                $"|", //replace 'bc' with caret
+                $"{Enter}");
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal("a|d", result.Text);
+        }
+
+        /////////////////////////////////////////////////////////////
+        
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput(
+                $"abcd",
+                $"{LeftArrow}{Shift}{LeftArrow}{Shift}{LeftArrow}", //select 'bc'
+                $"{Delete}", //delete 'bc'
+                $"{End}x", //write 'x' at the end
+                $"{Control}{Z}", //undo 'x'
+                $"{Control}{Z}", //undo 'bc' delete - it should be selected again
+
+                $"{Control}{Z}",
+                $"{Control}{Z}",
+                $"{Control}{Y}",
+                $"{Control}{Y}",
+
+                $"|", //replace 'bc' with caret
+                $"{Enter}");
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal("a|d", result.Text);
         }
     }
 }

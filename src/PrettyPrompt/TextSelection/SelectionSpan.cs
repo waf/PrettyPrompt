@@ -11,7 +11,7 @@ using PrettyPrompt.Documents;
 
 namespace PrettyPrompt.TextSelection;
 
-internal readonly struct SelectionSpan
+internal readonly record struct SelectionSpan
 {
     /// <summary>
     /// Inclusive.
