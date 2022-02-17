@@ -27,6 +27,7 @@ internal readonly struct ReadOnlyStringBuilder
     public string ToString(int startIndex, int length) => sb.ToString(startIndex, length);
 
     public void AppendTo(StringBuilder other) => other.Append(sb);
+    public StringBuilder.ChunkEnumerator GetChunks() => sb.GetChunks();
 
     public bool Equals(ReadOnlyStringBuilder other) => sb.Equals(other.sb);
     public bool Equals(ReadOnlyStringBuilder? other) => other.TryGet(out var otherValue) && sb.Equals(otherValue.sb);

@@ -22,7 +22,7 @@ internal static class WordWrapping
     /// The caret index (as the input is a 1 dimensional string of text) is converted
     /// to a 2 dimensional coordinate in the wrapped text.
     /// </summary>
-    public static WordWrappedText WrapEditableCharacters(StringBuilderWithCaret input, int initialCaretPosition, int width)
+    public static WordWrappedText WrapEditableCharacters(ReadOnlyStringBuilder input, int initialCaretPosition, int width)
     {
         if (input.Length == 0)
         {
