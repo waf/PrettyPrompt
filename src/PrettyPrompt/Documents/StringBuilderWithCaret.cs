@@ -20,9 +20,12 @@ internal class StringBuilderWithCaret
     private readonly StringBuilder sb;
     private int caret;
     private bool changedEventsSuspended;
-    private bool changedDuringEventSuspension;
+
+    private bool textChangedDuringEventSuspension;
+    private bool caretChangedDuringEventSuspension;
 
     public event Action? Changed;
+    public event Action? TextChanged;
 
     /// <summary>
     /// The one-dimensional index of the text caret in the document text
@@ -35,7 +38,7 @@ internal class StringBuilderWithCaret
             Debug.Assert(value >= 0);
             Debug.Assert(value <= sb.Length);
             caret = value;
-            InvokeChangedEvent();
+            InvokeChangedEvent(caretOnly: true);
         }
     }
 
@@ -99,26 +102,35 @@ internal class StringBuilderWithCaret
     public void SuspendChangedEvents()
     {
         changedEventsSuspended = true;
-        changedDuringEventSuspension = false;
+        textChangedDuringEventSuspension = false;
+        caretChangedDuringEventSuspension = false;
     }
 
     public void ResumeChangedEvents()
     {
         changedEventsSuspended = false;
-        if (changedDuringEventSuspension)
+        if (textChangedDuringEventSuspension || caretChangedDuringEventSuspension)
         {
-            InvokeChangedEvent();
+            InvokeChangedEvent(caretOnly: !textChangedDuringEventSuspension);
         }
     }
 
-    private void InvokeChangedEvent()
+    private void InvokeChangedEvent(bool caretOnly = false)
     {
         if (changedEventsSuspended)
         {
-            changedDuringEventSuspension = true;
+            if (!caretOnly)
+            {
+                textChangedDuringEventSuspension = true;
+            }
+            caretChangedDuringEventSuspension = true;
         }
         else
         {
+            if (!caretOnly)
+            {
+                TextChanged?.Invoke();
+            }
             Changed?.Invoke();
         }
     }

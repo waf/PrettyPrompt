@@ -7,7 +7,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Security;
 using System.Text;
 using PrettyPrompt.Documents;
 
@@ -83,12 +82,6 @@ public static class Extensions
     {
         Debug.Assert(min <= max);
         return value < min ? min : (value > max ? max : value);
-    }
-
-    internal static void SetContents(this StringBuilder sb, ReadOnlyStringBuilder contents)
-    {
-        sb.Clear();
-        contents.AppendTo(sb);
     }
 
     internal static void SetContents(this StringBuilder sb, string contents)

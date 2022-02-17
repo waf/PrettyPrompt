@@ -128,7 +128,7 @@ public class DocumentTests
         for (int i = 0; i <= document.Length; i++)
         {
             document.Caret = i;
-            Assert.Equal(document.GetText().Length, document.CalculateWordBoundaryIndexNearCaret(1));
+            Assert.Equal(document.Length, document.CalculateWordBoundaryIndexNearCaret(1));
             Assert.Equal(0, document.CalculateWordBoundaryIndexNearCaret(-1));
         }
 
@@ -137,7 +137,7 @@ public class DocumentTests
         for (int i = 0; i <= document.Length; i++)
         {
             document.Caret = i;
-            Assert.Equal(document.GetText().Length, document.CalculateWordBoundaryIndexNearCaret(1));
+            Assert.Equal(document.Length, document.CalculateWordBoundaryIndexNearCaret(1));
             Assert.Equal(0, document.CalculateWordBoundaryIndexNearCaret(-1));
         }
 
@@ -151,7 +151,7 @@ public class DocumentTests
         for (int i = 3; i <= document.Length; i++)
         {
             document.Caret = i;
-            Assert.Equal(document.GetText().Length, document.CalculateWordBoundaryIndexNearCaret(1));
+            Assert.Equal(document.Length, document.CalculateWordBoundaryIndexNearCaret(1));
         }
         for (int i = 0; i <= 3; i++)
         {

@@ -187,7 +187,7 @@ internal class CodePane : IKeyPressHandler
                 break;
             case (Control, X) when selection.TryGet(out var selectionValue):
                 {
-                    var cutContent = Document.GetText(selectionValue);
+                    var cutContent =  Document.GetText(selectionValue).ToString();
                     Document.Remove(this, selectionValue);
                     await clipboard.SetTextAsync(cutContent).ConfigureAwait(false);
                     break;
@@ -199,7 +199,7 @@ internal class CodePane : IKeyPressHandler
                 }
             case (Control, C) when selection.TryGet(out var selectionValue):
                 {
-                    var copiedContent = Document.GetText(selectionValue);
+                    var copiedContent = Document.GetText(selectionValue).ToString();
                     await clipboard.SetTextAsync(copiedContent).ConfigureAwait(false);
                     break;
                 }

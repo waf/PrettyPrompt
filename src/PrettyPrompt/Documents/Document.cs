@@ -22,6 +22,11 @@ internal class Document : IEquatable<Document>
     private readonly UndoRedoHistory undoRedoHistory;
 
     /// <summary>
+    /// Cached ToStringed current stringBuilder content. This is optimization for GetText calls so they don't repeatedly ToString underlying stringBuilder.
+    /// </summary>
+    private string currentText;
+
+    /// <summary>
     /// The one-dimensional index of the text caret in the document text
     /// </summary>
     public int Caret
@@ -30,13 +35,13 @@ internal class Document : IEquatable<Document>
         set => stringBuilder.Caret = value;
     }
 
-    public ReadOnlyStringBuilder Buffer => stringBuilder;
-
     public Document() : this(string.Empty, 0) { }
     public Document(string text, int caret)
     {
         this.stringBuilder = new StringBuilderWithCaret(text, caret);
         this.undoRedoHistory = new UndoRedoHistory(text, caret);
+        this.currentText = text;
+        stringBuilder.TextChanged += () => currentText = stringBuilder.ToString();
     }
 
     public void InsertAtCaret(CodePane codePane, char character)
@@ -208,7 +213,7 @@ internal class Document : IEquatable<Document>
         stringBuilder.SetContents(record.Text);
         Caret = record.Caret;
     }
-    
+
     public void Redo(out SelectionSpan? selection)
     {
         var record = undoRedoHistory.Redo();
@@ -228,15 +233,14 @@ internal class Document : IEquatable<Document>
     /*
      * The following methods are forwarding along the StringBuilder APIs.
      */
-    public char this[int index] => this.stringBuilder[index];
-    public int Length => this.stringBuilder.Length;
-    public string GetText() => this.stringBuilder.ToString();
-    public string GetText(TextSpan span) => GetText(span.Start, span.Length);
-    public string GetText(int startIndex, int length) => this.stringBuilder.ToString(startIndex, length);
+    public char this[int index] => currentText[index];
+    public int Length => currentText.Length;
+    public string GetText() => currentText;
+    public ReadOnlySpan<char> GetText(TextSpan span) => currentText.AsSpan(span);
     public override bool Equals(object? obj) => Equals(obj as Document);
-    public bool Equals(Document? other) => other != null && other.stringBuilder.Equals(this.stringBuilder);
-    public override int GetHashCode() => this.stringBuilder.GetHashCode();
-    private string GetDebuggerDisplay() => this.stringBuilder.ToString().Insert(this.Caret, "|");
+    public bool Equals(Document? other) => other != null && other.currentText.Equals(currentText);
+    public override int GetHashCode() => currentText.GetHashCode();
+    private string GetDebuggerDisplay() => currentText.Insert(this.Caret, "|");
 
     /// <summary>
     /// Accumulates changed events and invokes only one on dispose.
@@ -251,6 +255,8 @@ internal class Document : IEquatable<Document>
 
         public ChangeContext(CodePane codePane, Document document)
         {
+            Debug.Assert(document.stringBuilder.ToString() == document.currentText);
+
             this.codePane = codePane;
             this.document = document;
             document.stringBuilder.SuspendChangedEvents();
@@ -261,6 +267,8 @@ internal class Document : IEquatable<Document>
         {
             document.stringBuilder.ResumeChangedEvents();
             document.undoRedoHistory.Track(document.stringBuilder, document.Caret, codePane.Selection);
+
+            Debug.Assert(document.stringBuilder.ToString() == document.currentText);
         }
     }
 }

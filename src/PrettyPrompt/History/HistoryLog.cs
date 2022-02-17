@@ -95,7 +95,7 @@ sealed class HistoryLog : IKeyPressHandler
                 if (currentIndex == -1)
                 {
                     currentIndex = history.Count - 1;
-                    unsubmittedBuffer.SetContents(codePane.Document.Buffer);
+                    unsubmittedBuffer.SetContents(codePane.Document.GetText());
                 }
                 else if (currentIndex > 0)
                 {
@@ -168,7 +168,7 @@ sealed class HistoryLog : IKeyPressHandler
         if (oldDocument is not null)
         {
             oldDocument.ClearUndoRedoHistory(); // discard undo/redo history to reduce memory usage
-            if (oldDocument.Buffer.Length > 0)
+            if (oldDocument.Length > 0)
             {
                 history.Add(oldDocument.GetText()); 
             }
