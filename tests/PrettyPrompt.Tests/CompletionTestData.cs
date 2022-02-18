@@ -35,7 +35,7 @@ public class CompletionTestData
                 .Select((c, i) => new CompletionItem(
                     replacementText: c,
                     displayText: i % 2 == 0 ? c : null, // display text is optional, ReplacementText should be used when this is null.
-                    extendedDescription: new Lazy<Task<FormattedString>>(() => Task.FromResult<FormattedString>("a vivid description of " + c))
+                    getExtendedDescription: _ => Task.FromResult<FormattedString>("a vivid description of " + c)
                 ))
                 .ToArray()
         );

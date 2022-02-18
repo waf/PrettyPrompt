@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using PrettyPrompt.Completion;
 using PrettyPrompt.Consoles;
@@ -23,6 +24,7 @@ namespace PrettyPrompt;
 /// </summary>
 /// <param name="text">The user's input text</param>
 /// <param name="caret">The index of the text caret in the input text</param>
+/// <param name="cancellationToken">Cancellation token</param>
 /// <returns>
 /// <list type="bullet">
 /// <item>
@@ -36,7 +38,7 @@ namespace PrettyPrompt;
 /// </item>
 /// </list>
 /// </returns>
-public delegate Task<KeyPressCallbackResult?> KeyPressCallbackAsync(string text, int caret);
+public delegate Task<KeyPressCallbackResult?> KeyPressCallbackAsync(string text, int caret, CancellationToken cancellationToken);
 
 public interface IPromptCallbacks
 {
@@ -54,8 +56,9 @@ public interface IPromptCallbacks
     /// Provides syntax-highlighting for input text.
     /// </summary>
     /// <param name="text">The text to be highlighted</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>A collection of formatting instructions</returns>
-    Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text);
+    Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text, CancellationToken cancellationToken);
 
     /// <summary>
     /// Determines which part of document will be replaced by inserted completion item.
@@ -63,8 +66,9 @@ public interface IPromptCallbacks
     /// </summary>
     /// <param name="text">The user's input text</param>
     /// <param name="caret">The index of the text caret in the input text</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Span of text that will be replaced by inserted completion item.</returns>
-    Task<TextSpan> GetSpanToReplaceByCompletionkAsync(string text, int caret);
+    Task<TextSpan> GetSpanToReplaceByCompletionkAsync(string text, int caret, CancellationToken cancellationToken);
 
     /// <summary>
     /// Provides to auto-completion items for specified position in the input text.
@@ -72,8 +76,9 @@ public interface IPromptCallbacks
     /// <param name="text">The user's input text</param>
     /// <param name="caret">The index of the text caret in the input text</param>
     /// <param name="spanToBeReplaced">Span of text that will be replaced by inserted completion item</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>A list of possible completions that will be displayed in the autocomplete menu.</returns>
-    Task<IReadOnlyList<CompletionItem>> GetCompletionItemsAsync(string text, int caret, TextSpan spanToBeReplaced);
+    Task<IReadOnlyList<CompletionItem>> GetCompletionItemsAsync(string text, int caret, TextSpan spanToBeReplaced, CancellationToken cancellationToken);
 
     /// <summary>
     /// Controls when the completion window should open.
@@ -81,8 +86,9 @@ public interface IPromptCallbacks
     /// </summary>
     /// <param name="text">The user's input text</param>
     /// <param name="caret">The index of the text caret in the input text</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>A value indicating whether the completion window should automatically open.</returns>
-    Task<bool> ShouldOpenCompletionWindowAsync(string text, int caret);
+    Task<bool> ShouldOpenCompletionWindowAsync(string text, int caret, CancellationToken cancellationToken);
 
     /// <summary>
     /// Defines whether given <see cref="KeyPressPattern"/> should be interpreted as
@@ -91,8 +97,9 @@ public interface IPromptCallbacks
     /// <param name="text">The user's input text</param>
     /// <param name="caret">The index of the text caret in the input text</param>
     /// <param name="keyInfo">Key press pattern in question</param>
+    /// <param name="cancellationToken">Cancellation token</param>
     /// <returns><see langword="true"/> if the prompt should be submitted or <see langword="false"/> newline should be inserted ("soft-enter").</returns>
-    Task<bool> InterpretKeyPressAsInputSubmitAsync(string text, int caret, ConsoleKeyInfo keyInfo);
+    Task<bool> InterpretKeyPressAsInputSubmitAsync(string text, int caret, ConsoleKeyInfo keyInfo, CancellationToken cancellationToken);
 }
 
 public class PromptCallbacks : IPromptCallbacks
@@ -114,14 +121,14 @@ public class PromptCallbacks : IPromptCallbacks
         return false;
     }
 
-    Task<IReadOnlyCollection<FormatSpan>> IPromptCallbacks.HighlightCallbackAsync(string text)
-        => HighlightCallbackAsync(text);
+    Task<IReadOnlyCollection<FormatSpan>> IPromptCallbacks.HighlightCallbackAsync(string text, CancellationToken cancellationToken)
+        => HighlightCallbackAsync(text, cancellationToken);
 
-    async Task<TextSpan> IPromptCallbacks.GetSpanToReplaceByCompletionkAsync(string text, int caret)
+    async Task<TextSpan> IPromptCallbacks.GetSpanToReplaceByCompletionkAsync(string text, int caret, CancellationToken cancellationToken)
     {
         Debug.Assert(caret >= 0 && caret <= text.Length);
 
-        var span = await GetSpanToReplaceByCompletionkAsync(text, caret).ConfigureAwait(false);
+        var span = await GetSpanToReplaceByCompletionkAsync(text, caret, cancellationToken).ConfigureAwait(false);
         if (!new TextSpan(0, text.Length).Contains(span))
         {
             throw new InvalidOperationException("Resulting TextSpan has to be inside the document.");
@@ -133,25 +140,25 @@ public class PromptCallbacks : IPromptCallbacks
         return span;
     }
 
-    Task<IReadOnlyList<CompletionItem>> IPromptCallbacks.GetCompletionItemsAsync(string text, int caret, TextSpan spanToBeReplaced)
+    Task<IReadOnlyList<CompletionItem>> IPromptCallbacks.GetCompletionItemsAsync(string text, int caret, TextSpan spanToBeReplaced, CancellationToken cancellationToken)
     {
         Debug.Assert(caret >= 0 && caret <= text.Length);
 
-        return GetCompletionItemsAsync(text, caret, spanToBeReplaced);
+        return GetCompletionItemsAsync(text, caret, spanToBeReplaced, cancellationToken);
     }
 
-    Task<bool> IPromptCallbacks.ShouldOpenCompletionWindowAsync(string text, int caret)
+    Task<bool> IPromptCallbacks.ShouldOpenCompletionWindowAsync(string text, int caret, CancellationToken cancellationToken)
     {
         Debug.Assert(caret >= 0 && caret <= text.Length);
 
-        return ShouldOpenCompletionWindowAsync(text, caret);
+        return ShouldOpenCompletionWindowAsync(text, caret, cancellationToken);
     }
 
-    Task<bool> IPromptCallbacks.InterpretKeyPressAsInputSubmitAsync(string text, int caret, ConsoleKeyInfo keyInfo)
+    Task<bool> IPromptCallbacks.InterpretKeyPressAsInputSubmitAsync(string text, int caret, ConsoleKeyInfo keyInfo, CancellationToken cancellationToken)
     {
         Debug.Assert(caret >= 0 && caret <= text.Length);
 
-        return InterpretKeyPressAsInputSubmitAsync(text, caret, keyInfo);
+        return InterpretKeyPressAsInputSubmitAsync(text, caret, keyInfo, cancellationToken);
     }
 
 
@@ -167,11 +174,11 @@ public class PromptCallbacks : IPromptCallbacks
         => Array.Empty<(KeyPressPattern, KeyPressCallbackAsync)>();
 
     /// <inheritdoc cref="IPromptCallbacks.HighlightCallbackAsync"/>
-    protected virtual Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text)
+    protected virtual Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text, CancellationToken cancellationToken)
         => Task.FromResult<IReadOnlyCollection<FormatSpan>>(Array.Empty<FormatSpan>());
 
     /// <inheritdoc cref="IPromptCallbacks.GetSpanToReplaceByCompletionkAsync"/>
-    protected virtual Task<TextSpan> GetSpanToReplaceByCompletionkAsync(string text, int caret)
+    protected virtual Task<TextSpan> GetSpanToReplaceByCompletionkAsync(string text, int caret, CancellationToken cancellationToken)
     {
         int wordStart = caret;
         for (int i = wordStart - 1; i >= 0; i--)
@@ -206,11 +213,11 @@ public class PromptCallbacks : IPromptCallbacks
     }
 
     /// <inheritdoc cref="IPromptCallbacks.GetCompletionItemsAsync"/>
-    protected virtual Task<IReadOnlyList<CompletionItem>> GetCompletionItemsAsync(string text, int caret, TextSpan spanToBeReplaced)
+    protected virtual Task<IReadOnlyList<CompletionItem>> GetCompletionItemsAsync(string text, int caret, TextSpan spanToBeReplaced, CancellationToken cancellationToken)
         => Task.FromResult<IReadOnlyList<CompletionItem>>(Array.Empty<CompletionItem>());
 
     /// <inheritdoc cref="IPromptCallbacks.ShouldOpenCompletionWindowAsync"/>
-    protected virtual Task<bool> ShouldOpenCompletionWindowAsync(string text, int caret)
+    protected virtual Task<bool> ShouldOpenCompletionWindowAsync(string text, int caret, CancellationToken cancellationToken)
     {
         if (caret > 0 && text[caret - 1] is '.' or '(') // typical "intellisense behavior", opens for new methods and parameters
         {
@@ -228,6 +235,6 @@ public class PromptCallbacks : IPromptCallbacks
     }
 
     /// <inheritdoc cref="IPromptCallbacks.InterpretKeyPressAsInputSubmitAsync"/>
-    protected virtual Task<bool> InterpretKeyPressAsInputSubmitAsync(string text, int caret, ConsoleKeyInfo keyInfo)
+    protected virtual Task<bool> InterpretKeyPressAsInputSubmitAsync(string text, int caret, ConsoleKeyInfo keyInfo, CancellationToken cancellationToken)
         => Task.FromResult(false);
 }

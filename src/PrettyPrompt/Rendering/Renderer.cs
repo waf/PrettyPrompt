@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Documents;
@@ -49,19 +50,25 @@ internal class Renderer
         console.Write(configuration.Prompt);
     }
 
-    public async Task RenderOutput(PromptResult? result, CodePane codePane, CompletionPane completionPane, IReadOnlyCollection<FormatSpan> highlights, KeyPress key)
+    public async Task RenderOutput(
+        PromptResult? result,
+        CodePane codePane,
+        CompletionPane completionPane,
+        IReadOnlyCollection<FormatSpan> highlights,
+        KeyPress key,
+        CancellationToken cancellationToken)
     {
         if (result is not null)
         {
             if (wasTextSelectedDuringPreviousRender && codePane.Selection is null)
             {
-                await Redraw().ConfigureAwait(false);
+                await Redraw(cancellationToken).ConfigureAwait(false);
             }
 
             if (completionPane.IsOpen)
             {
                 completionPane.IsOpen = false;
-                await Redraw().ConfigureAwait(false);
+                await Redraw(cancellationToken).ConfigureAwait(false);
             }
 
             Write(
@@ -83,12 +90,12 @@ internal class Renderer
                 codePane.MeasureConsole(console, configuration.Prompt.Length); // our code pane will have more room to render, it now renders at the top of the screen.
             }
 
-            await Redraw().ConfigureAwait(false);
+            await Redraw(cancellationToken).ConfigureAwait(false);
         }
 
         wasTextSelectedDuringPreviousRender = codePane.Selection.HasValue;
 
-        async Task Redraw()
+        async Task Redraw(CancellationToken cancellationToken)
         {
             // convert our "view models" into characters, contained in screen areas
             ScreenArea codeWidget = BuildCodeScreenArea(codePane, highlights);
@@ -96,7 +103,8 @@ internal class Renderer
                 completionPane,
                 cursor: codePane.Cursor,
                 codeAreaStartColumn: configuration.Prompt.Length,
-                codeAreaWidth: codePane.CodeAreaWidth
+                codeAreaWidth: codePane.CodeAreaWidth,
+                cancellationToken
             ).ConfigureAwait(false);
 
             // ansi escape sequence row/column values are 1-indexed.
@@ -153,7 +161,12 @@ internal class Renderer
         return codeWidget;
     }
 
-    private async Task<ScreenArea[]> BuildCompletionScreenAreas(CompletionPane completionPane, ConsoleCoordinate cursor, int codeAreaStartColumn, int codeAreaWidth)
+    private async Task<ScreenArea[]> BuildCompletionScreenAreas(
+        CompletionPane completionPane,
+        ConsoleCoordinate cursor,
+        int codeAreaStartColumn,
+        int codeAreaWidth,
+        CancellationToken cancellationToken)
     {
         //  _  <-- cursor location
         //  ┌──────────────┐
@@ -178,7 +191,7 @@ internal class Renderer
         var completionRows = BuildCompletionRows(completionPane, codeAreaWidth, wordWidth, completionStart);
 
         var documentationStart = new ConsoleCoordinate(cursor.Row + 1, completionStart.Column + boxWidth);
-        var selectedItemDescription = filteredView.SelectedItem != null ? await filteredView.SelectedItem.GetExtendedDescriptionAsync().ConfigureAwait(false) : default;
+        var selectedItemDescription = filteredView.SelectedItem != null ? await filteredView.SelectedItem.GetExtendedDescriptionAsync(cancellationToken).ConfigureAwait(false) : default;
         var documentationRows = BuildDocumentationRows(
             documentation: selectedItemDescription,
             maxWidth: codeAreaWidth - completionStart.Column - boxWidth,

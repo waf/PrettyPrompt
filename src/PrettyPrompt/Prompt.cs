@@ -81,19 +81,19 @@ public sealed class Prompt : IPrompt
             // grab the code area width every key press, so we rerender appropriately when the console is resized.
             codePane.MeasureConsole(console, configuration.Prompt.Length);
 
-            await InterpretKeyPress(key, codePane, completionPane).ConfigureAwait(false);
+            await InterpretKeyPress(key, codePane, completionPane, cancellationToken: default).ConfigureAwait(false);
 
             // typing / word-wrapping may have scrolled the console, giving us more room.
             codePane.MeasureConsole(console, configuration.Prompt.Length);
 
             // render the typed input, with syntax highlighting
             var inputText = codePane.Document.GetText();
-            var highlights = await highlighter.HighlightAsync(inputText).ConfigureAwait(false);
+            var highlights = await highlighter.HighlightAsync(inputText, cancellationToken: default).ConfigureAwait(false);
 
             // the key press may have caused the prompt to return its input, e.g. <Enter> or a callback.
-            var result = await GetResult(codePane, key, inputText).ConfigureAwait(false);
+            var result = await GetResult(codePane, key, inputText, cancellationToken: default).ConfigureAwait(false);
 
-            await renderer.RenderOutput(result, codePane, completionPane, highlights, key).ConfigureAwait(false);
+            await renderer.RenderOutput(result, codePane, completionPane, highlights, key, cancellationToken: default).ConfigureAwait(false);
 
             if (result is not null)
             {
@@ -107,13 +107,13 @@ public sealed class Prompt : IPrompt
         return null;
     }
 
-    private async Task InterpretKeyPress(KeyPress key, CodePane codePane, CompletionPane completionPane)
+    private async Task InterpretKeyPress(KeyPress key, CodePane codePane, CompletionPane completionPane, CancellationToken cancellationToken)
     {
         foreach (var panes in new IKeyPressHandler[] { completionPane, codePane, history })
-            await panes.OnKeyDown(key).ConfigureAwait(false);
+            await panes.OnKeyDown(key, cancellationToken).ConfigureAwait(false);
 
         foreach (var panes in new IKeyPressHandler[] { completionPane, codePane, history })
-            await panes.OnKeyUp(key).ConfigureAwait(false);
+            await panes.OnKeyUp(key, cancellationToken).ConfigureAwait(false);
 
         //we don't support text selection while completion list is open
         //text selection can put completion list into broken state, where filtering does not work
@@ -121,12 +121,12 @@ public sealed class Prompt : IPrompt
         Debug.Assert(!completionPane.IsOpen || (codePane.Selection is null));
     }
 
-    private async Task<PromptResult?> GetResult(CodePane codePane, KeyPress key, string inputText)
+    private async Task<PromptResult?> GetResult(CodePane codePane, KeyPress key, string inputText, CancellationToken cancellationToken)
     {
         // process any user-defined keyboard shortcuts
         if (promptCallbacks.TryGetKeyPressCallbacks(key.ConsoleKeyInfo, out var callback))
         {
-            var result = await callback.Invoke(inputText, codePane.Document.Caret).ConfigureAwait(false);
+            var result = await callback.Invoke(inputText, codePane.Document.Caret, cancellationToken).ConfigureAwait(false);
             if (result is not null)
                 return result;
         }
