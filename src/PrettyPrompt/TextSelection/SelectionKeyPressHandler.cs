@@ -5,6 +5,7 @@
 #endregion
 
 using System;
+using System.Threading;
 using System.Threading.Tasks;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Panes;
@@ -23,7 +24,7 @@ class SelectionKeyPressHandler : IKeyPressHandler
         this.codePane = codePane;
     }
 
-    public Task OnKeyDown(KeyPress key)
+    public Task OnKeyDown(KeyPress key, CancellationToken cancellationToken)
     {
         this.previousCursorLocation = codePane.Cursor;
 
@@ -34,7 +35,7 @@ class SelectionKeyPressHandler : IKeyPressHandler
         return Task.CompletedTask;
     }
 
-    public Task OnKeyUp(KeyPress key)
+    public Task OnKeyUp(KeyPress key, CancellationToken cancellationToken)
     {
 
         switch (key.ObjectPattern)

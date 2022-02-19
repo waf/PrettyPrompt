@@ -258,7 +258,7 @@ public class PromptTests
         var prompt = new Prompt(callbacks: new TestPromptCallbacks(
             (
                 new KeyPressPattern(F1),
-                (inputArg, caretArg) => { input = inputArg; caret = caretArg; return Task.FromResult<KeyPressCallbackResult?>(null); }
+                (inputArg, caretArg, _) => { input = inputArg; caret = caretArg; return Task.FromResult<KeyPressCallbackResult?>(null); }
         )),
             console: console);
 
@@ -315,7 +315,7 @@ public class PromptTests
         var prompt = new Prompt(callbacks: new TestPromptCallbacks(
             (
                 new KeyPressPattern(F2),
-                (inputArg, caretArg) =>
+                (inputArg, caretArg, _) =>
                 {
                     return Task.FromResult<KeyPressCallbackResult?>(callbackOutput);
                 }

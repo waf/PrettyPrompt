@@ -4,12 +4,13 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PrettyPrompt.Consoles;
 
 internal interface IKeyPressHandler
 {
-    Task OnKeyDown(KeyPress key);
-    Task OnKeyUp(KeyPress key);
+    Task OnKeyDown(KeyPress key, CancellationToken cancellationToken);
+    Task OnKeyUp(KeyPress key, CancellationToken cancellationToken);
 }

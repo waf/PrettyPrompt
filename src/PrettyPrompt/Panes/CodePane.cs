@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Documents;
@@ -108,14 +109,14 @@ internal class CodePane : IKeyPressHandler
         void WordWrap() => wordWrappedText = Document.WrapEditableCharacters(CodeAreaWidth);
     }
 
-    public async Task OnKeyDown(KeyPress key)
+    public async Task OnKeyDown(KeyPress key, CancellationToken cancellationToken)
     {
         if (key.Handled) return;
 
-        await selectionHandler.OnKeyDown(key).ConfigureAwait(false);
+        await selectionHandler.OnKeyDown(key, cancellationToken).ConfigureAwait(false);
         var selection = GetSelectionSpan();
 
-        if (await promptCallbacks.InterpretKeyPressAsInputSubmitAsync(Document.GetText(), Document.Caret, key.ConsoleKeyInfo).ConfigureAwait(false))
+        if (await promptCallbacks.InterpretKeyPressAsInputSubmitAsync(Document.GetText(), Document.Caret, key.ConsoleKeyInfo, cancellationToken).ConfigureAwait(false))
         {
             Result = new PromptResult(isSuccess: true, Document.GetText().EnvironmentNewlines(), key.ConsoleKeyInfo);
             return;
@@ -189,22 +190,22 @@ internal class CodePane : IKeyPressHandler
                 {
                     var cutContent =  Document.GetText(selectionValue).ToString();
                     Document.Remove(this, selectionValue);
-                    await clipboard.SetTextAsync(cutContent).ConfigureAwait(false);
+                    await clipboard.SetTextAsync(cutContent, cancellationToken).ConfigureAwait(false);
                     break;
                 }
             case (Control, X):
                 {
-                    await clipboard.SetTextAsync(Document.GetText()).ConfigureAwait(false);
+                    await clipboard.SetTextAsync(Document.GetText(), cancellationToken).ConfigureAwait(false);
                     break;
                 }
             case (Control, C) when selection.TryGet(out var selectionValue):
                 {
                     var copiedContent = Document.GetText(selectionValue).ToString();
-                    await clipboard.SetTextAsync(copiedContent).ConfigureAwait(false);
+                    await clipboard.SetTextAsync(copiedContent, cancellationToken).ConfigureAwait(false);
                     break;
                 }
             case (Control | Shift, C):
-                await clipboard.SetTextAsync(Document.GetText()).ConfigureAwait(false);
+                await clipboard.SetTextAsync(Document.GetText(), cancellationToken).ConfigureAwait(false);
                 break;
             case (Shift, Insert) when key.PastedText is not null:
                 PasteText(key.PastedText);
@@ -212,7 +213,7 @@ internal class CodePane : IKeyPressHandler
             case (Control, V):
             case (Control | Shift, V):
             case (Shift, Insert):
-                var clipboardText = await clipboard.GetTextAsync().ConfigureAwait(false);
+                var clipboardText = await clipboard.GetTextAsync(cancellationToken).ConfigureAwait(false);
                 PasteText(clipboardText);
                 break;
             case (Control, Z):
@@ -319,7 +320,7 @@ internal class CodePane : IKeyPressHandler
         this.CodeAreaHeight = Math.Max(0, console.WindowHeight - this.TopCoordinate);
     }
 
-    public async Task OnKeyUp(KeyPress key)
+    public async Task OnKeyUp(KeyPress key, CancellationToken cancellationToken)
     {
         if (key.Handled) return;
 
@@ -347,7 +348,7 @@ internal class CodePane : IKeyPressHandler
                 }
         }
 
-        await selectionHandler.OnKeyUp(key).ConfigureAwait(false);
+        await selectionHandler.OnKeyUp(key, cancellationToken).ConfigureAwait(false);
 
         CheckConsistency();
     }

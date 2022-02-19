@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using PrettyPrompt.Completion;
 using PrettyPrompt.Consoles;
@@ -31,43 +32,43 @@ internal class TestPromptCallbacks : PromptCallbacks
 
     protected override IEnumerable<(KeyPressPattern Pattern, KeyPressCallbackAsync Callback)> GetKeyPressCallbacks() => keyPressCallbacks;
 
-    protected override Task<TextSpan> GetSpanToReplaceByCompletionkAsync(string text, int caret)
+    protected override Task<TextSpan> GetSpanToReplaceByCompletionkAsync(string text, int caret, CancellationToken cancellationToken)
     {
         return
             SpanToReplaceByCompletionCallback is null ?
-            base.GetSpanToReplaceByCompletionkAsync(text, caret) :
+            base.GetSpanToReplaceByCompletionkAsync(text, caret, cancellationToken) :
             SpanToReplaceByCompletionCallback(text, caret);
     }
 
-    protected override Task<IReadOnlyList<CompletionItem>> GetCompletionItemsAsync(string text, int caret, TextSpan spanToBeReplaced)
+    protected override Task<IReadOnlyList<CompletionItem>> GetCompletionItemsAsync(string text, int caret, TextSpan spanToBeReplaced, CancellationToken cancellationToken)
     {
         return
             CompletionCallback is null ?
-            base.GetCompletionItemsAsync(text, caret, spanToBeReplaced) :
+            base.GetCompletionItemsAsync(text, caret, spanToBeReplaced, cancellationToken) :
             CompletionCallback(text, caret, spanToBeReplaced);
     }
 
-    protected override Task<bool> ShouldOpenCompletionWindowAsync(string text, int caret)
+    protected override Task<bool> ShouldOpenCompletionWindowAsync(string text, int caret, CancellationToken cancellationToken)
     {
         return
             OpenCompletionWindowCallback is null ?
-            base.ShouldOpenCompletionWindowAsync(text, caret) :
+            base.ShouldOpenCompletionWindowAsync(text, caret, cancellationToken) :
             OpenCompletionWindowCallback(text, caret);
     }
 
-    protected override Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text)
+    protected override Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text, CancellationToken cancellationToken)
     {
         return
             HighlightCallback is null ?
-            base.HighlightCallbackAsync(text) :
+            base.HighlightCallbackAsync(text, cancellationToken) :
             HighlightCallback(text);
     }
 
-    protected override Task<bool> InterpretKeyPressAsInputSubmitAsync(string text, int caret, ConsoleKeyInfo keyInfo)
+    protected override Task<bool> InterpretKeyPressAsInputSubmitAsync(string text, int caret, ConsoleKeyInfo keyInfo, CancellationToken cancellationToken)
     {
         return
             InterpretKeyPressAsInputSubmitCallback is null ?
-            base.InterpretKeyPressAsInputSubmitAsync(text, caret, keyInfo) :
+            base.InterpretKeyPressAsInputSubmitAsync(text, caret, keyInfo, cancellationToken) :
             InterpretKeyPressAsInputSubmitCallback(text, caret, keyInfo);
     }
 }

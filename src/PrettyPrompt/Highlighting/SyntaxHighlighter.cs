@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace PrettyPrompt.Highlighting;
@@ -28,7 +29,7 @@ class SyntaxHighlighter
         this.previousOutput = Array.Empty<FormatSpan>();
     }
 
-    public async Task<IReadOnlyCollection<FormatSpan>> HighlightAsync(string input)
+    public async Task<IReadOnlyCollection<FormatSpan>> HighlightAsync(string input, CancellationToken cancellationToken)
     {
         if (hasUserOptedOutFromColor) return Array.Empty<FormatSpan>();
 
@@ -37,7 +38,7 @@ class SyntaxHighlighter
             return previousOutput;
         }
 
-        var highlights = await promptCallbacks.HighlightCallbackAsync(input).ConfigureAwait(false);
+        var highlights = await promptCallbacks.HighlightCallbackAsync(input, cancellationToken).ConfigureAwait(false);
         previousInput = input;
         previousOutput = highlights;
         return highlights;

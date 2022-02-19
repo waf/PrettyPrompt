@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using PrettyPrompt.Completion;
 using PrettyPrompt.Consoles;
@@ -77,7 +78,7 @@ internal class CompletionPane : IKeyPressHandler
         this.FilteredView.Clear();
     }
 
-    async Task IKeyPressHandler.OnKeyDown(KeyPress key)
+    async Task IKeyPressHandler.OnKeyDown(KeyPress key, CancellationToken cancellationToken)
     {
         if (!EnoughRoomToDisplay(this.codePane)) return;
 
@@ -88,7 +89,7 @@ internal class CompletionPane : IKeyPressHandler
         {
             var documentText = codePane.Document.GetText();
             int documentCaret = codePane.Document.Caret;
-            var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(documentText, documentCaret).ConfigureAwait(false);
+            var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(documentText, documentCaret, cancellationToken).ConfigureAwait(false);
             lastSpanToReplaceOnKeyDown = spanToReplace;
 
             switch (key.ObjectPattern)
@@ -155,7 +156,7 @@ internal class CompletionPane : IKeyPressHandler
             case var _ when configuration.KeyBindings.CommitCompletion.Matches(key.ConsoleKeyInfo):
                 if (FilteredView.SelectedItem != null)
                 {
-                    await InsertCompletion(codePane, FilteredView.SelectedItem).ConfigureAwait(false);
+                    await InsertCompletion(codePane, FilteredView.SelectedItem, cancellationToken).ConfigureAwait(false);
                     key.Handled = char.IsControl(key.ConsoleKeyInfo.KeyChar);
                 }
                 else
@@ -175,7 +176,7 @@ internal class CompletionPane : IKeyPressHandler
     private bool EnoughRoomToDisplay(CodePane codePane) =>
         codePane.CodeAreaHeight - codePane.Cursor.Row >= VerticalPaddingHeight + configuration.MinCompletionItemsCount; // offset + top border + MinCompletionItemsCount + bottom border
 
-    async Task IKeyPressHandler.OnKeyUp(KeyPress key)
+    async Task IKeyPressHandler.OnKeyUp(KeyPress key, CancellationToken cancellationToken)
     {
         if (!EnoughRoomToDisplay(codePane)) return;
 
@@ -184,7 +185,7 @@ internal class CompletionPane : IKeyPressHandler
         if (!IsOpen)
         {
             if (!char.IsControl(key.ConsoleKeyInfo.KeyChar) &&
-                await promptCallbacks.ShouldOpenCompletionWindowAsync(codePane.Document.GetText(), codePane.Document.Caret).ConfigureAwait(false))
+                await promptCallbacks.ShouldOpenCompletionWindowAsync(codePane.Document.GetText(), codePane.Document.Caret, cancellationToken).ConfigureAwait(false))
             {
                 Open();
             }
@@ -194,7 +195,7 @@ internal class CompletionPane : IKeyPressHandler
         {
             var documentText = codePane.Document.GetText();
             int documentCaret = codePane.Document.Caret;
-            var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(documentText, documentCaret).ConfigureAwait(false);
+            var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(documentText, documentCaret, cancellationToken).ConfigureAwait(false);
 
             if (wasAlreadyOpen &&
                 lastSpanToReplaceOnKeyDown.TryGet(out var spanToReplaceOld))
@@ -208,7 +209,7 @@ internal class CompletionPane : IKeyPressHandler
 
             if (allCompletions.Count == 0)
             {
-                var completions = await promptCallbacks.GetCompletionItemsAsync(documentText, documentCaret, spanToReplace).ConfigureAwait(false);
+                var completions = await promptCallbacks.GetCompletionItemsAsync(documentText, documentCaret, spanToReplace, cancellationToken).ConfigureAwait(false);
                 if (completions.Any())
                 {
                     allCompletions = completions;
@@ -230,10 +231,10 @@ internal class CompletionPane : IKeyPressHandler
         }
     }
 
-    private async Task InsertCompletion(CodePane codepane, CompletionItem completion)
+    private async Task InsertCompletion(CodePane codepane, CompletionItem completion, CancellationToken cancellationToken)
     {
         var document = codepane.Document;
-        var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(document.GetText(), document.Caret).ConfigureAwait(false);
+        var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(document.GetText(), document.Caret, cancellationToken).ConfigureAwait(false);
         document.Remove(codepane, spanToReplace);
         document.InsertAtCaret(codepane, completion.ReplacementText);
         document.Caret = spanToReplace.Start + completion.ReplacementText.Length;

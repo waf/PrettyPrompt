@@ -10,3 +10,12 @@ dotnet_diagnostic.CS1591.severity = none
 dotnet_diagnostic.S3358.severity = none
 
 csharp_style_namespace_declarations=file_scoped:warning
+
+# CA1068: CancellationToken parameters must come last
+dotnet_diagnostic.CA1068.severity = warning
+
+# CA2250: Use ThrowIfCancellationRequested
+dotnet_diagnostic.CA2250.severity = warning
+
+# CA2016: Forward the CancellationToken parameter to methods that take one
+dotnet_diagnostic.CA2016.severity = warning

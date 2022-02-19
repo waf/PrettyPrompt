@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using PrettyPrompt.Completion;
 using PrettyPrompt.Consoles;
@@ -83,7 +84,7 @@ internal static class Program
         }
     }
 
-    private static Task<KeyPressCallbackResult?> ShowFruitDocumentation(string text, int caret)
+    private static Task<KeyPressCallbackResult?> ShowFruitDocumentation(string text, int caret, CancellationToken cancellationToken)
     {
         string wordUnderCursor = GetWordAtCaret(text, caret).ToLower();
 
@@ -139,7 +140,7 @@ internal static class Program
             yield return (new(ConsoleModifiers.Control, ConsoleKey.F1), ShowFruitDocumentation);
         }
 
-        protected override Task<IReadOnlyList<CompletionItem>> GetCompletionItemsAsync(string text, int caret, TextSpan spanToBeReplaced)
+        protected override Task<IReadOnlyList<CompletionItem>> GetCompletionItemsAsync(string text, int caret, TextSpan spanToBeReplaced, CancellationToken cancellationToken)
         {
             // demo completion algorithm callback
             // populate completions and documentation for autocompletion window
@@ -153,14 +154,14 @@ internal static class Program
                     return new CompletionItem(
                         replacementText: fruit.Name,
                         displayText: displayText,
-                        extendedDescription: new Lazy<Task<FormattedString>>(() => Task.FromResult(description))
+                        getExtendedDescription: _ => Task.FromResult(description)
                     );
                 })
                 .ToArray()
             );
         }
 
-        protected override Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text)
+        protected override Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text, CancellationToken cancellationToken)
         {
             // demo syntax highlighting callback
             IReadOnlyCollection<FormatSpan> spans = EnumerateFormatSpans(text, Fruits.Select(f => (f.Name, f.Highlight))).ToList();

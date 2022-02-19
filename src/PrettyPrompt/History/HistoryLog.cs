@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Documents;
@@ -79,9 +80,9 @@ sealed class HistoryLog : IKeyPressHandler
         }
     }
 
-    public Task OnKeyDown(KeyPress key) => Task.CompletedTask;
+    public Task OnKeyDown(KeyPress key, CancellationToken cancellationToken) => Task.CompletedTask;
 
-    public async Task OnKeyUp(KeyPress key)
+    public async Task OnKeyUp(KeyPress key, CancellationToken cancellationToken)
     {
         if (codePane is null) return;
 
