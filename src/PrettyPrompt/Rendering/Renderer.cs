@@ -300,7 +300,7 @@ internal class Renderer
         // 'too long and too thin' boxes but also we don't want 'too narrow and too high' ones.
         // So we use two heuristics to select the 'right' proportions of the documentation box.
         List<FormattedString>? documentationLines = null;
-        for (double proportion = 0.3; proportion <= 0.95; proportion += 0.1) //30%, 40%, ..., 90%
+        for (double proportion = 0.7; proportion <= 0.96; proportion += 0.05) //70%, 75%, ..., 95%
         {
             var requestedBoxWidth = (int)(proportion * maxWidth);
             documentationLines = GetDocumentationLines(requestedBoxWidth);
