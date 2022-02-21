@@ -109,6 +109,8 @@ public sealed class Prompt : IPrompt
 
     private async Task InterpretKeyPress(KeyPress key, CodePane codePane, CompletionPane completionPane, CancellationToken cancellationToken)
     {
+        key = await promptCallbacks.TransformKeyPressAsync(codePane.Document.GetText(), codePane.Document.Caret, key, cancellationToken).ConfigureAwait(false);
+
         foreach (var panes in new IKeyPressHandler[] { completionPane, codePane, history })
             await panes.OnKeyDown(key, cancellationToken).ConfigureAwait(false);
 

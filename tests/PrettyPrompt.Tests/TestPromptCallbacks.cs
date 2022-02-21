@@ -13,7 +13,7 @@ internal delegate Task<TextSpan> SpanToReplaceByCompletionCallbackAsync(string t
 internal delegate Task<IReadOnlyList<CompletionItem>> CompletionCallbackAsync(string text, int caret, TextSpan spanToBeReplaced);
 internal delegate Task<bool> OpenCompletionWindowCallbackAsync(string text, int caret);
 internal delegate Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text);
-internal delegate Task<bool> InterpretKeyPressAsInputSubmitCallbackAsync(string text, int caret, ConsoleKeyInfo keyInfo);
+internal delegate Task<KeyPress> TransformKeyPressAsyncCallbackAsync(string text, int caret, KeyPress keyPress);
 
 internal class TestPromptCallbacks : PromptCallbacks
 {
@@ -23,7 +23,7 @@ internal class TestPromptCallbacks : PromptCallbacks
     public CompletionCallbackAsync? CompletionCallback { get; set; }
     public OpenCompletionWindowCallbackAsync? OpenCompletionWindowCallback { get; set; }
     public HighlightCallbackAsync? HighlightCallback { get; set; }
-    public InterpretKeyPressAsInputSubmitCallbackAsync? InterpretKeyPressAsInputSubmitCallback { get; set; }
+    public TransformKeyPressAsyncCallbackAsync? TransformKeyPressCallback { get; set; }
 
     public TestPromptCallbacks(params (KeyPressPattern Pattern, KeyPressCallbackAsync Callback)[]? keyPressCallbacks)
     {
@@ -64,11 +64,11 @@ internal class TestPromptCallbacks : PromptCallbacks
             HighlightCallback(text);
     }
 
-    protected override Task<bool> InterpretKeyPressAsInputSubmitAsync(string text, int caret, ConsoleKeyInfo keyInfo, CancellationToken cancellationToken)
+    protected override Task<KeyPress> TransformKeyPressAsync(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken)
     {
         return
-            InterpretKeyPressAsInputSubmitCallback is null ?
-            base.InterpretKeyPressAsInputSubmitAsync(text, caret, keyInfo, cancellationToken) :
-            InterpretKeyPressAsInputSubmitCallback(text, caret, keyInfo);
+            TransformKeyPressCallback is null ?
+            base.TransformKeyPressAsync(text, caret, keyPress, cancellationToken) :
+            TransformKeyPressCallback(text, caret, keyPress);
     }
 }

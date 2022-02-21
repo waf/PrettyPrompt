@@ -116,12 +116,6 @@ internal class CodePane : IKeyPressHandler
         await selectionHandler.OnKeyDown(key, cancellationToken).ConfigureAwait(false);
         var selection = GetSelectionSpan();
 
-        if (await promptCallbacks.InterpretKeyPressAsInputSubmitAsync(Document.GetText(), Document.Caret, key.ConsoleKeyInfo, cancellationToken).ConfigureAwait(false))
-        {
-            Result = new PromptResult(isSuccess: true, Document.GetText().EnvironmentNewlines(), key.ConsoleKeyInfo);
-            return;
-        }
-
         switch (key.ObjectPattern)
         {
             case (Control, C) when selection is null:
@@ -188,7 +182,7 @@ internal class CodePane : IKeyPressHandler
                 break;
             case (Control, X) when selection.TryGet(out var selectionValue):
                 {
-                    var cutContent =  Document.GetText(selectionValue).ToString();
+                    var cutContent = Document.GetText(selectionValue).ToString();
                     Document.Remove(this, selectionValue);
                     await clipboard.SetTextAsync(cutContent, cancellationToken).ConfigureAwait(false);
                     break;

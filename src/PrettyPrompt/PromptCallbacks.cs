@@ -91,15 +91,14 @@ public interface IPromptCallbacks
     Task<bool> ShouldOpenCompletionWindowAsync(string text, int caret, CancellationToken cancellationToken);
 
     /// <summary>
-    /// Defines whether given <see cref="KeyPressPattern"/> should be interpreted as
-    /// the prompt input submit.
+    /// Optionaly transforms key presses to another ones.
     /// </summary>
     /// <param name="text">The user's input text</param>
     /// <param name="caret">The index of the text caret in the input text</param>
-    /// <param name="keyInfo">Key press pattern in question</param>
+    /// <param name="keyPress">Key press pattern in question</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns><see langword="true"/> if the prompt should be submitted or <see langword="false"/> newline should be inserted ("soft-enter").</returns>
-    Task<bool> InterpretKeyPressAsInputSubmitAsync(string text, int caret, ConsoleKeyInfo keyInfo, CancellationToken cancellationToken);
+    Task<KeyPress> TransformKeyPressAsync(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken);
 }
 
 public class PromptCallbacks : IPromptCallbacks
@@ -154,11 +153,11 @@ public class PromptCallbacks : IPromptCallbacks
         return ShouldOpenCompletionWindowAsync(text, caret, cancellationToken);
     }
 
-    Task<bool> IPromptCallbacks.InterpretKeyPressAsInputSubmitAsync(string text, int caret, ConsoleKeyInfo keyInfo, CancellationToken cancellationToken)
+    Task<KeyPress> IPromptCallbacks.TransformKeyPressAsync(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken)
     {
         Debug.Assert(caret >= 0 && caret <= text.Length);
 
-        return InterpretKeyPressAsInputSubmitAsync(text, caret, keyInfo, cancellationToken);
+        return TransformKeyPressAsync(text, caret, keyPress, cancellationToken);
     }
 
 
@@ -234,7 +233,7 @@ public class PromptCallbacks : IPromptCallbacks
         return Task.FromResult(caret - 2 >= 0 && char.IsWhiteSpace(text[caret - 2]) && char.IsLetter(text[caret - 1]));
     }
 
-    /// <inheritdoc cref="IPromptCallbacks.InterpretKeyPressAsInputSubmitAsync"/>
-    protected virtual Task<bool> InterpretKeyPressAsInputSubmitAsync(string text, int caret, ConsoleKeyInfo keyInfo, CancellationToken cancellationToken)
-        => Task.FromResult(false);
+    /// <inheritdoc cref="IPromptCallbacks.TransformKeyPressAsync(string, int, KeyPress, CancellationToken)"/>
+    protected virtual Task<KeyPress> TransformKeyPressAsync(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken)
+        => Task.FromResult(keyPress);
 }

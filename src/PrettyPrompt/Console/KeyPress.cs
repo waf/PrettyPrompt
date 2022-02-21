@@ -12,7 +12,7 @@ using System.Linq;
 namespace PrettyPrompt.Consoles;
 
 [DebuggerDisplay("{ObjectPattern}")]
-internal class KeyPress
+public class KeyPress
 {
     /// <summary>
     /// The key press as reported by Console.ReadKey
@@ -31,7 +31,7 @@ internal class KeyPress
     /// </summary>
     public string? PastedText { get; }
 
-    public bool Handled { get; internal set; }
+    internal bool Handled { get; set; }
 
     public KeyPress(ConsoleKeyInfo consoleKeyInfo, string? pastedText = null)
     {
@@ -45,7 +45,7 @@ internal class KeyPress
         this.PastedText = pastedText;
     }
 
-    public static IEnumerable<KeyPress> ReadForever(IConsole console)
+    internal static IEnumerable<KeyPress> ReadForever(IConsole console)
     {
         while (true)
         {
