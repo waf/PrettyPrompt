@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace PrettyPrompt.Highlighting;
 
-class SyntaxHighlighter
+internal class SyntaxHighlighter
 {
     private readonly IPromptCallbacks promptCallbacks;
     private readonly bool hasUserOptedOutFromColor;

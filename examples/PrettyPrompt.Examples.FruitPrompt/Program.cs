@@ -13,7 +13,7 @@ namespace PrettyPrompt;
 
 internal static class Program
 {
-    static async Task Main(string[] _)
+    private static async Task Main(string[] _)
     {
         Console.WriteLine("Welcome! Try typing some fruit names.");
         Console.WriteLine();
@@ -130,7 +130,7 @@ internal static class Program
         }
     }
 
-    class FruitPromptCallbacks : PromptCallbacks
+    private class FruitPromptCallbacks : PromptCallbacks
     {
         protected override IEnumerable<(KeyPressPattern Pattern, KeyPressCallbackAsync Callback)> GetKeyPressCallbacks()
         {

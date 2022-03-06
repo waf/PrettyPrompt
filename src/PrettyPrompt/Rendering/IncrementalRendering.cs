@@ -12,7 +12,7 @@ using static PrettyPrompt.Consoles.AnsiEscapeCodes;
 
 namespace PrettyPrompt.Rendering;
 
-static class IncrementalRendering
+internal static class IncrementalRendering
 {
     /// <summary>
     /// Given a new screen and the previously rendered screen,
