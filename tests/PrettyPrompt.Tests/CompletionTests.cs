@@ -385,6 +385,26 @@ public class CompletionTests
         Assert.Equal($"aaa", result.Text);
     }
 
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/126 was causing this test to fail.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_WriteWord_WriteDot_RightSelectDotAndLastLetter_TriggerSelection_ShouldNotOpenCompletionList()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput(
+            $"aaa.",
+            $"{LeftArrow}{LeftArrow}{Shift}{RightArrow}{Shift}{RightArrow}", //right select 'a.'
+            $"{Control}{Spacebar}", //try to show completion list (should not open)
+            $"{Enter}"); //submit prompt
+        var prompt = ConfigurePrompt(
+            console,
+            completions: new[] { "aaa", "bbb" });
+        var result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal($"aaa.", result.Text);
+    }
+
     [Fact]
     public async Task ReadLine_TriggerCompletionListInWord_PressHomeOrEndToGetToAnotherWord_ListShouldClose()
     {

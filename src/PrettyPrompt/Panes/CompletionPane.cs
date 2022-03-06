@@ -40,6 +40,7 @@ internal class CompletionPane : IKeyPressHandler
     private readonly PromptConfiguration configuration;
 
     private TextSpan? lastSpanToReplaceOnKeyDown;
+    private bool completionListTriggeredOnKeyDown;
 
     /// <summary>
     /// All completions available. Called once when the window is initially opened
@@ -83,6 +84,7 @@ internal class CompletionPane : IKeyPressHandler
         if (!EnoughRoomToDisplay(this.codePane)) return;
 
         var completionListTriggered = configuration.KeyBindings.TriggerCompletionList.Matches(key.ConsoleKeyInfo);
+        completionListTriggeredOnKeyDown = completionListTriggered;
         lastSpanToReplaceOnKeyDown = null;
 
         if (IsOpen)
@@ -185,6 +187,7 @@ internal class CompletionPane : IKeyPressHandler
         if (!IsOpen)
         {
             if (!char.IsControl(key.ConsoleKeyInfo.KeyChar) &&
+                !completionListTriggeredOnKeyDown &&
                 await promptCallbacks.ShouldOpenCompletionWindowAsync(codePane.Document.GetText(), codePane.Document.Caret, cancellationToken).ConfigureAwait(false))
             {
                 Open();
