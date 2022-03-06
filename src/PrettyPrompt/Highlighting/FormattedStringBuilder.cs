@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using System.Text;
+using PrettyPrompt.Documents;
 
 namespace PrettyPrompt.Highlighting;
 
@@ -37,6 +38,9 @@ public readonly struct FormattedStringBuilder
     public FormattedStringBuilder Append(string text, params FormatSpan[] formatSpans)
         => Append(new FormattedString(text, formatSpans));
 
+    public FormattedStringBuilder Append(string text, ConsoleFormat format)
+        => Append(text, new FormatSpan(new TextSpan(0, text.Length), format));
+
     public void Clear()
     {
         stringBuilder.Clear();
@@ -45,4 +49,7 @@ public readonly struct FormattedStringBuilder
     
     public FormattedString ToFormattedString()
         => new(stringBuilder.ToString(), formatSpans);
+
+    public override string ToString()
+        => stringBuilder.ToString();
 }
