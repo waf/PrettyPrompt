@@ -1,3 +1,13 @@
+# Release 3.0.2
+
+- Fix of #126 (Completion pane should not open when selection is active).
+- Upgrade of referenced NuGets.
+- Minor enhancements.
+
+# Release 3.0.1
+
+- `IPromptCallbacks.InterpretKeyPressAsInputSubmitAsync` -> `IPromptCallbacks.TransformKeyPressAsync`
+
 # Release 3.0.0
 
 This is a large release that greatly improves the usability, consistency, and reliability of PrettyPrompt. Special thanks to @kindermannhubert for an incredible amount of work to improve PrettyPrompt!
