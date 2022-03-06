@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -41,7 +42,12 @@ internal static class ConsoleStub
     public static IReadOnlyList<string> GetAllOutput(this IConsole consoleStub) =>
         consoleStub.ReceivedCalls()
             .Where(call => call.GetMethodInfo().Name == nameof(Console.Write))
-            .Select(call => (string)call.GetArguments().Single())
+            .Select(call =>
+            {
+                var arg = (string?)call.GetArguments().Single();
+                Debug.Assert(arg != null);
+                return arg;
+            })
             .ToArray();
 
     public static string GetFinalOutput(this IConsole consoleStub)
