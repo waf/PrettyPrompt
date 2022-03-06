@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 namespace PrettyPrompt.Consoles;
 
 /// <summary>
-/// Implementation of <see cref="IConsole"/> that uses the normal <see cref="System.Console"/> APIs
+/// Implementation of <see cref="IConsole"/> that uses the normal <see cref="Console"/> APIs
 /// </summary>
 public class SystemConsole : IConsole
 {
@@ -57,12 +57,21 @@ public class SystemConsole : IConsole
         if (!GetConsoleMode(iStdOut, out uint outConsoleMode) ||
             !SetConsoleMode(iStdOut, outConsoleMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN))
         {
-            throw new InvalidOperationException($"failed to set output console mode, error code: {GetLastError()}");
+            throw new InvalidOperationException($"failed to set output console mode, error code: {Marshal.GetLastWin32Error()}");
         }
     }
 
-    [DllImport("kernel32.dll")] private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
-    [DllImport("kernel32.dll")] private static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
-    [DllImport("kernel32.dll", SetLastError = true)] private static extern IntPtr GetStdHandle(int nStdHandle);
-    [DllImport("kernel32.dll")] private static extern uint GetLastError();
+    [DllImport("kernel32")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool GetConsoleMode(IntPtr hConsoleHandle, out uint lpMode);
+
+    [DllImport("kernel32")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool SetConsoleMode(IntPtr hConsoleHandle, uint dwMode);
+
+    /// <summary>
+    /// Returned handle does not need to be closed (https://docs.microsoft.com/en-us/windows/console/getstdhandle#handle-disposal).
+    /// </summary>
+    [DllImport("kernel32", SetLastError = true)]
+    private static extern IntPtr GetStdHandle(int nStdHandle);
 }
