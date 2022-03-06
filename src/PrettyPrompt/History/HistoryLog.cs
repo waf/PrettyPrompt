@@ -19,7 +19,7 @@ using static System.ConsoleKey;
 
 namespace PrettyPrompt.History;
 
-sealed class HistoryLog : IKeyPressHandler
+internal sealed class HistoryLog : IKeyPressHandler
 {
     private const int MaxHistoryEntries = 500;
     private const int HistoryTrimInterval = 100;

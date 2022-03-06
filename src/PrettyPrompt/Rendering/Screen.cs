@@ -14,7 +14,7 @@ namespace PrettyPrompt.Rendering;
 /// Represents characters (TextElements) rendered on a screen.
 /// Used as part of <see cref="IncrementalRendering"/>.
 /// </summary>
-sealed class Screen
+internal sealed class Screen
 {
     private readonly ScreenArea[] screenAreas;
 

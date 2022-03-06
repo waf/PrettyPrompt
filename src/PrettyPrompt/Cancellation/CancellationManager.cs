@@ -10,7 +10,7 @@ using PrettyPrompt.Consoles;
 
 namespace PrettyPrompt.Cancellation;
 
-sealed class CancellationManager
+internal sealed class CancellationManager
 {
     private readonly IConsole console;
     private PromptResult? execution;

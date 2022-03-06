@@ -14,7 +14,7 @@ using static System.ConsoleModifiers;
 
 namespace PrettyPrompt.TextSelection;
 
-class SelectionKeyPressHandler : IKeyPressHandler
+internal class SelectionKeyPressHandler : IKeyPressHandler
 {
     private readonly CodePane codePane;
     private ConsoleCoordinate previousCursorLocation;

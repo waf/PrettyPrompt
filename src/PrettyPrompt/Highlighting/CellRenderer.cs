@@ -17,7 +17,7 @@ namespace PrettyPrompt.Highlighting;
 /// <summary>
 /// Given the text and the syntax highlighting information, render the text into the "cells" of the terminal screen.
 /// </summary>
-static class CellRenderer
+internal static class CellRenderer
 {
     public static Row[] ApplyColorToCharacters(IReadOnlyCollection<FormatSpan> highlights, IReadOnlyList<WrappedLine> lines, SelectionSpan? selection)
     {

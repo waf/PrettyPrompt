@@ -17,7 +17,7 @@ namespace PrettyPrompt.Completion;
 /// also has a concept of the window "sliding" to always keep a selected index in view. This datastructure powers
 /// the auto-complete menu, and the window slides to provide the scrolling of the menu.
 /// </summary>
-sealed class SlidingArrayWindow : IReadOnlyCollection<CompletionItem>
+internal sealed class SlidingArrayWindow : IReadOnlyCollection<CompletionItem>
 {
     private readonly List<CompletionItem> itemsOriginal = new();
     private readonly int windowBuffer;
