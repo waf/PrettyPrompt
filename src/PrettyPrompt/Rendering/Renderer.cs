@@ -87,7 +87,7 @@ internal class Renderer
                 console.Clear(); // for some reason, using escape codes (ClearEntireScreen and MoveCursorToPosition) leaves
                                  // CursorTop in an old (cached?) state. Using Console.Clear() works around this.
                 RenderPrompt();
-                codePane.MeasureConsole(console, configuration.Prompt.Length); // our code pane will have more room to render, it now renders at the top of the screen.
+                codePane.MeasureConsole(); // our code pane will have more room to render, it now renders at the top of the screen.
             }
 
             await Redraw(cancellationToken).ConfigureAwait(false);

@@ -23,13 +23,13 @@ namespace PrettyPrompt.Panes;
 
 internal class CodePane : IKeyPressHandler
 {
+    private readonly IConsole console;
     private readonly PromptConfiguration configuration;
-    private readonly IPromptCallbacks promptCallbacks;
     private readonly IClipboard clipboard;
     private readonly SelectionKeyPressHandler selectionHandler;
     private int topCoordinate;
-    private int codeAreaWidth = int.MaxValue;
-    private int codeAreaHeight = int.MaxValue;
+    private int codeAreaWidth;
+    private int codeAreaHeight;
     private int windowTop;
     private WordWrappedText wordWrappedText;
 
@@ -93,15 +93,18 @@ internal class CodePane : IKeyPressHandler
 
     public string TabSpaces { get; }
 
-    public CodePane(int topCoordinate, PromptConfiguration configuration, IPromptCallbacks promptCallbacks, IClipboard clipboard)
+    public CodePane(IConsole console, PromptConfiguration configuration, IClipboard clipboard)
     {
-        this.TopCoordinate = topCoordinate;
+        this.console = console;
         this.configuration = configuration;
-        this.promptCallbacks = promptCallbacks;
         this.clipboard = clipboard;
-        this.Document = new Document();
-        this.Document.Changed += WordWrap;
-        this.selectionHandler = new SelectionKeyPressHandler(this);
+
+        TopCoordinate = console.CursorTop;
+        MeasureConsole();
+
+        Document = new Document();
+        Document.Changed += WordWrap;
+        selectionHandler = new SelectionKeyPressHandler(this);
         TabSpaces = new string(' ', configuration.TabSize);
 
         WordWrap();
@@ -304,13 +307,13 @@ internal class CodePane : IKeyPressHandler
         }
     }
 
-    internal void MeasureConsole(IConsole console, int promptLength)
+    internal void MeasureConsole()
     {
         var windowTopChange = console.WindowTop - this.windowTop;
         this.TopCoordinate = Math.Max(0, this.TopCoordinate - windowTopChange);
         this.windowTop = console.WindowTop;
 
-        this.CodeAreaWidth = Math.Max(0, console.BufferWidth - promptLength);
+        this.CodeAreaWidth = Math.Max(0, console.BufferWidth - configuration.Prompt.Length);
         this.CodeAreaHeight = Math.Max(0, console.WindowHeight - this.TopCoordinate);
     }
 
