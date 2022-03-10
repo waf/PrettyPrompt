@@ -21,6 +21,18 @@ public class ScreenTests
     [InlineData("a😁", 3)]
     [InlineData("a😉bc", 5)]
     [InlineData("a😐🙄bc", 7)]
+
+    //different circles (some had incorrectly specified width in UnicodeWidth.GetWidth)
+    [InlineData("⚪", 2)]
+    [InlineData("⚫", 2)]
+    [InlineData("⭕", 2)]
+    [InlineData("🔴", 2)]
+    [InlineData("🔵", 2)]
+    [InlineData("🟠", 2)]
+    [InlineData("🟡", 2)]
+    [InlineData("🟢", 2)]
+    [InlineData("🟣", 2)]
+    [InlineData("🟤", 2)]
     public void ScreenCursorPositionTest(string text, int expectedCursorPosition)
     {
         var screen = new Screen(
