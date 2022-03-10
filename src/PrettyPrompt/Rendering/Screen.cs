@@ -5,6 +5,7 @@
 #endregion
 
 using System;
+using System.Diagnostics;
 using System.Linq;
 using PrettyPrompt.Consoles;
 
@@ -79,16 +80,23 @@ internal sealed class Screen
         int column = Math.Min(cursor.Column, screen.Width - 1);
         int rowStartIndex = row * screen.Width;
         int rowCursorIndex = rowStartIndex + column;
-        int foundFullWidthCharacters = 0;
-        for (int i = row * screen.Width; i <= rowCursorIndex + foundFullWidthCharacters; i++)
+        int extraColumnOffset = 0;
+        for (int i = row * screen.Width; i <= rowCursorIndex + extraColumnOffset; i++)
         {
             var cell = screen.CellBuffer[i];
             if (cell is not null && cell.IsContinuationOfPreviousCharacter)
             {
-                foundFullWidthCharacters++;
+                Debug.Assert(i > 0);
+                var previousCell = screen.CellBuffer[i - 1];
+                Debug.Assert(previousCell.ElementWidth == 2);
+                Debug.Assert(previousCell.Text is not null);
+
+                //e.g. for '界' is previousCell.ElementWidth==2 and previousCell.Text.Length==1
+                //e.g. for '😀' is previousCell.ElementWidth==2 and previousCell.Text.Length==2 (which means cursor is already moved by 2 because of Text length)
+                extraColumnOffset += previousCell.ElementWidth - previousCell.Text.Length;
             }
         }
-        int newColumn = column + foundFullWidthCharacters;
+        int newColumn = column + extraColumnOffset;
 
         return newColumn > screen.Width
             ? new ConsoleCoordinate(row + 1, newColumn - screen.Width)
