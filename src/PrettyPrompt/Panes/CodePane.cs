@@ -32,6 +32,7 @@ internal class CodePane : IKeyPressHandler
     private int codeAreaHeight;
     private int windowTop;
     private WordWrappedText wordWrappedText;
+    private CompletionPane completionPane = null!;
 
     /// <summary>
     /// The input text being edited in the pane
@@ -111,6 +112,8 @@ internal class CodePane : IKeyPressHandler
 
         void WordWrap() => wordWrappedText = Document.WrapEditableCharacters(CodeAreaWidth);
     }
+
+    internal void Bind(CompletionPane completionPane) => this.completionPane = completionPane;
 
     public async Task OnKeyDown(KeyPress key, CancellationToken cancellationToken)
     {
@@ -216,10 +219,18 @@ internal class CodePane : IKeyPressHandler
             case (Control, Z):
                 Document.Undo(out var newSelection);
                 Selection = newSelection;
+                if (newSelection.HasValue)
+                {
+                    completionPane.IsOpen = false;
+                }
                 break;
             case (Control, Y):
                 Document.Redo(out newSelection);
                 Selection = newSelection;
+                if (newSelection.HasValue)
+                {
+                    completionPane.IsOpen = false;
+                }
                 break;
             default:
                 if (!char.IsControl(key.ConsoleKeyInfo.KeyChar))
