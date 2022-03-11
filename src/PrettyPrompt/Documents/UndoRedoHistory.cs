@@ -14,7 +14,7 @@ namespace PrettyPrompt.Documents;
 /// Stores undo/redo history for a single document.
 /// </summary>
 /// <remarks>
-/// Implementation is naive -- it just stores full snapshots in a linked and undo/redo navigates
+/// Implementation is naive -- it just stores full snapshots in a list and undo/redo navigates
 /// through it. If tracking snapshots of the input ends up causing high memory, we can rework it.
 /// </remarks>
 internal sealed class UndoRedoHistory
@@ -45,7 +45,7 @@ internal sealed class UndoRedoHistory
             {
                 //edit after undos -> we will throw following redos away
                 var itemsToRemove = history.Count - currentIndex - 1;
-                history.RemoveRange(1, itemsToRemove);
+                history.RemoveRange(index: history.Count - itemsToRemove, itemsToRemove);
             }
 
             history.Add(new Record(text.ToString(), caret, selection));
