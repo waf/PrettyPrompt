@@ -1,6 +1,13 @@
+# Release 3.0.3
+
+- Fix of incorrect positioning of cursor while using 2-character symbols (#134).
+- Fix of crash when repeating deleting selected text and Ctrl+Z (#139).
+- Width fix of some emoji characters.
+- Fixes of around text selection and undo/redo.
+
 # Release 3.0.2
 
-- Fix of #126 (Completion pane should not open when selection is active).
+- Fix of completion pane that should not open when selection is active (#126).
 - Upgrade of referenced NuGets.
 - Minor enhancements.
 
