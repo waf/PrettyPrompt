@@ -208,8 +208,20 @@ public static class UnicodeWidth
         if (BinarySearch(character, combining))
             return 0;
 
-        //PrettyPrompt's correction for black⚫/white⚪/empty⭕ circle
-        if ((int)character is 0x26AA or 0x26AB or 0x2B55) return 2;
+        //PrettyPrompt's correction
+        if ((int)character is
+            0x26AA or //⚫
+            0x26AB or //⚪
+            0x2B55 or //⭕
+            0x26A1 or //⚡
+            0x2B1B or //⬛
+            0x2B1C or //⬜
+            0x274C or //❌
+            0x2705    //✅
+            )
+        {
+            return 2;
+        }
 
         /* if we arrive here, ucs is not a combining or C0/C1 control character */
         return (character >= 0x1100 &&
