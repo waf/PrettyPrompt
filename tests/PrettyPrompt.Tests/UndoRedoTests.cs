@@ -362,4 +362,26 @@ public class UndoRedoTests
             Assert.Equal("a|d", result.Text);
         }
     }
+
+    /// <summary>
+    /// Reproduces bug from https://github.com/waf/PrettyPrompt/issues/133
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_Repeated_CtrlZ_Backspace()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput(
+            $"abcd",
+            $"{Shift}{LeftArrow}{Shift}{LeftArrow}", //select 'cd'
+            $"{Backspace}",
+            $"{Control}{Z}",
+            $"{Backspace}",
+            $"{Control}{Z}",
+            $"{Enter}"
+        );
+        var prompt = new Prompt(console: console);
+        var result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal("abcd", result.Text);
+    }
 }
