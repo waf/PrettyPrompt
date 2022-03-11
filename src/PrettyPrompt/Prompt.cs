@@ -72,6 +72,8 @@ public sealed class Prompt : IPrompt
             promptCallbacks,
             configuration);
 
+        codePane.Bind(completionPane);
+
         history.Track(codePane);
         cancellationManager.CaptureControlC();
 

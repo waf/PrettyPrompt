@@ -50,6 +50,7 @@ internal class Document : IEquatable<Document>
         {
             if (codePane.GetSelectionSpan().TryGet(out var selectionValue))
             {
+                codePane.Selection = null;
                 stringBuilder.Remove(selectionValue);
             }
             stringBuilder.Insert(Caret, character);
@@ -62,6 +63,7 @@ internal class Document : IEquatable<Document>
         {
             if (codePane.GetSelectionSpan().TryGet(out var selectionValue))
             {
+                codePane.Selection = null;
                 stringBuilder.Remove(selectionValue);
             }
         }

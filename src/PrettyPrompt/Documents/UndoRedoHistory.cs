@@ -30,6 +30,7 @@ internal sealed class UndoRedoHistory
     internal void Track(ReadOnlyStringBuilder text, int caret, SelectionSpan? selection)
     {
         CheckValidity();
+        CheckTrackInputs(text, caret, selection);
 
         var historyItem = history[currentIndex];
         if (text.Equals(historyItem.Text))
@@ -85,10 +86,23 @@ internal sealed class UndoRedoHistory
         history.RemoveRange(1, history.Count - 1);
     }
 
+    [Conditional("DEBUG")]
     private void CheckValidity()
     {
         Debug.Assert(history.Count > 0);
         Debug.Assert(currentIndex >= 0 && currentIndex < history.Count);
+    }
+
+    [Conditional("DEBUG")]
+    private static void CheckTrackInputs(ReadOnlyStringBuilder text, int caret, SelectionSpan? selectionNullable)
+    {
+        Debug.Assert(caret >= 0 && caret <= text.Length);
+
+        if (selectionNullable.TryGet(out var selection))
+        {
+            Debug.Assert(selection.Start.Column <= text.Length);
+            Debug.Assert(selection.End.Column <= text.Length);
+        }
     }
 
     public readonly record struct Record(string Text, int Caret, SelectionSpan? Selection);
