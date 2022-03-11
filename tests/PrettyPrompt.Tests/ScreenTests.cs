@@ -22,7 +22,8 @@ public class ScreenTests
     [InlineData("a😉bc", 5)]
     [InlineData("a😐🙄bc", 7)]
 
-    //different circles (some had incorrectly specified width in UnicodeWidth.GetWidth)
+    //different emojis (some had incorrectly specified width in UnicodeWidth.GetWidth)
+    //circles
     [InlineData("⚪", 2)]
     [InlineData("⚫", 2)]
     [InlineData("⭕", 2)]
@@ -33,6 +34,25 @@ public class ScreenTests
     [InlineData("🟢", 2)]
     [InlineData("🟣", 2)]
     [InlineData("🟤", 2)]
+
+    [InlineData("⚡", 2)]
+    [InlineData("💡", 2)]
+    [InlineData("❌", 2)]
+    [InlineData("✅", 2)]
+    
+    //squares
+    [InlineData("⬛", 2)]
+    [InlineData("🟫", 2)]
+    [InlineData("🟪", 2)]
+    [InlineData("🟦", 2)]
+    [InlineData("🟩", 2)]
+    [InlineData("🟨", 2)]
+    [InlineData("🟧", 2)]
+    [InlineData("🟥", 2)]
+    [InlineData("⬜", 2)]
+
+    [InlineData("🔷", 2)]
+    [InlineData("🔶", 2)]
     public void ScreenCursorPositionTest(string text, int expectedCursorPosition)
     {
         var screen = new Screen(
