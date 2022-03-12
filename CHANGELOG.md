@@ -1,3 +1,7 @@
+# Release 3.0.4
+
+- Fix of insufficient formatting reseting in extension method `IConsole.Write(FormattedString)`.
+
 # Release 3.0.3
 
 - Fix of incorrect positioning of cursor while using 2-character symbols (#134).
