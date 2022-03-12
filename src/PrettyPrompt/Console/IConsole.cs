@@ -47,13 +47,20 @@ public static class IConsoleX
             {
                 console.Write(AnsiEscapeCodes.ToAnsiEscapeSequence(formatting));
                 console.Write(element);
+                console.Write(AnsiEscapeCodes.Reset);
             }
-            console.Write(AnsiEscapeCodes.Reset);
         }
         else
         {
             console.Write(value.Text);
         }
+    }
+
+    public static void WriteLine(this IConsole console, FormattedString value)
+    {
+        console.Write(value);
+        console.WriteLine("");
+
     }
 }
 
