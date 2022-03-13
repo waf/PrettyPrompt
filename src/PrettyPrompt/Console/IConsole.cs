@@ -43,12 +43,19 @@ public static class IConsoleX
         if (!PromptConfiguration.HasUserOptedOutFromColor &&
             value.FormatSpans.Count > 0)
         {
+            var lastFormatting = ConsoleFormat.None;
+            console.Write(AnsiEscapeCodes.Reset);
             foreach (var (element, formatting) in value.EnumerateTextElements())
             {
-                console.Write(AnsiEscapeCodes.ToAnsiEscapeSequence(formatting));
+                if (lastFormatting != formatting)
+                {
+                    console.Write(AnsiEscapeCodes.Reset);
+                    console.Write(AnsiEscapeCodes.ToAnsiEscapeSequence(formatting));
+                    lastFormatting = formatting;
+                }
                 console.Write(element);
-                console.Write(AnsiEscapeCodes.Reset);
             }
+            console.Write(AnsiEscapeCodes.Reset);
         }
         else
         {
