@@ -189,6 +189,7 @@ internal class CodePane : IKeyPressHandler
             case (Control, X) when selection.TryGet(out var selectionValue):
                 {
                     var cutContent = Document.GetText(selectionValue).ToString();
+                    Selection = null;
                     Document.Remove(this, selectionValue);
                     await clipboard.SetTextAsync(cutContent, cancellationToken).ConfigureAwait(false);
                     break;
