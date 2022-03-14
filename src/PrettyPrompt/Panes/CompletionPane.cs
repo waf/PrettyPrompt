@@ -188,7 +188,7 @@ internal class CompletionPane : IKeyPressHandler
         {
             if (!char.IsControl(key.ConsoleKeyInfo.KeyChar) &&
                 !completionListTriggeredOnKeyDown &&
-                await promptCallbacks.ShouldOpenCompletionWindowAsync(codePane.Document.GetText(), codePane.Document.Caret, cancellationToken).ConfigureAwait(false))
+                await promptCallbacks.ShouldOpenCompletionWindowAsync(codePane.Document.GetText(), codePane.Document.Caret, key, cancellationToken).ConfigureAwait(false))
             {
                 Open();
             }
