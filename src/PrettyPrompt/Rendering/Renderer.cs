@@ -225,7 +225,7 @@ internal class Renderer
                 var topRightCornerRow = new Row(Cell.FromText(BoxDrawing.EdgeHorizontalAndLowerVertical.ToString(), configuration.CompletionBoxBorderFormat));
                 var topRightCornerArea = new ScreenArea(completionTopRightCorner, new[] { topRightCornerRow });
 
-                var lowerConnectionCorner = new ConsoleCoordinate(documentationRows.Length, completionStart.Column + boxWidth - 1);
+                var lowerConnectionCorner = new ConsoleCoordinate(completionStart.Row + documentationRows.Length - 1, completionStart.Column + boxWidth - 1);
                 var bottomRightCornerRow = new Row(Cell.FromText(documentationRows.Length < completionRows.Length ? BoxDrawing.EdgeVerticalAndRightHorizontal.ToString() : BoxDrawing.EdgeHorizontalAndUpperVertical.ToString(), configuration.CompletionBoxBorderFormat));
                 var bottomRightCornerArea = new ScreenArea(lowerConnectionCorner, new[] { bottomRightCornerRow });
 
