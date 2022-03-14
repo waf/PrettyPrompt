@@ -48,11 +48,11 @@ internal class TestPromptCallbacks : PromptCallbacks
             CompletionCallback(text, caret, spanToBeReplaced);
     }
 
-    protected override Task<bool> ShouldOpenCompletionWindowAsync(string text, int caret, CancellationToken cancellationToken)
+    protected override Task<bool> ShouldOpenCompletionWindowAsync(string text, int caret, KeyPress key, CancellationToken cancellationToken)
     {
         return
             OpenCompletionWindowCallback is null ?
-            base.ShouldOpenCompletionWindowAsync(text, caret, cancellationToken) :
+            base.ShouldOpenCompletionWindowAsync(text, caret, key, cancellationToken) :
             OpenCompletionWindowCallback(text, caret);
     }
 

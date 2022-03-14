@@ -384,4 +384,23 @@ public class UndoRedoTests
         Assert.True(result.IsSuccess);
         Assert.Equal("abcd", result.Text);
     }
+
+    /// <summary>
+    /// Reproduces bug from https://github.com/waf/PrettyPrompt/issues/148
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_CtrlA_CtrlX()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput(
+            $"abcd",
+            $"{Control}{A}",
+            $"{Control}{X}",
+            $"{Enter}"
+        );
+        var prompt = new Prompt(console: console);
+        var result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal("", result.Text);
+    }
 }

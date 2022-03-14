@@ -86,9 +86,10 @@ public interface IPromptCallbacks
     /// </summary>
     /// <param name="text">The user's input text</param>
     /// <param name="caret">The index of the text caret in the input text</param>
+    /// <param name="keyPress">Key press after which we are asking whether completion list should be automatically open.</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>A value indicating whether the completion window should automatically open.</returns>
-    Task<bool> ShouldOpenCompletionWindowAsync(string text, int caret, CancellationToken cancellationToken);
+    Task<bool> ShouldOpenCompletionWindowAsync(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken);
 
     /// <summary>
     /// Optionaly transforms key presses to another ones.
@@ -146,11 +147,11 @@ public class PromptCallbacks : IPromptCallbacks
         return GetCompletionItemsAsync(text, caret, spanToBeReplaced, cancellationToken);
     }
 
-    Task<bool> IPromptCallbacks.ShouldOpenCompletionWindowAsync(string text, int caret, CancellationToken cancellationToken)
+    Task<bool> IPromptCallbacks.ShouldOpenCompletionWindowAsync(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken)
     {
         Debug.Assert(caret >= 0 && caret <= text.Length);
 
-        return ShouldOpenCompletionWindowAsync(text, caret, cancellationToken);
+        return ShouldOpenCompletionWindowAsync(text, caret, keyPress, cancellationToken);
     }
 
     Task<KeyPress> IPromptCallbacks.TransformKeyPressAsync(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken)
@@ -216,7 +217,7 @@ public class PromptCallbacks : IPromptCallbacks
         => Task.FromResult<IReadOnlyList<CompletionItem>>(Array.Empty<CompletionItem>());
 
     /// <inheritdoc cref="IPromptCallbacks.ShouldOpenCompletionWindowAsync"/>
-    protected virtual Task<bool> ShouldOpenCompletionWindowAsync(string text, int caret, CancellationToken cancellationToken)
+    protected virtual Task<bool> ShouldOpenCompletionWindowAsync(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken)
     {
         if (caret > 0 && text[caret - 1] is '.' or '(') // typical "intellisense behavior", opens for new methods and parameters
         {
