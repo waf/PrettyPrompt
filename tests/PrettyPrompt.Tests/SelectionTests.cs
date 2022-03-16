@@ -437,4 +437,27 @@ public class SelectionTests
         Assert.Equal("\u001b[1D\u001b[39;49;7ma\u001b[0m\u001b[1D", outputs[3]); //move left, rewrite 'a' with reverse colors, reset, move left
         Assert.Equal("b", outputs[4]);
     }
+
+    /// <summary>
+    /// Tests bug from https://github.com/waf/PrettyPrompt/issues/156.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_SelectedAll_SomeKeysShouldNotDeselectText()
+    {
+        foreach (var key in new[] { LeftWindows, RightWindows, F1, F2, F3, F4, F5, F6, F7, F8, F9, F10, F11, F12 })
+        {
+            var console = ConsoleStub.NewConsole();
+            console.StubInput(
+                $"abcd",
+                $"{Control}{A}",
+                $"{key}",
+                $"x",
+                $"{Enter}"); //confirm input
+
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal("x", result.Text);
+        }
+    }
 }

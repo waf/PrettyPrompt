@@ -338,7 +338,7 @@ public class UndoRedoTests
         }
 
         /////////////////////////////////////////////////////////////
-        
+
         {
             var console = ConsoleStub.NewConsole();
             console.StubInput(
@@ -392,15 +392,17 @@ public class UndoRedoTests
     public async Task ReadLine_CtrlA_CtrlX()
     {
         var console = ConsoleStub.NewConsole();
-        console.StubInput(
-            $"abcd",
-            $"{Control}{A}",
-            $"{Control}{X}",
-            $"{Enter}"
-        );
-        var prompt = new Prompt(console: console);
-        var result = await prompt.ReadLineAsync();
-        Assert.True(result.IsSuccess);
-        Assert.Equal("", result.Text);
+        using (console.ProtectClipboard())
+        {
+            console.StubInput(
+                $"abcd",
+                $"{Control}{A}",
+                $"{Control}{X}",
+                $"{Enter}");
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal("", result.Text);
+        }
     }
 }
