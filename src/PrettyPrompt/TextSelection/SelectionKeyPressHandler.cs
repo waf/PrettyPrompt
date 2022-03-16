@@ -55,7 +55,7 @@ internal class SelectionKeyPressHandler : IKeyPressHandler
                     }
                     return Task.CompletedTask;
                 }
-            case 
+            case
                 (Control, Z) or
                 (Control, Y):
                 {
@@ -92,7 +92,8 @@ internal class SelectionKeyPressHandler : IKeyPressHandler
                     }
                     break;
                 }
-
+            case LeftWindows or RightWindows or F1 or F2 or F3 or F4 or F5 or F6 or F7 or F8 or F9 or F10 or F11 or F12:
+                return Task.CompletedTask;
             default:
                 // keypress is not related to selection
                 codePane.Selection = null;
