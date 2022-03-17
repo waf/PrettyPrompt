@@ -31,7 +31,7 @@ public class WordWrappingTests
     public void WrapEditableCharacters_DoubleWidthCharacters_UsesStringWidth()
     {
         var text = "每个人都有他的作战策略，直到脸上中了一拳。";
-        var wrapped = WordWrapping.WrapEditableCharacters(new StringBuilder(text), initialCaretPosition: 13, width: 20);
+        var wrapped = WordWrapping.WrapEditableCharacters(new StringBuilder(text), caret: 13, width: 20);
 
         Assert.Equal(
             new[]
@@ -50,7 +50,7 @@ public class WordWrappingTests
     public void WrapEditableCharacters_DoubleWidthCharactersWithWrappingInMiddleOfCharacter_WrapsCharacter()
     {
         var text = "每个人都有他的作战策略， 直到脸上中了一拳。";
-        var wrapped = WordWrapping.WrapEditableCharacters(new StringBuilder(text), initialCaretPosition: 19, width: 19);
+        var wrapped = WordWrapping.WrapEditableCharacters(new StringBuilder(text), caret: 19, width: 19);
 
         Assert.Equal(
             new[]

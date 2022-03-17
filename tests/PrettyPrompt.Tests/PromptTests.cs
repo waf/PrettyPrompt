@@ -10,7 +10,6 @@ using System.Linq;
 using System.Threading.Tasks;
 using NSubstitute;
 using PrettyPrompt.Consoles;
-using PrettyPrompt.Documents;
 using PrettyPrompt.Highlighting;
 using Xunit;
 using static System.ConsoleKey;
@@ -22,7 +21,7 @@ namespace PrettyPrompt.Tests;
 
 public class PromptTests
 {
-    private static readonly string DefaultTabSpaces= new(' ', new PromptConfiguration().TabSize);
+    private static readonly string DefaultTabSpaces = new(' ', new PromptConfiguration().TabSize);
 
     [Fact]
     public async Task ReadLine_TypeSimpleString_GetSimpleString()
@@ -155,6 +154,22 @@ public class PromptTests
         var result = await prompt.ReadLineAsync();
 
         Assert.Equal($"pretty well{NewLine}unit-tested?{NewLine}prompt!", result.Text);
+    }
+
+    /// <summary>
+    /// Triggered bug from https://github.com/waf/PrettyPrompt/issues/160.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_ArrowDownToLastEmptyLine()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput($"abc{Shift}{Enter}{LeftArrow}{DownArrow}x{Enter}");
+
+        var prompt = new Prompt(console: console);
+        var result = await prompt.ReadLineAsync();
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal($"abc{NewLine}x", result.Text);
     }
 
     [Fact]
