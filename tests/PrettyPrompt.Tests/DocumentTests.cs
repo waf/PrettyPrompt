@@ -187,4 +187,23 @@ public class DocumentTests
             Assert.Equal(4, document.Caret);
         }
     }
+
+    /// <summary>
+    /// Triggers bug from https://github.com/waf/PrettyPrompt/issues/161.
+    /// </summary>
+    [Fact]
+    public void LeftMoveToLineBoundary_OnEmptyLine_ShouldDoNothing()
+    {
+        var document = new Document("abc\n", caret: 4);
+        document.MoveToLineBoundary(-1);
+        Assert.Equal(4, document.Caret);
+
+        document = new Document("abc\n\n", caret: 4);
+        document.MoveToLineBoundary(-1);
+        Assert.Equal(4, document.Caret);
+
+        document.Caret = 5;
+        document.MoveToLineBoundary(-1);
+        Assert.Equal(5, document.Caret);
+    }
 }

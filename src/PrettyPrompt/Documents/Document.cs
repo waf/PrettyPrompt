@@ -183,7 +183,7 @@ internal class Document : IEquatable<Document>
                 {
                     if (stringBuilder[i] == '\n')
                     {
-                        lineStart = Math.Min(i + 1, Length - 1);
+                        lineStart = Math.Min(i + 1, Length);
                         break;
                     }
                 }
