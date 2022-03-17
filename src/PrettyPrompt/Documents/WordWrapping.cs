@@ -22,13 +22,15 @@ internal static class WordWrapping
     /// The caret index (as the input is a 1 dimensional string of text) is converted
     /// to a 2 dimensional coordinate in the wrapped text.
     /// </summary>
-    public static WordWrappedText WrapEditableCharacters(ReadOnlyStringBuilder input, int initialCaretPosition, int width)
+    public static WordWrappedText WrapEditableCharacters(ReadOnlyStringBuilder input, int caret, int width)
     {
+        Debug.Assert(caret >= 0 && caret <= input.Length);
+
         if (input.Length == 0)
         {
             return new WordWrappedText(
                 new[] { WrappedLine.Empty(startIndex: 0) },
-                new ConsoleCoordinate(0, initialCaretPosition));
+                new ConsoleCoordinate(0, caret));
         }
 
         var lines = new List<WrappedLine>();
@@ -44,7 +46,7 @@ internal static class WordWrapping
             {
                 char character = chunk[i];
                 line.Append(character);
-                bool isCursorPastCharacter = initialCaretPosition > textIndex;
+                bool isCursorPastCharacter = caret > textIndex;
 
                 Debug.Assert(character != '\t', "tabs should be replaced by spaces");
                 int unicodeWidth = UnicodeWidth.GetWidth(character);
@@ -75,7 +77,7 @@ internal static class WordWrapping
             }
         }
 
-        if (currentLineLength > 0)
+        if (currentLineLength > 0 || input[^1] == '\n')
         {
             lines.Add(new WrappedLine(textIndex - line.Length, line.ToString()));
         }
@@ -164,6 +166,8 @@ internal struct WordWrappedText
 
     public WordWrappedText(IReadOnlyList<WrappedLine> wrappedLines, ConsoleCoordinate cursor)
     {
+        Debug.Assert(!wrappedLines.Last().Content.EndsWith('\n'));
+
         WrappedLines = wrappedLines;
 
         this.cursor = default;
