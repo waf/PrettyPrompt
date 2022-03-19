@@ -207,7 +207,7 @@ internal class CodePane : IKeyPressHandler
 
                     if (key.ObjectPattern is (Control, X))
                     {
-                        await clipboard.SetTextAsync(Document.GetText(span).ToString(), cancellationToken).ConfigureAwait(false); 
+                        await clipboard.SetTextAsync(Document.GetText(span).ToString(), cancellationToken).ConfigureAwait(false);
                     }
 
                     Document.Remove(this, span);
@@ -289,7 +289,8 @@ internal class CodePane : IKeyPressHandler
 
                 if (!nonEmptyLines.Any())
                 {
-                    return text;
+                    AppendFiltered(sb, text);
+                    return sb.ToString();
                 }
 
                 var leadingIndent = nonEmptyLines
