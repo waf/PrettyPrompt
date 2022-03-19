@@ -320,6 +320,100 @@ public class PromptTests
         }
     }
 
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/151
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_CutLine()
+    {
+        var console = ConsoleStub.NewConsole();
+        using (console.ProtectClipboard())
+        {
+            //cutting single line
+            for (int count = 0; count < 5; count++)
+            {
+                var text = new string('a', count);
+                console.StubInput($"{text}{Control}{X}z{Shift}{Enter}{Control}{V}{Enter}");
+                var prompt = new Prompt(console: console);
+                var result = await prompt.ReadLineAsync();
+                Assert.True(result.IsSuccess);
+                Assert.Equal($"z{NewLine}{text}", result.Text);
+            }
+
+            //////////////////////////////////////////////
+
+            //cutting empty line from multiple empty lines
+            for (int lineCount = 2; lineCount < 6; lineCount++)
+            {
+                for (int upArrowCount = 0; upArrowCount < lineCount; upArrowCount++)
+                {
+                    var input = new List<FormattableString>();
+                    input.AddRange(Enumerable.Repeat<FormattableString>($"{Shift}{Enter}", lineCount));
+                    input.AddRange(Enumerable.Repeat<FormattableString>($"{UpArrow}", upArrowCount));
+                    input.Add($"{Control}X{Enter}");
+                    console.StubInput(input.ToArray());
+                    var prompt = new Prompt(console: console);
+                    var result = await prompt.ReadLineAsync();
+                    Assert.True(result.IsSuccess);
+                    if (upArrowCount == 0)
+                    {
+                        Assert.Equal(Enumerable.Repeat(NewLine, lineCount).Aggregate((a, b) => a + b), result.Text);
+                    }
+                    else
+                    {
+                        Assert.Equal(Enumerable.Repeat(NewLine, lineCount - 1).Aggregate((a, b) => a + b), result.Text);
+                        Assert.Equal("\n", console.Clipboard.GetText());
+                    }
+                }
+            }
+
+            //////////////////////////////////////////////
+
+            //cutting line from multiple lines
+            for (int lineCount = 2; lineCount < 6; lineCount++)
+            {
+                for (int upArrowCount = 0; upArrowCount < lineCount; upArrowCount++)
+                {
+                    var input = new List<FormattableString>();
+                    var outputLines = new List<string>();
+                    for (int i = 0; i < lineCount; i++)
+                    {
+                        if (i % 2 == 0)
+                        {
+                            input.Add($"{Shift}{Enter}");
+                            outputLines.Add(NewLine);
+                        }
+                        else
+                        {
+                            input.Add($"abcdef{Shift}{Enter}");
+                            outputLines.Add("abcdef" + NewLine);
+                        }
+                    }
+
+                    string clipboardOutput = "";
+                    if (upArrowCount > 0)
+                    {
+                        clipboardOutput = outputLines[lineCount - upArrowCount];
+                        outputLines.RemoveAt(lineCount - upArrowCount);
+                    }
+                    var output = outputLines.Aggregate((a, b) => a + b);
+
+                    input.AddRange(Enumerable.Repeat<FormattableString>($"{UpArrow}", upArrowCount));
+                    input.Add($"{Control}X{Enter}");
+                    console.StubInput(input.ToArray());
+                    var prompt = new Prompt(console: console);
+                    var result = await prompt.ReadLineAsync();
+                    Assert.True(result.IsSuccess);
+                    Assert.Equal(output, result.Text);
+                    if (upArrowCount > 0)
+                    {
+                        Assert.Equal(clipboardOutput.Replace("\r\n", "\n"), console.Clipboard.GetText());
+                    }
+                }
+            }
+        }
+    }
+
     [Fact]
     public async Task ReadLine_KeyPressCallbackReturnsOutput_IsReturned()
     {

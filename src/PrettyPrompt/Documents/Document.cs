@@ -159,52 +159,54 @@ internal class Document : IEquatable<Document>
     {
         Debug.Assert(direction is -1 or 1);
 
-        Caret = CalculateLineBoundaryIndexNearCaret(direction);
+        Caret = CalculateLineBoundaryIndexNearCaret(direction, smartHome: true);
+    }
 
-        int CalculateLineBoundaryIndexNearCaret(int direction)
+    public int CalculateLineBoundaryIndexNearCaret(int direction, bool smartHome)
+    {
+        if (stringBuilder.Length == 0) return Caret;
+
+        if (direction > 0)
         {
-            if (stringBuilder.Length == 0) return Caret;
-
-            if (direction > 0)
+            for (var i = Caret; i < stringBuilder.Length; i++)
             {
-                for (var i = Caret; i < stringBuilder.Length; i++)
-                {
-                    if (stringBuilder[i] == '\n') return i;
-                }
-                return stringBuilder.Length;
+                if (stringBuilder[i] == '\n') return i;
             }
-            else
+            return stringBuilder.Length;
+        }
+        else
+        {
+            //smart Home implementation (repeating Home presses switch between 'non-white-space start of line' and 'start of line')
+
+            int lineStart = 0;
+            var beforeCaretIndex = (Caret - 1).Clamp(0, Length - 1);
+            for (int i = beforeCaretIndex; i >= 0; i--)
             {
-                //smart Home implementation (repeating Home presses switch between 'non-white-space start of line' and 'start of line')
-
-                int lineStart = 0;
-                var beforeCaretIndex = (Caret - 1).Clamp(0, Length - 1);
-                for (int i = beforeCaretIndex; i >= 0; i--)
+                if (stringBuilder[i] == '\n')
                 {
-                    if (stringBuilder[i] == '\n')
-                    {
-                        lineStart = Math.Min(i + 1, Length);
-                        break;
-                    }
+                    lineStart = Math.Min(i + 1, Length);
+                    break;
                 }
-
-                int lineStartNonWhiteSpace = lineStart;
-                for (int i = lineStart; i < Length; i++)
-                {
-                    var c = stringBuilder[i];
-                    if (c == '\n')
-                    {
-                        return lineStart;
-                    }
-                    if (!char.IsWhiteSpace(c))
-                    {
-                        lineStartNonWhiteSpace = i;
-                        break;
-                    }
-                }
-
-                return lineStartNonWhiteSpace == beforeCaretIndex + 1 ? lineStart : lineStartNonWhiteSpace;
             }
+
+            if (!smartHome) return lineStart;
+
+            int lineStartNonWhiteSpace = lineStart;
+            for (int i = lineStart; i < Length; i++)
+            {
+                var c = stringBuilder[i];
+                if (c == '\n')
+                {
+                    return lineStart;
+                }
+                if (!char.IsWhiteSpace(c))
+                {
+                    lineStartNonWhiteSpace = i;
+                    break;
+                }
+            }
+
+            return lineStartNonWhiteSpace == beforeCaretIndex + 1 ? lineStart : lineStartNonWhiteSpace;
         }
     }
 
