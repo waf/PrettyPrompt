@@ -21,7 +21,7 @@ namespace PrettyPrompt.Tests;
 
 public class PromptTests
 {
-    private static readonly string DefaultTabSpaces = new(' ', new PromptConfiguration().TabSize);
+    public static readonly string DefaultTabSpaces = new(' ', new PromptConfiguration().TabSize);
 
     [Fact]
     public async Task ReadLine_TypeSimpleString_GetSimpleString()

@@ -36,18 +36,21 @@ public class FuzzingTests
             .ToList();
 
         var console = ConsoleStub.NewConsole();
-        console.StubInput(randomKeys);
-
-        var prompt = new Prompt(persistentHistoryFilepath: Path.GetTempFileName(), console: console);
-
-        try
+        using (console.ProtectClipboard())
         {
-            var result = await prompt.ReadLineAsync();
-            Assert.NotNull(result);
-        }
-        catch (Exception ex)
-        {
-            throw new InvalidOperationException("Fuzzing failed for seed: " + seed, ex);
+            console.StubInput(randomKeys);
+
+            var prompt = new Prompt(persistentHistoryFilepath: Path.GetTempFileName(), console: console);
+
+            try
+            {
+                var result = await prompt.ReadLineAsync();
+                Assert.NotNull(result);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Fuzzing failed for seed: " + seed, ex);
+            } 
         }
     }
 

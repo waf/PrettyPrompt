@@ -75,6 +75,7 @@ internal class Document : IEquatable<Document>
         {
             if (codePane.GetSelectionSpan().TryGet(out var selectionValue))
             {
+                codePane.Selection = null;
                 stringBuilder.Remove(selectionValue);
             }
             this.stringBuilder.Insert(Caret, text);

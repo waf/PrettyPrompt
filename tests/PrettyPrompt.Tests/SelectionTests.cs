@@ -7,7 +7,7 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
-using PrettyPrompt.Consoles;
+using PrettyPrompt.Panes;
 using Xunit;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
@@ -458,6 +458,45 @@ public class SelectionTests
             var result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal("x", result.Text);
+        }
+    }
+
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/173
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_ReplaceSelectionByText()
+    {
+        //replace by Tab
+        var console = ConsoleStub.NewConsole();
+        var prompt = new Prompt(console: console);
+        console.StubInput($"abcdefg{Control}{A}{Tab}{Enter}");
+        var result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal(PromptTests.DefaultTabSpaces, result.Text);
+
+        //replace by Paste (shorter text)
+        console = ConsoleStub.NewConsole();
+        using (console.ProtectClipboard())
+        {
+            console.Clipboard.SetText("ab");
+            prompt = new Prompt(console: console);
+            console.StubInput($"abcdefg{Control}{A}{Control}{V}{Enter}");
+            result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal("ab", result.Text); 
+        }
+
+        //replace by Paste (longer text)
+        console = ConsoleStub.NewConsole();
+        using (console.ProtectClipboard())
+        {
+            console.Clipboard.SetText("1234567890");
+            prompt = new Prompt(console: console);
+            console.StubInput($"abcdefg{Control}{A}{Control}{V}{Enter}");
+            result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal("1234567890", result.Text);
         }
     }
 }
