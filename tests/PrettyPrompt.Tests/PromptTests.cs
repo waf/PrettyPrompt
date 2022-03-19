@@ -303,7 +303,8 @@ public class PromptTests
     }
 
     /// <summary>
-    /// Triggered issue: https://github.com/waf/PrettyPrompt/issues/55
+    /// https://github.com/waf/PrettyPrompt/issues/55
+    /// https://github.com/waf/PrettyPrompt/issues/166
     /// </summary>
     [Fact]
     public async Task ReadLine_PasteTabWithChar()
@@ -311,12 +312,23 @@ public class PromptTests
         var console = ConsoleStub.NewConsole();
         using (console.ProtectClipboard())
         {
+            //#55
             console.Clipboard.SetText("\ta");
             console.StubInput($"{Control}{V}{Enter}");
             var prompt = new Prompt(console: console);
             var result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
             Assert.Equal($"{DefaultTabSpaces}a", result.Text);
+
+            ////////////////////////////////////////////////
+
+            //#166
+            console.Clipboard.SetText("\r\n\r\n");
+            console.StubInput($"{Control}{V}{Enter}");
+            prompt = new Prompt(console: console);
+            result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal($"{NewLine}{NewLine}", result.Text);
         }
     }
 
@@ -360,7 +372,7 @@ public class PromptTests
                 Assert.Equal($"z", result.Text);
                 if (cutKeyPress.GetArgument(1) is X)
                 {
-                    Assert.Equal(text, console.Clipboard.GetText()); 
+                    Assert.Equal(text, console.Clipboard.GetText());
                 }
                 else
                 {
