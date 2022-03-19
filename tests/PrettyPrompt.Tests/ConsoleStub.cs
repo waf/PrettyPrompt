@@ -20,7 +20,7 @@ namespace PrettyPrompt.Tests;
 internal static class ConsoleStub
 {
     private static readonly Regex FormatStringSplit = new(@"({\d+}|.)", RegexOptions.Compiled);
-    private static readonly Mutex mutex = new(initiallyOwned: false, nameof(ConsoleStub) + "Mutex"); //interprocess
+    private static readonly Semaphore semaphore = new(1, 1, nameof(ConsoleStub) + "Semaphore"); //interprocess
 
     public static IConsoleWithClipboard NewConsole(int width = 100, int height = 100)
     {
@@ -32,7 +32,7 @@ internal static class ConsoleStub
         console.ProtectClipboard().Returns(
             _ =>
             {
-                mutex.WaitOne();
+                semaphore.WaitOne();
                 return new MutexProtector();
             });
 
@@ -230,6 +230,6 @@ internal static class ConsoleStub
 
     private class MutexProtector : IDisposable
     {
-        public void Dispose() => mutex.ReleaseMutex();
+        public void Dispose() => semaphore.Release();
     }
 }
