@@ -196,7 +196,16 @@ internal class CodePane : IKeyPressHandler
                 }
             case (Control, X):
                 {
-                    await clipboard.SetTextAsync(Document.GetText(), cancellationToken).ConfigureAwait(false);
+                    var lineStart = Document.CalculateLineBoundaryIndexNearCaret(-1, smartHome: false);
+                    var lineEnd = Document.CalculateLineBoundaryIndexNearCaret(1, smartHome: false);
+                    var span = TextSpan.FromBounds(lineStart, lineEnd);
+                    if (span.End < Document.Length)
+                    {
+                        Debug.Assert(Document.GetText()[span.End] == '\n');
+                        span = new TextSpan(span.Start, span.Length + 1);
+                    }
+                    await clipboard.SetTextAsync(Document.GetText(span).ToString(), cancellationToken).ConfigureAwait(false);
+                    Document.Remove(this, span);
                     break;
                 }
             case (Control, C) when selection.TryGet(out var selectionValue):
