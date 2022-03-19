@@ -26,10 +26,10 @@ public class PromptConfiguration
 
     public ConsoleFormat CompletionBoxBorderFormat { get; }
     public AnsiColor? CompletionItemDescriptionPaneBackground { get; }
-
     public FormattedString SelectedCompletionItemMarker { get; }
     public string UnselectedCompletionItemMarker { get; }
     public AnsiColor? SelectedCompletionItemBackground { get; }
+    public AnsiColor? SelectedTextBackground { get; }
 
     /// <summary>
     /// How few completion items we are willing to render. If we do not have a space for rendering of
@@ -53,6 +53,7 @@ public class PromptConfiguration
         AnsiColor? completionItemDescriptionPaneBackground = null,
         FormattedString? selectedCompletionItemMarkSymbol = null,
         AnsiColor? selectedCompletionItemBackground = null,
+        AnsiColor? selectedTextBackground = null,
         int minCompletionItemsCount = 1,
         int maxCompletionItemsCount = 9, //9 is VS default
         double proportionOfWindowHeightForCompletionPane = 0.9,
@@ -71,6 +72,7 @@ public class PromptConfiguration
         SelectedCompletionItemMarker = selectedCompletionItemMarkSymbol ?? new FormattedString(">", new FormatSpan(0, 1, AnsiColor.Cyan));
         UnselectedCompletionItemMarker = new string(' ', SelectedCompletionItemMarker.Length);
         SelectedCompletionItemBackground = GetColor(selectedCompletionItemBackground);
+        SelectedTextBackground = GetColor(selectedTextBackground);
 
         ConsoleFormat GetFormat(ConsoleFormat format) => HasUserOptedOutFromColor ? ConsoleFormat.None : format;
         AnsiColor? GetColor(AnsiColor? color) => HasUserOptedOutFromColor ? null : color;

@@ -19,7 +19,7 @@ namespace PrettyPrompt.Highlighting;
 /// </summary>
 internal static class CellRenderer
 {
-    public static Row[] ApplyColorToCharacters(IReadOnlyCollection<FormatSpan> highlights, IReadOnlyList<WrappedLine> lines, SelectionSpan? selection)
+    public static Row[] ApplyColorToCharacters(IReadOnlyCollection<FormatSpan> highlights, IReadOnlyList<WrappedLine> lines, SelectionSpan? selection, AnsiColor? selectedTextBackground)
     {
         var selectionStart = new ConsoleCoordinate(int.MaxValue, int.MaxValue); //invalid
         var selectionEnd = new ConsoleCoordinate(int.MaxValue, int.MaxValue); //invalid
@@ -76,7 +76,14 @@ internal static class CellRenderer
                 }
                 if (selectionHighlight)
                 {
-                    cell.Formatting = new ConsoleFormat { Inverted = true };
+                    if (selectedTextBackground.TryGet(out var background))
+                    {
+                        cell.Formatting = cell.Formatting with { Background = background };
+                    }
+                    else
+                    {
+                        cell.Formatting = new ConsoleFormat { Inverted = true };
+                    }
                 }
             }
             highlightedRows[lineIndex] = new Row(cells);
@@ -108,6 +115,6 @@ internal static class CellRenderer
     public static Row[] ApplyColorToCharacters(IReadOnlyCollection<FormatSpan> highlights, string text, int textWidth)
     {
         var wrapped = WordWrapping.WrapEditableCharacters(new StringBuilder(text), 0, textWidth);
-        return ApplyColorToCharacters(highlights, wrapped.WrappedLines, null);
+        return ApplyColorToCharacters(highlights, wrapped.WrappedLines, selection: null, selectedTextBackground: null);
     }
 }
