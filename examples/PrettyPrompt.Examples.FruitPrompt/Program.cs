@@ -24,7 +24,8 @@ internal static class Program
             configuration: new PromptConfiguration(
                 prompt: new FormattedString(">>> ", new FormatSpan(0, 1, AnsiColor.Red), new FormatSpan(1, 1, AnsiColor.Yellow), new FormatSpan(2, 1, AnsiColor.Green)),
                 completionItemDescriptionPaneBackground: AnsiColor.Rgb(30, 30, 30),
-                selectedCompletionItemBackground: AnsiColor.Rgb(30, 30, 30)));
+                selectedCompletionItemBackground: AnsiColor.Rgb(30, 30, 30),
+                selectedTextBackground: AnsiColor.Rgb(20, 61, 102)));
         while (true)
         {
             var response = await prompt.ReadLineAsync().ConfigureAwait(false);

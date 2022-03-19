@@ -146,9 +146,9 @@ internal class Renderer
     private static bool DidCodeAreaResize(Screen previousScreen, Screen currentScreen) =>
         previousScreen != null && previousScreen?.Width != currentScreen.Width;
 
-    private static ScreenArea BuildCodeScreenArea(CodePane codePane, IReadOnlyCollection<FormatSpan> highlights)
+    private ScreenArea BuildCodeScreenArea(CodePane codePane, IReadOnlyCollection<FormatSpan> highlights)
     {
-        var highlightedLines = CellRenderer.ApplyColorToCharacters(highlights, codePane.WordWrappedLines, codePane.Selection);
+        var highlightedLines = CellRenderer.ApplyColorToCharacters(highlights, codePane.WordWrappedLines, codePane.Selection, configuration.SelectedTextBackground);
         // if we've filled up the full line, add a new line at the end so we can render our cursor on this new line.
         if (highlightedLines[^1].Cells.Count > 0
             && (highlightedLines[^1].Cells.Count >= codePane.CodeAreaWidth
