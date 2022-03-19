@@ -326,18 +326,46 @@ public class PromptTests
     [Fact]
     public async Task ReadLine_CutLine()
     {
+        await TestLineCutting(cutKeyPress: $"{Control}{X}");
+    }
+
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/152
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_DeleteLine()
+    {
+        await TestLineCutting(cutKeyPress: $"{Shift}{Delete}");
+    }
+
+    private static async Task TestLineCutting(FormattableString cutKeyPress)
+    {
         var console = ConsoleStub.NewConsole();
         using (console.ProtectClipboard())
         {
+            console.Clipboard.SetText("");
+
             //cutting single line
             for (int count = 0; count < 5; count++)
             {
                 var text = new string('a', count);
-                console.StubInput($"{text}{Control}{X}z{Shift}{Enter}{Control}{V}{Enter}");
+                var input = new List<FormattableString>();
+                input.Add($"{text}");
+                input.Add(cutKeyPress);
+                input.Add($"z{Enter}");
+                console.StubInput(input.ToArray());
                 var prompt = new Prompt(console: console);
                 var result = await prompt.ReadLineAsync();
                 Assert.True(result.IsSuccess);
-                Assert.Equal($"z{NewLine}{text}", result.Text);
+                Assert.Equal($"z", result.Text);
+                if (cutKeyPress.GetArgument(1) is X)
+                {
+                    Assert.Equal(text, console.Clipboard.GetText()); 
+                }
+                else
+                {
+                    Assert.Equal("", console.Clipboard.GetText());
+                }
             }
 
             //////////////////////////////////////////////
@@ -350,7 +378,8 @@ public class PromptTests
                     var input = new List<FormattableString>();
                     input.AddRange(Enumerable.Repeat<FormattableString>($"{Shift}{Enter}", lineCount));
                     input.AddRange(Enumerable.Repeat<FormattableString>($"{UpArrow}", upArrowCount));
-                    input.Add($"{Control}X{Enter}");
+                    input.Add(cutKeyPress);
+                    input.Add($"{Enter}");
                     console.StubInput(input.ToArray());
                     var prompt = new Prompt(console: console);
                     var result = await prompt.ReadLineAsync();
@@ -362,7 +391,14 @@ public class PromptTests
                     else
                     {
                         Assert.Equal(Enumerable.Repeat(NewLine, lineCount - 1).Aggregate((a, b) => a + b), result.Text);
-                        Assert.Equal("\n", console.Clipboard.GetText());
+                        if (cutKeyPress.GetArgument(1) is X)
+                        {
+                            Assert.Equal("\n", console.Clipboard.GetText());
+                        }
+                        else
+                        {
+                            Assert.Equal("", console.Clipboard.GetText());
+                        }
                     }
                 }
             }
@@ -399,7 +435,8 @@ public class PromptTests
                     var output = outputLines.Aggregate((a, b) => a + b);
 
                     input.AddRange(Enumerable.Repeat<FormattableString>($"{UpArrow}", upArrowCount));
-                    input.Add($"{Control}X{Enter}");
+                    input.Add(cutKeyPress);
+                    input.Add($"{Enter}");
                     console.StubInput(input.ToArray());
                     var prompt = new Prompt(console: console);
                     var result = await prompt.ReadLineAsync();
@@ -407,7 +444,14 @@ public class PromptTests
                     Assert.Equal(output, result.Text);
                     if (upArrowCount > 0)
                     {
-                        Assert.Equal(clipboardOutput.Replace("\r\n", "\n"), console.Clipboard.GetText());
+                        if (cutKeyPress.GetArgument(1) is X)
+                        {
+                            Assert.Equal(clipboardOutput.Replace("\r\n", "\n"), console.Clipboard.GetText());
+                        }
+                        else
+                        {
+                            Assert.Equal("", console.Clipboard.GetText());
+                        }
                     }
                 }
             }

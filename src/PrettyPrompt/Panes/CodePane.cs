@@ -194,7 +194,7 @@ internal class CodePane : IKeyPressHandler
                     await clipboard.SetTextAsync(cutContent, cancellationToken).ConfigureAwait(false);
                     break;
                 }
-            case (Control, X):
+            case (Control, X) or (Shift, Delete):
                 {
                     var lineStart = Document.CalculateLineBoundaryIndexNearCaret(-1, smartHome: false);
                     var lineEnd = Document.CalculateLineBoundaryIndexNearCaret(1, smartHome: false);
@@ -204,7 +204,12 @@ internal class CodePane : IKeyPressHandler
                         Debug.Assert(Document.GetText()[span.End] == '\n');
                         span = new TextSpan(span.Start, span.Length + 1);
                     }
-                    await clipboard.SetTextAsync(Document.GetText(span).ToString(), cancellationToken).ConfigureAwait(false);
+
+                    if (key.ObjectPattern is (Control, X))
+                    {
+                        await clipboard.SetTextAsync(Document.GetText(span).ToString(), cancellationToken).ConfigureAwait(false); 
+                    }
+
                     Document.Remove(this, span);
                     break;
                 }
