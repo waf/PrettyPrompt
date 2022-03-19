@@ -284,24 +284,34 @@ internal class CodePane : IKeyPressHandler
             if (lines.Length > 1)
             {
                 var nonEmptyLines = lines
-                    .Where(line => line.Length > 0)
+                    .Where(line => !string.IsNullOrWhiteSpace(line))
                     .ToList();
 
-                if (!nonEmptyLines.Any())
+                //we remove indentation only when there are multiple non-whitespace lines
+                if (nonEmptyLines.Count <= 1)
                 {
                     AppendFiltered(sb, text);
-                    return sb.ToString();
                 }
-
-                var leadingIndent = nonEmptyLines
-                    .Select(line => line.TakeWhile(char.IsWhiteSpace).Count())
-                    .Min();
-
-                for (var i = 0; i < lines.Length; i++)
+                else
                 {
-                    var line = lines[i].Substring(Math.Min(lines[i].Length, leadingIndent));
-                    AppendFiltered(sb, line);
-                    if (i != lines.Length - 1) sb.Append('\n');
+                    var leadingIndent = nonEmptyLines
+                        .Select(line => line.TakeWhile(char.IsWhiteSpace).Count())
+                        .Min();
+
+                    if (leadingIndent == 0)
+                    {
+                        AppendFiltered(sb, text);
+                    }
+                    else
+                    {
+                        //removing indentation
+                        for (var i = 0; i < lines.Length; i++)
+                        {
+                            var line = lines[i][Math.Min(lines[i].Length, leadingIndent)..];
+                            AppendFiltered(sb, line);
+                            if (i != lines.Length - 1) sb.Append('\n');
+                        }
+                    }
                 }
             }
             else

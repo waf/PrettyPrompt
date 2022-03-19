@@ -10,6 +10,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using NSubstitute;
 using NSubstitute.Core;
 using PrettyPrompt.Consoles;
@@ -21,6 +22,7 @@ internal static class ConsoleStub
 {
     private static readonly Regex FormatStringSplit = new(@"({\d+}|.)", RegexOptions.Compiled);
     private static readonly Semaphore semaphore = new(1, 1, nameof(ConsoleStub) + "Semaphore"); //interprocess
+    private static bool isClipboardProtected;
 
     public static IConsoleWithClipboard NewConsole(int width = 100, int height = 100)
     {
@@ -33,6 +35,8 @@ internal static class ConsoleStub
             _ =>
             {
                 semaphore.WaitOne();
+                if (isClipboardProtected) throw new InvalidOperationException("Clipboard is already protected.");
+                isClipboardProtected = true;
                 return new MutexProtector();
             });
 
@@ -230,6 +234,50 @@ internal static class ConsoleStub
 
     private class MutexProtector : IDisposable
     {
-        public void Dispose() => semaphore.Release();
+        public void Dispose()
+        {
+            isClipboardProtected = false;
+            semaphore.Release();
+        }
+    }
+
+    private class ProtectedClipboard : IClipboard
+    {
+        private readonly IClipboard clipboard;
+
+        public ProtectedClipboard(IClipboard clipboard)
+        {
+            this.clipboard = clipboard;
+        }
+
+        public string? GetText()
+        {
+            Check();
+            return clipboard.GetText();
+        }
+
+        public Task<string?> GetTextAsync(CancellationToken cancellation = default)
+        {
+            Check();
+            return clipboard.GetTextAsync(cancellation);
+        }
+
+        public void SetText(string text)
+        {
+            Check();
+            clipboard.SetText(text);
+        }
+
+        public Task SetTextAsync(string text, CancellationToken cancellation = default)
+        {
+            Check();
+            return clipboard.SetTextAsync(text, cancellation);
+        }
+
+        private static void Check()
+        {
+            if (!isClipboardProtected)
+                throw new InvalidOperationException("If the test uses clipboard the test has to be wrapped by ProtectClipboard() method call.");
+        }
     }
 }

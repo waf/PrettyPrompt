@@ -262,6 +262,48 @@ public class PromptTests
         Assert.Equal($"indent{NewLine}    more indent{NewLine}{NewLine}indent", result.Text);
     }
 
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/168
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_Paste_DoesNotTrimLeadingIndentation()
+    {
+        var console = ConsoleStub.NewConsole();
+        using (console.ProtectClipboard())
+        {
+            console.Clipboard.SetText("    abcd");
+            console.StubInput($"{Control}{V}{Enter}");
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLineAsync();
+            Assert.Equal($"    abcd", result.Text);
+
+            ///////////////////
+            
+            console.Clipboard.SetText("    abcd\n");
+            console.StubInput($"{Control}{V}{Enter}");
+            prompt = new Prompt(console: console);
+            result = await prompt.ReadLineAsync();
+            Assert.Equal($"    abcd{NewLine}", result.Text);
+
+            ///////////////////
+
+            console.Clipboard.SetText("\n    abcd\n");
+            console.StubInput($"{Control}{V}{Enter}");
+            prompt = new Prompt(console: console);
+            result = await prompt.ReadLineAsync();
+            Assert.Equal($"{NewLine}    abcd{NewLine}", result.Text);
+
+
+            ///////////////////
+
+            console.Clipboard.SetText("\n    abcd\t\n");
+            console.StubInput($"{Control}{V}{Enter}");
+            prompt = new Prompt(console: console);
+            result = await prompt.ReadLineAsync();
+            Assert.Equal($"{NewLine}    abcd{DefaultTabSpaces}{NewLine}", result.Text);
+        }
+    }
+
     [Fact]
     public async Task ReadLine_KeyPressCallback_IsInvoked()
     {
