@@ -29,7 +29,7 @@ internal static class ConsoleStub
         var console = Substitute.For<IConsoleWithClipboard>();
         console.BufferWidth.Returns(width);
         console.WindowHeight.Returns(height);
-        console.Clipboard.Returns(new Clipboard());
+        console.Clipboard.Returns(new ProtectedClipboard());
 
         console.ProtectClipboard().Returns(
             _ =>
@@ -243,12 +243,7 @@ internal static class ConsoleStub
 
     private class ProtectedClipboard : IClipboard
     {
-        private readonly IClipboard clipboard;
-
-        public ProtectedClipboard(IClipboard clipboard)
-        {
-            this.clipboard = clipboard;
-        }
+        private readonly IClipboard clipboard = new Clipboard();
 
         public string? GetText()
         {
