@@ -627,6 +627,31 @@ public class CompletionTests
         Assert.Equal("222", result.Text);
     }
 
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/147.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_TriggerCompletionWhenIsAlreadyOpen_And_CommitCharacterColidesWithThriggerCharacter()
+    {
+        var console = ConsoleStub.NewConsole();
+        var prompt = ConfigurePrompt(
+            console,
+            completions: new[] { "aaa" },
+            configuration: new PromptConfiguration(
+                keyBindings: new KeyBindings(
+                    commitCompletion: new(new KeyPressPattern(' ')),
+                    triggerCompletionList: new(new KeyPressPattern(Control, Spacebar))
+                    )));
+        console.StubInput(
+            $"a", //should openg completion list
+            $"{Control}{Spacebar}", //trigger should do nothing (in #147 it commited completion item)
+            $"{Escape}", //close completion list
+            $"{Enter}"); //submit prompt
+        var result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal("a", result.Text);
+    }
+
     public static Prompt ConfigurePrompt(IConsole console, PromptConfiguration? configuration = null, string[]? completions = null) =>
         new(
             callbacks: new TestPromptCallbacks
