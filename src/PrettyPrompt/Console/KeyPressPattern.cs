@@ -40,8 +40,8 @@ public readonly struct KeyPressPattern
     {
         return
             type == KeyPressPatternType.ConsoleKey ?
-            Modifiers == keyInfo.Modifiers && Key == keyInfo.Key :
-            Character == keyInfo.KeyChar;
+            keyInfo.Modifiers == Modifiers && keyInfo.Key == Key :
+            keyInfo.Modifiers == default && keyInfo.KeyChar == Character;
     }
 }
 
