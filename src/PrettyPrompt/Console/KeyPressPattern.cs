@@ -5,9 +5,11 @@
 #endregion
 
 using System;
+using System.Diagnostics;
 
 namespace PrettyPrompt.Consoles;
 
+[DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "()}")]
 public readonly struct KeyPressPattern
 {
     private readonly KeyPressPatternType type;
@@ -41,7 +43,19 @@ public readonly struct KeyPressPattern
         return
             type == KeyPressPatternType.ConsoleKey ?
             keyInfo.Modifiers == Modifiers && keyInfo.Key == Key :
-            keyInfo.Modifiers == default && keyInfo.KeyChar == Character;
+            (keyInfo.Modifiers is default(ConsoleModifiers) or ConsoleModifiers.Shift) && keyInfo.KeyChar == Character; //Shift is ok, it only determines casing of letter
+    }
+
+    private string GetDebuggerDisplay()
+    {
+        if (type == KeyPressPatternType.ConsoleKey)
+        {
+            return Modifiers == default ? $"{Key}" : $"{Modifiers}+{Key}";
+        }
+        else
+        {
+            return $"{Character}";
+        }
     }
 }
 
