@@ -5,9 +5,11 @@
 #endregion
 
 using System;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using PrettyPrompt.Consoles;
 using PrettyPrompt.Documents;
 using PrettyPrompt.Highlighting;
 
@@ -42,6 +44,11 @@ public class CompletionItem
     public string FilterText { get; }
 
     /// <summary>
+    /// Rules that modify the set of characters that can be typed to cause the selected item to be committed.
+    /// </summary>
+    public ImmutableArray<CharacterSetModificationRule> CommitCharacterRules { get; }
+
+    /// <summary>
     /// This task will be executed when the item is selected, to display the extended "tool tip" description to the right of the menu.
     /// </summary>
     public Task<FormattedString> GetExtendedDescriptionAsync(CancellationToken cancellationToken) => getExtendedDescription(cancellationToken);
@@ -52,15 +59,18 @@ public class CompletionItem
     /// <param name="displayText">This text will be displayed in the completion menu. If not specified, the <paramref name="replacementText"/> value will be used.</param>
     /// <param name="getExtendedDescription">This lazy task will be executed when the item is selected, to display the extended "tool tip" description to the right of the menu.</param>
     /// <param name="filterText">The text used to determine if the item matches the filter in the list. If not specified the <paramref name="replacementText"/> value is used.</param>
+    /// <param name="commitCharacterRules">Rules that modify the set of characters that can be typed to cause the selected item to be committed.</param>
     public CompletionItem(
         string replacementText,
         FormattedString displayText = default,
         string? filterText = null,
-        GetExtendedDescriptionHandler? getExtendedDescription = null)
+        GetExtendedDescriptionHandler? getExtendedDescription = null,
+        ImmutableArray<CharacterSetModificationRule> commitCharacterRules = default)
     {
         ReplacementText = replacementText;
         DisplayTextFormatted = displayText.IsEmpty ? replacementText : displayText;
         FilterText = filterText ?? replacementText;
+        CommitCharacterRules = commitCharacterRules.IsDefault ? ImmutableArray<CharacterSetModificationRule>.Empty : commitCharacterRules;
 
         Task<FormattedString>? extendedDescriptionTask = null; //will be stored in closure of getExtendedDescription
         this.getExtendedDescription = ct => extendedDescriptionTask ??= getExtendedDescription?.Invoke(ct) ?? Task.FromResult(FormattedString.Empty);

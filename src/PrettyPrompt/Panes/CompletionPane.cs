@@ -155,22 +155,22 @@ internal class CompletionPane : IKeyPressHandler
                 this.FilteredView.DecrementSelectedIndex();
                 key.Handled = true;
                 break;
-            case var _ when configuration.KeyBindings.CommitCompletion.Matches(key.ConsoleKeyInfo):
-                if (FilteredView.SelectedItem != null)
-                {
-                    await InsertCompletion(codePane, FilteredView.SelectedItem, cancellationToken).ConfigureAwait(false);
-                    key.Handled = char.IsControl(key.ConsoleKeyInfo.KeyChar);
-                }
-                else
-                {
-                    Close();
-                    break;
-                }
-                break;
             case var _ when configuration.KeyBindings.TriggerCompletionList.Matches(key.ConsoleKeyInfo):
                 key.Handled = true;
                 break;
             default:
+                if (FilteredView.SelectedItem is null)
+                {
+                    if (configuration.KeyBindings.CommitCompletion.Matches(key.ConsoleKeyInfo))
+                    {
+                        Close();
+                    }
+                }
+                else if (configuration.KeyBindings.CommitCompletion.Matches(key.ConsoleKeyInfo, FilteredView.SelectedItem.CommitCharacterRules))
+                {
+                    await InsertCompletion(codePane, FilteredView.SelectedItem, cancellationToken).ConfigureAwait(false);
+                    key.Handled = char.IsControl(key.ConsoleKeyInfo.KeyChar);
+                }
                 break;
         }
     }

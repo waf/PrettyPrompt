@@ -5,6 +5,7 @@
 #endregion
 
 using System;
+using System.Collections.Immutable;
 
 namespace PrettyPrompt.Consoles;
 
@@ -23,13 +24,35 @@ public readonly struct KeyPressPatterns
     public bool Matches(ConsoleKeyInfo keyInfo)
     {
         if (definedPatterns is null) return false;
-        foreach (var definedPattern in definedPatterns)
+        foreach (var pattern in definedPatterns)
         {
-            if (definedPattern.Matches(keyInfo))
+            if (pattern.Matches(keyInfo))
             {
                 return true;
             }
         }
         return false;
+    }
+
+    public bool Matches(ConsoleKeyInfo keyInfo, ImmutableArray<CharacterSetModificationRule> modificationRules)
+    {
+        foreach (var rule in modificationRules)
+        {
+            switch (rule.Kind)
+            {
+                case CharacterSetModificationKind.Add:
+                    if (rule.Characters.Contains(keyInfo.KeyChar))
+                        return true;
+                    continue;
+                case CharacterSetModificationKind.Remove:
+                    if (rule.Characters.Contains(keyInfo.KeyChar))
+                        return false;
+                    continue;
+                case CharacterSetModificationKind.Replace:
+                    return rule.Characters.Contains(keyInfo.KeyChar);
+            }
+        }
+
+        return Matches(keyInfo);
     }
 }
