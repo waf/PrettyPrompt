@@ -1,3 +1,20 @@
+# Release 3.0.5
+
+- Performance improvement of IConsole.Write(FormattedString).
+- `IPromptCallbacksShouldOpenCompletionWindowAsync` now accepts also `KeyPress` argument.
+- `CompletionItem` has new property `CommitCharacterRules` which modifies configured global commit characters.
+- Fix of incorrect rendering of description box in multiline statements (#149).
+- Win/F1/F2/... keys do not deselect currently selected text (#156).
+- Fix of Home press on empty line (#161).
+- Fix of down arrow not working properly when last character is '\n' (#160).
+- Improved selection formatting + it's configurable (#155).
+- Ctrl+X when nothing is selected cuts the current line (#151).
+- Current line can be deleted with Shift+Delete (#152).
+- Fix of indentation removal inside of pasted text. It's removed only when there are multiple non-whitespace lines (#168).
+- Fix of key-binding matching (#147).
+- Fix of multiple '\r\n' pasting (#166).
+- Fixes other minor bugs.
+
 # Release 3.0.4
 
 - Fix of insufficient formatting reseting in extension method `IConsole.Write(FormattedString)`.
