@@ -243,4 +243,9 @@ internal class CompletionPane : IKeyPressHandler
         document.Caret = spanToReplace.Start + completion.ReplacementText.Length;
         Close();
     }
+
+    public bool WouldKeyPressCommitCompletionItem(KeyPress key) =>
+        IsOpen &&
+        FilteredView.SelectedItem != null &&
+        configuration.KeyBindings.CommitCompletion.Matches(key.ConsoleKeyInfo, FilteredView.SelectedItem.CommitCharacterRules);
 }
