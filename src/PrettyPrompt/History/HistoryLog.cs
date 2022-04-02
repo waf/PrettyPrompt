@@ -96,7 +96,7 @@ internal sealed class HistoryLog : IKeyPressHandler
             //we do not want to cycle in history in multiline documents
             return;
         }
-        
+
         switch (key.ObjectPattern)
         {
             case UpArrow:
@@ -110,20 +110,43 @@ internal sealed class HistoryLog : IKeyPressHandler
                     currentIndex--;
                 }
 
-                if (TryGetPreviousMatchingEntry(unsubmittedBuffer, out var matchingPreviousEntryIndex))
+                if (TryGetMatchingEntryIndex(unsubmittedBuffer, direction: -1, out var matchingPreviousEntryIndex))
                 {
                     SetContents(codePane, history[matchingPreviousEntryIndex]);
                     currentIndex = matchingPreviousEntryIndex;
                     key.Handled = true;
                 }
+                else
+                {
+                    //optimization - when we are here there is no previous entry in history that matches the filter
+                    currentIndex = 0;
+                }
                 break;
             case DownArrow:
+                Debug.Assert(currentIndex < history.Count);
                 if (currentIndex != -1)
                 {
-                    Debug.Assert(currentIndex < history.Count);
-                    var result = currentIndex < history.Count - 1 ? history[++currentIndex] : unsubmittedBuffer.ToString();
-                    SetContents(codePane, result);
-                    key.Handled = true;
+                    ++currentIndex;
+                    if (currentIndex == history.Count)
+                    {
+                        SetContents(codePane, unsubmittedBuffer.ToString());
+                        currentIndex = -1;
+                        key.Handled = true;
+                    }
+                    else
+                    {
+                        if (TryGetMatchingEntryIndex(unsubmittedBuffer, direction: 1, out matchingPreviousEntryIndex))
+                        {
+                            SetContents(codePane, history[matchingPreviousEntryIndex]);
+                            currentIndex = matchingPreviousEntryIndex;
+                        }
+                        else
+                        {
+                            SetContents(codePane, unsubmittedBuffer.ToString());
+                            currentIndex = -1;
+                        }
+                        key.Handled = true;
+                    }
                 }
                 break;
             default:
@@ -139,13 +162,16 @@ internal sealed class HistoryLog : IKeyPressHandler
     /// Starting at the <see cref="currentIndex"/> node, search backwards for a node
     /// that starts with <paramref name="prefix"/>
     /// </summary>
-    private bool TryGetPreviousMatchingEntry(ReadOnlyStringBuilder prefix, out int historyIndex)
+    private bool TryGetMatchingEntryIndex(ReadOnlyStringBuilder prefix, int direction, out int historyIndex)
     {
+        Debug.Assert(direction is 1 or -1);
+
         var startIndex = currentIndex == -1 ? history.Count - 1 : currentIndex;
         if (prefix.Length > 0)
         {
-            Debug.Assert(currentIndex < history.Count);
-            for (int i = startIndex; i >= 0; i--)
+            Debug.Assert(startIndex >= 0);
+            Debug.Assert(startIndex < history.Count);
+            for (int i = startIndex; direction == 1 ? i < history.Count : i >= 0; i += direction)
             {
                 if (history[i].StartsWith(prefix))
                 {
