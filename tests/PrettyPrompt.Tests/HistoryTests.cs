@@ -45,8 +45,11 @@ public class HistoryTests
 
         console.StubInput($"{UpArrow}{UpArrow}{UpArrow}{DownArrow}{Enter}");
         var result = await prompt.ReadLineAsync();
-
         Assert.Equal("Howdy World", result.Text);
+
+        console.StubInput($"{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{Enter}");
+        result = await prompt.ReadLineAsync();
+        Assert.Equal("", result.Text);        
     }
 
     [Fact]
@@ -275,5 +278,31 @@ public class HistoryTests
         console.StubInput($"{Shift}{Enter}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}b{Enter}");
         var result = await prompt.ReadLineAsync();
         Assert.Equal($"b{Environment.NewLine}", result.Text);
+    }
+
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/188
+    /// </summary>
+    [Fact]
+    public async Task ReturningBackFromFilteredHistory_ShouldGoBySameFilteredEntriesAsBefore()
+    {
+        var console = ConsoleStub.NewConsole();
+        var prompt = new Prompt(console: console);
+
+        console.StubInput($"aa{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput($"b{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput($"c{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput(
+            $"a{UpArrow}", //jumps to 'aa'
+            $"{DownArrow}", //should go back right to 'a'
+            $"{Enter}");
+        var result = await prompt.ReadLineAsync();
+        Assert.Equal($"a", result.Text);
     }
 }
