@@ -90,13 +90,20 @@ internal sealed class HistoryLog : IKeyPressHandler
 
         if (history.Count == 0 || key.Handled) return;
 
+        var contents = codePane.Document.GetText();
+        if (contents.Contains('\n'))
+        {
+            //we do not want to cycle in history in multiline documents
+            return;
+        }
+        
         switch (key.ObjectPattern)
         {
             case UpArrow:
                 if (currentIndex == -1)
                 {
                     currentIndex = history.Count - 1;
-                    unsubmittedBuffer.SetContents(codePane.Document.GetText());
+                    unsubmittedBuffer.SetContents(contents);
                 }
                 else if (currentIndex > 0)
                 {
@@ -189,7 +196,7 @@ internal sealed class HistoryLog : IKeyPressHandler
         if (history.Count == 0 || history[^1] != input) //filter out duplicates
         {
             var entry = Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
-            await File.AppendAllLinesAsync(persistentHistoryFilepath, new[] { entry }).ConfigureAwait(false); 
+            await File.AppendAllLinesAsync(persistentHistoryFilepath, new[] { entry }).ConfigureAwait(false);
         }
     }
 }
