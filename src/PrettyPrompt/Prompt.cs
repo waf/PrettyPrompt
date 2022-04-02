@@ -115,10 +115,10 @@ public sealed class Prompt : IPrompt
             key = await promptCallbacks.TransformKeyPressAsync(codePane.Document.GetText(), codePane.Document.Caret, key, cancellationToken).ConfigureAwait(false); 
         }
 
-        foreach (var panes in new IKeyPressHandler[] { completionPane, codePane, history })
+        foreach (var panes in new IKeyPressHandler[] { completionPane, history, codePane })
             await panes.OnKeyDown(key, cancellationToken).ConfigureAwait(false);
 
-        foreach (var panes in new IKeyPressHandler[] { completionPane, codePane, history })
+        foreach (var panes in new IKeyPressHandler[] { completionPane, history, codePane })
             await panes.OnKeyUp(key, cancellationToken).ConfigureAwait(false);
 
         //we don't support text selection while completion list is open
