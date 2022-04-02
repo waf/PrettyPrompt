@@ -643,13 +643,39 @@ public class CompletionTests
                     triggerCompletionList: new(new KeyPressPattern(Control, Spacebar))
                     )));
         console.StubInput(
-            $"a", //should openg completion list
+            $"a", //should open completion list
             $"{Control}{Spacebar}", //trigger should do nothing (in #147 it commited completion item)
             $"{Escape}", //close completion list
             $"{Enter}"); //submit prompt
         var result = await prompt.ReadLineAsync();
         Assert.True(result.IsSuccess);
         Assert.Equal("a", result.Text);
+    }
+
+
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/185
+    /// </summary>
+    [Fact]
+    public async Task TransformKeyPressAsync_ShouldNotBeCalledAlways()
+    {
+        var console = ConsoleStub.NewConsole();
+        var prompt = ConfigurePrompt(
+            console,
+            configuration: new PromptConfiguration(
+                keyBindings: new KeyBindings(
+                    commitCompletion: new[] { new KeyPressPattern(Enter) },
+                    submitPrompt: new[] { new KeyPressPattern(Control, Enter) },
+                    newLine: new[] { new KeyPressPattern(Enter) }
+                    )),
+            completions: new[] { "aaa" });
+        console.StubInput(
+            $"a", //should open completion list
+            $"{Enter}", //should insert item (bug was that new line was inserted instead)
+            $"{Control}{Enter}"); //submit prompt
+        var result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        Assert.Equal("aaa", result.Text);
     }
 
     public static Prompt ConfigurePrompt(IConsole console, PromptConfiguration? configuration = null, string[]? completions = null) =>
