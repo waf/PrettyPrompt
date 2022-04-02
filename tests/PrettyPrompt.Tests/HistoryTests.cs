@@ -4,10 +4,12 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+using System;
 using System.IO;
 using System.Threading.Tasks;
 using Xunit;
 using static System.ConsoleKey;
+using static System.ConsoleModifiers;
 
 namespace PrettyPrompt.Tests;
 
@@ -256,5 +258,22 @@ public class HistoryTests
         {
             File.Delete(historyFile);
         }
+    }
+
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/181
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_UpArrow_DoesNotCycleThroughHistory_InMultilineStatements()
+    {
+        var console = ConsoleStub.NewConsole();
+        var prompt = new Prompt(console: console);
+
+        console.StubInput($"a{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput($"{Shift}{Enter}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}b{Enter}");
+        var result = await prompt.ReadLineAsync();
+        Assert.Equal($"b{Environment.NewLine}", result.Text);
     }
 }
