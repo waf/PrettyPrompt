@@ -267,7 +267,7 @@ public class HistoryTests
     /// https://github.com/waf/PrettyPrompt/issues/181
     /// </summary>
     [Fact]
-    public async Task ReadLine_UpArrow_DoesNotCycleThroughHistory_InMultilineStatements()
+    public async Task ReadLine_UpArrow_DoesNotCycleThroughHistory_WhenInMultilineStatement()
     {
         var console = ConsoleStub.NewConsole();
         var prompt = new Prompt(console: console);
@@ -304,5 +304,33 @@ public class HistoryTests
             $"{Enter}");
         var result = await prompt.ReadLineAsync();
         Assert.Equal($"a", result.Text);
+    }
+
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/190
+    /// </summary>
+    [Fact]
+    public async Task DirectHistoryCyclingThroughMultilineEntries()
+    {
+        var console = ConsoleStub.NewConsole();
+        var prompt = new Prompt(console: console);
+
+        console.StubInput($"a{Shift}{Enter}1{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput($"b{Shift}{Enter}2{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput($"c{Shift}{Enter}3{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput(
+            $"{UpArrow}", //jumps to 'c\n3'
+            $"{UpArrow}", //jumps to 'b\n2'
+            $"{UpArrow}", //jumps to 'a\n1'
+            $"{DownArrow}", //should go back right to 'b\n2'
+            $"{Enter}");
+        var result = await prompt.ReadLineAsync();
+        Assert.Equal($"b{Environment.NewLine}2", result.Text);
     }
 }

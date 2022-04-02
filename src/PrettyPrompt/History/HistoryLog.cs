@@ -41,6 +41,7 @@ internal sealed class HistoryLog : IKeyPressHandler
     private readonly Task loadPersistentHistoryTask;
 
     private int currentIndex = -1;
+    private bool historyEntryWasUsedLastTime;
 
     /// <summary>
     /// The currently code pane being edited. The contents of this pane will be changed when
@@ -84,6 +85,8 @@ internal sealed class HistoryLog : IKeyPressHandler
 
     public async Task OnKeyUp(KeyPress key, CancellationToken cancellationToken)
     {
+        var allowInMultilineStatement = historyEntryWasUsedLastTime;
+        historyEntryWasUsedLastTime = false;
         if (codePane is null) return;
 
         await loadPersistentHistoryTask.ConfigureAwait(false);
@@ -91,7 +94,7 @@ internal sealed class HistoryLog : IKeyPressHandler
         if (history.Count == 0 || key.Handled) return;
 
         var contents = codePane.Document.GetText();
-        if (contents.Contains('\n'))
+        if (contents.Contains('\n') && !allowInMultilineStatement)
         {
             //we do not want to cycle in history in multiline documents
             return;
@@ -113,6 +116,7 @@ internal sealed class HistoryLog : IKeyPressHandler
                 if (TryGetMatchingEntryIndex(unsubmittedBuffer, direction: -1, out var matchingPreviousEntryIndex))
                 {
                     SetContents(codePane, history[matchingPreviousEntryIndex]);
+                    historyEntryWasUsedLastTime = true;
                     currentIndex = matchingPreviousEntryIndex;
                     key.Handled = true;
                 }
@@ -138,6 +142,7 @@ internal sealed class HistoryLog : IKeyPressHandler
                         if (TryGetMatchingEntryIndex(unsubmittedBuffer, direction: 1, out matchingPreviousEntryIndex))
                         {
                             SetContents(codePane, history[matchingPreviousEntryIndex]);
+                            historyEntryWasUsedLastTime = true;
                             currentIndex = matchingPreviousEntryIndex;
                         }
                         else
