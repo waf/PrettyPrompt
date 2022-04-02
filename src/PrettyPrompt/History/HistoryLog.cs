@@ -171,37 +171,25 @@ internal sealed class HistoryLog : IKeyPressHandler
             oldDocument.ClearUndoRedoHistory(); // discard undo/redo history to reduce memory usage
             if (oldDocument.Length > 0)
             {
-                history.Add(oldDocument.GetText()); 
+                var text = oldDocument.GetText();
+                if (history.Count == 0 || history[^1] != text) //filter out duplicates
+                {
+                    history.Add(text);
+                }
             }
         }
-        PruneHistory(history);
         currentIndex = -1;
         this.codePane = codePane;
-    }
-
-    /// <summary>
-    /// Remove the latest history entry, if it's duplicate.
-    /// </summary>
-    private static void PruneHistory(List<string> history)
-    {
-        if (!history.Any())
-        {
-            return;
-        }
-
-        if (history.Count > 1 &&
-            history[^1] == history[^2])
-        {
-            // Remove last duplicate history.
-            history.RemoveAt(history.Count - 1);
-        }
     }
 
     internal async Task SavePersistentHistoryAsync(string input)
     {
         if (input.Length == 0 || string.IsNullOrEmpty(persistentHistoryFilepath)) return;
 
-        var entry = Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
-        await File.AppendAllLinesAsync(persistentHistoryFilepath, new[] { entry }).ConfigureAwait(false);
+        if (history.Count == 0 || history[^1] != input) //filter out duplicates
+        {
+            var entry = Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
+            await File.AppendAllLinesAsync(persistentHistoryFilepath, new[] { entry }).ConfigureAwait(false); 
+        }
     }
 }

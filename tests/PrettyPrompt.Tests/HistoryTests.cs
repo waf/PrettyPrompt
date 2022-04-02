@@ -206,17 +206,55 @@ public class HistoryTests
     public async Task ReadLine_PersistentHistory_PersistsAcrossPrompts()
     {
         var historyFile = Path.GetTempFileName();
+        try
+        {
+            var console = ConsoleStub.NewConsole();
+            var prompt = new Prompt(console: console, persistentHistoryFilepath: historyFile);
+            console.StubInput($"Entry One{Enter}");
+            var result = await prompt.ReadLineAsync();
+            Assert.Equal("Entry One", result.Text);
 
-        var console = ConsoleStub.NewConsole();
-        var prompt = new Prompt(console: console, persistentHistoryFilepath: historyFile);
-        console.StubInput($"Entry One{Enter}");
-        var result = await prompt.ReadLineAsync();
-        Assert.Equal("Entry One", result.Text);
+            console = ConsoleStub.NewConsole();
+            prompt = new Prompt(console: console, persistentHistoryFilepath: historyFile);
+            console.StubInput($"{UpArrow}{Enter}");
+            result = await prompt.ReadLineAsync();
+            Assert.Equal("Entry One", result.Text); // did not navigate to "Entry One" above
+        }
+        finally
+        {
+            File.Delete(historyFile);
+        }
+    }
 
-        console = ConsoleStub.NewConsole();
-        prompt = new Prompt(console: console, persistentHistoryFilepath: historyFile);
-        console.StubInput($"{UpArrow}{Enter}");
-        result = await prompt.ReadLineAsync();
-        Assert.Equal("Entry One", result.Text); // did not navigate to "Entry One" above
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/184
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_PersistentHistory_Deduplication()
+    {
+        var historyFile = Path.GetTempFileName();
+        try
+        {
+            foreach (var input in new[] { "a", "b", "b", "b" })
+            {
+                var console = ConsoleStub.NewConsole();
+                var prompt = new Prompt(console: console, persistentHistoryFilepath: historyFile);
+                console.StubInput($"{input}{Enter}");
+                var result = await prompt.ReadLineAsync();
+                Assert.Equal(input, result.Text);
+            }
+
+            {
+                var console = ConsoleStub.NewConsole();
+                var prompt = new Prompt(console: console, persistentHistoryFilepath: historyFile);
+                console.StubInput($"{UpArrow}{UpArrow}{Enter}");
+                var result = await prompt.ReadLineAsync();
+                Assert.Equal("a", result.Text);
+            }
+        }
+        finally
+        {
+            File.Delete(historyFile);
+        }
     }
 }
