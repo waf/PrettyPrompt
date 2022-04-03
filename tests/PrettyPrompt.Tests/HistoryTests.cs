@@ -367,6 +367,32 @@ public class HistoryTests
 
     /// <summary>
     /// https://github.com/waf/PrettyPrompt/issues/187
+    /// https://github.com/waf/PrettyPrompt/issues/194
+    /// </summary>
+    [Fact]
+    public async Task GoingBackToFutureWithNonMatchingFilter2()
+    {
+        var console = ConsoleStub.NewConsole();
+        var prompt = new Prompt(console: console);
+
+        console.StubInput($"a{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput($"b{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput($"c{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput(
+            $"c{UpArrow}",
+            $"{Enter}");
+        var result = await prompt.ReadLineAsync();
+        Assert.Equal($"b", result.Text);
+    }
+
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/187
     /// </summary>
     [Fact]
     public async Task WeakerFilteringMatch()
@@ -383,5 +409,25 @@ public class HistoryTests
         console.StubInput($"write{UpArrow}{Enter}");
         var result = await prompt.ReadLineAsync();
         Assert.Equal($"Console.WriteLine()", result.Text);
+    }
+
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/194
+    /// </summary>
+    [Fact]
+    public async Task SkipExactMatches()
+    {
+        var console = ConsoleStub.NewConsole();
+        var prompt = new Prompt(console: console);
+
+        console.StubInput($"a{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput($"b{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput($"b{UpArrow}{Enter}");
+        var result = await prompt.ReadLineAsync();
+        Assert.Equal($"a", result.Text);
     }
 }
