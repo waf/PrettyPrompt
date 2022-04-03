@@ -49,7 +49,7 @@ public class HistoryTests
 
         console.StubInput($"{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{UpArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{DownArrow}{Enter}");
         result = await prompt.ReadLineAsync();
-        Assert.Equal("", result.Text);        
+        Assert.Equal("", result.Text);
     }
 
     [Fact]
@@ -184,29 +184,6 @@ public class HistoryTests
         Assert.Equal("one", result.Text);
     }
 
-    [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task ReadLine_HistoryWithNoMatchingTextOnPrompt_DoesNotChange(bool existingTextOnPrompt)
-    {
-        var console = ConsoleStub.NewConsole();
-        var prompt = new Prompt(console: console);
-
-        if (existingTextOnPrompt)
-        {
-            console.StubInput($"apple{Enter}");
-            await prompt.ReadLineAsync();
-
-            console.StubInput($"banana{Enter}");
-            await prompt.ReadLineAsync();
-        }
-
-        console.StubInput($"zebr{UpArrow}{Enter}");
-        var result = await prompt.ReadLineAsync();
-
-        Assert.Equal("zebr", result.Text);
-    }
-
     [Fact]
     public async Task ReadLine_PersistentHistory_PersistsAcrossPrompts()
     {
@@ -332,5 +309,79 @@ public class HistoryTests
             $"{Enter}");
         var result = await prompt.ReadLineAsync();
         Assert.Equal($"b{Environment.NewLine}2", result.Text);
+    }
+
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/187
+    /// </summary>
+    [Fact]
+    public async Task GoingToHistoryWithNonMatchingFilter()
+    {
+        var console = ConsoleStub.NewConsole();
+        var prompt = new Prompt(console: console);
+
+        console.StubInput($"a{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput($"b{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput($"c{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput(
+            $"x{UpArrow}", //should go to 'c'
+            $"{UpArrow}", //should go to 'b'
+            $"{Enter}");
+        var result = await prompt.ReadLineAsync();
+        Assert.Equal($"b", result.Text);
+    }
+
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/187
+    /// </summary>
+    [Fact]
+    public async Task GoingBackToFutureWithNonMatchingFilter()
+    {
+        var console = ConsoleStub.NewConsole();
+        var prompt = new Prompt(console: console);
+
+        console.StubInput($"a{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput($"b{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput($"c{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput(
+            $"x{UpArrow}", //jumps to 'c'
+            $"{UpArrow}", //jumps to 'b'
+            $"{UpArrow}", //jumps to 'a'
+            $"{DownArrow}", //should go back to 'b'
+            $"{Enter}");
+        var result = await prompt.ReadLineAsync();
+        Assert.Equal($"b", result.Text);
+    }
+
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/187
+    /// </summary>
+    [Fact]
+    public async Task WeakerFilteringMatch()
+    {
+        var console = ConsoleStub.NewConsole();
+        var prompt = new Prompt(console: console);
+
+        console.StubInput($"Console.WriteLine(){Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput($"Console.ReadLine(){Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput($"write{UpArrow}{Enter}");
+        var result = await prompt.ReadLineAsync();
+        Assert.Equal($"Console.WriteLine()", result.Text);
     }
 }

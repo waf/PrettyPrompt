@@ -13,7 +13,6 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using PrettyPrompt.Consoles;
-using PrettyPrompt.Documents;
 using PrettyPrompt.Panes;
 using static System.ConsoleKey;
 
@@ -31,7 +30,7 @@ internal sealed class HistoryLog : IKeyPressHandler
     /// it so we can restore it when the user stops navigating through history (i.e. they press Down Arrow until
     /// they're back to their current prompt).
     /// </summary>
-    private readonly StringBuilder unsubmittedBuffer = new();
+    private string unsubmittedBuffer = string.Empty;
 
     /// <summary>
     /// Filepath of the history storage file. If null, history is not saved. History is stored as base64 encoded lines,
@@ -40,7 +39,11 @@ internal sealed class HistoryLog : IKeyPressHandler
     private readonly string? persistentHistoryFilepath;
     private readonly Task loadPersistentHistoryTask;
 
-    private int currentIndex = -1;
+    /// <summary>
+    /// Indices of path through history. Sequence can contain gaps because of filtering but it should be monotonously decreasing.
+    /// </summary>
+    private readonly Stack<int> historyPath = new();
+
     private bool historyEntryWasUsedLastTime;
 
     /// <summary>
@@ -103,59 +106,46 @@ internal sealed class HistoryLog : IKeyPressHandler
         switch (key.ObjectPattern)
         {
             case UpArrow:
-                if (currentIndex == -1)
+                int startIndex = -1;
+                if (historyPath.Count == 0)
                 {
-                    currentIndex = history.Count - 1;
-                    unsubmittedBuffer.SetContents(contents);
+                    startIndex = history.Count - 1;
+                    unsubmittedBuffer = contents;
                 }
-                else if (currentIndex > 0)
+                else if (historyPath.Peek() > 0)
                 {
-                    currentIndex--;
+                    startIndex = historyPath.Peek() - 1;
                 }
 
-                if (TryGetMatchingEntryIndex(unsubmittedBuffer, direction: -1, out var matchingPreviousEntryIndex))
+                if (startIndex != -1)
                 {
-                    SetContents(codePane, history[matchingPreviousEntryIndex]);
-                    historyEntryWasUsedLastTime = true;
-                    currentIndex = matchingPreviousEntryIndex;
-                    key.Handled = true;
-                }
-                else
-                {
-                    //optimization - when we are here there is no previous entry in history that matches the filter
-                    currentIndex = 0;
+                    if (TryGetPreviousMatchingEntryIndex(unsubmittedBuffer, startIndex, out var matchingPreviousEntryIndex))
+                    {
+                        SetContents(codePane, history[matchingPreviousEntryIndex]);
+                        historyEntryWasUsedLastTime = true;
+                        historyPath.Push(matchingPreviousEntryIndex);
+                        key.Handled = true;
+                    }
                 }
                 break;
             case DownArrow:
-                Debug.Assert(currentIndex < history.Count);
-                if (currentIndex != -1)
+                if (historyPath.Count > 0)
                 {
-                    ++currentIndex;
-                    if (currentIndex == history.Count)
+                    historyPath.Pop();
+                    if (historyPath.Count > 0)
                     {
-                        SetContents(codePane, unsubmittedBuffer.ToString());
-                        currentIndex = -1;
-                        key.Handled = true;
+                        SetContents(codePane, history[historyPath.Peek()]);
+                        historyEntryWasUsedLastTime = true;
                     }
                     else
                     {
-                        if (TryGetMatchingEntryIndex(unsubmittedBuffer, direction: 1, out matchingPreviousEntryIndex))
-                        {
-                            SetContents(codePane, history[matchingPreviousEntryIndex]);
-                            historyEntryWasUsedLastTime = true;
-                            currentIndex = matchingPreviousEntryIndex;
-                        }
-                        else
-                        {
-                            SetContents(codePane, unsubmittedBuffer.ToString());
-                            currentIndex = -1;
-                        }
-                        key.Handled = true;
+                        SetContents(codePane, unsubmittedBuffer);
                     }
+                    key.Handled = true;
                 }
                 break;
             default:
-                currentIndex = -1;
+                historyPath.Clear();
                 key.Handled = false;
                 break;
         }
@@ -163,22 +153,26 @@ internal sealed class HistoryLog : IKeyPressHandler
         return;
     }
 
-    /// <summary>
-    /// Starting at the <see cref="currentIndex"/> node, search backwards for a node
-    /// that starts with <paramref name="prefix"/>
-    /// </summary>
-    private bool TryGetMatchingEntryIndex(ReadOnlyStringBuilder prefix, int direction, out int historyIndex)
+    private bool TryGetPreviousMatchingEntryIndex(string pattern, int startIndex, out int historyIndex)
     {
-        Debug.Assert(direction is 1 or -1);
+        Debug.Assert(startIndex >= 0);
+        Debug.Assert(startIndex < history.Count);
 
-        var startIndex = currentIndex == -1 ? history.Count - 1 : currentIndex;
-        if (prefix.Length > 0)
+        if (!string.IsNullOrEmpty(pattern))
         {
-            Debug.Assert(startIndex >= 0);
-            Debug.Assert(startIndex < history.Count);
-            for (int i = startIndex; direction == 1 ? i < history.Count : i >= 0; i += direction)
+            if (TryGet(out historyIndex, static (entry, pattern) => entry.StartsWith(pattern, StringComparison.Ordinal))) return true;
+            if (TryGet(out historyIndex, static (entry, pattern) => entry.StartsWith(pattern, StringComparison.OrdinalIgnoreCase))) return true;
+            if (TryGet(out historyIndex, static (entry, pattern) => entry.Contains(pattern, StringComparison.Ordinal))) return true;
+            if (TryGet(out historyIndex, static (entry, pattern) => entry.Contains(pattern, StringComparison.OrdinalIgnoreCase))) return true;
+        }
+        historyIndex = startIndex;
+        return true;
+
+        bool TryGet(out int historyIndex, Func<string, string, bool> isMatch)
+        {
+            for (int i = startIndex; i >= 0; i--)
             {
-                if (history[i].StartsWith(prefix))
+                if (isMatch(history[i], pattern))
                 {
                     historyIndex = i;
                     return true;
@@ -186,11 +180,6 @@ internal sealed class HistoryLog : IKeyPressHandler
             }
             historyIndex = -1;
             return false;
-        }
-        else
-        {
-            historyIndex = startIndex;
-            return true;
         }
     }
 
@@ -216,7 +205,7 @@ internal sealed class HistoryLog : IKeyPressHandler
                 }
             }
         }
-        currentIndex = -1;
+        historyPath.Clear();
         this.codePane = codePane;
     }
 
