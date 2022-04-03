@@ -165,14 +165,15 @@ internal sealed class HistoryLog : IKeyPressHandler
             if (TryGet(out historyIndex, static (entry, pattern) => entry.Contains(pattern, StringComparison.Ordinal))) return true;
             if (TryGet(out historyIndex, static (entry, pattern) => entry.Contains(pattern, StringComparison.OrdinalIgnoreCase))) return true;
         }
-        historyIndex = startIndex;
-        return true;
+        
+        return TryGet(out historyIndex, static (entry, pattern) => true);
 
         bool TryGet(out int historyIndex, Func<string, string, bool> isMatch)
         {
             for (int i = startIndex; i >= 0; i--)
             {
-                if (isMatch(history[i], pattern))
+                if (isMatch(history[i], pattern) &&
+                    history[i] != pattern) //we do not want to return the same entry as is alearedy written
                 {
                     historyIndex = i;
                     return true;
