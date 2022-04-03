@@ -90,16 +90,6 @@ public static class Extensions
         sb.Append(contents);
     }
 
-    internal static bool StartsWith(this string text, ReadOnlyStringBuilder prefix)
-    {
-        if (prefix.Length > text.Length) return false;
-        for (int i = 0; i < prefix.Length; i++)
-        {
-            if (text[i] != prefix[i]) return false;
-        }
-        return true;
-    }
-
     public static ReadOnlySpan<char> AsSpan(this string text, TextSpan span)
         => text.AsSpan(span.Start, span.Length);
 }
