@@ -11,20 +11,20 @@ namespace PrettyPrompt.Consoles;
 
 public readonly struct KeyPressPatterns
 {
-    private readonly KeyPressPattern[]? definedPatterns;
+    public readonly KeyPressPattern[]? DefinedPatterns;
 
-    public bool HasAny => definedPatterns?.Length > 0;
+    public bool HasAny => DefinedPatterns?.Length > 0;
 
     public KeyPressPatterns(params KeyPressPattern[]? definedPatterns)
-        => this.definedPatterns = definedPatterns;
+        => this.DefinedPatterns = definedPatterns;
 
     public static implicit operator KeyPressPatterns(KeyPressPattern[]? definedPatterns)
         => new(definedPatterns);
 
     public bool Matches(ConsoleKeyInfo keyInfo)
     {
-        if (definedPatterns is null) return false;
-        foreach (var pattern in definedPatterns)
+        if (DefinedPatterns is null) return false;
+        foreach (var pattern in DefinedPatterns)
         {
             if (pattern.Matches(keyInfo))
             {

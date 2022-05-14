@@ -27,7 +27,7 @@ public readonly struct KeyPressPattern
         type = KeyPressPatternType.ConsoleKey;
         Modifiers = modifiers;
         Key = key;
-        Character = default;
+        Character = MapToCharacter(key);
     }
 
     public KeyPressPattern(char character)
@@ -44,6 +44,20 @@ public readonly struct KeyPressPattern
             type == KeyPressPatternType.ConsoleKey ?
             keyInfo.Modifiers == Modifiers && keyInfo.Key == Key :
             (keyInfo.Modifiers is default(ConsoleModifiers) or ConsoleModifiers.Shift) && keyInfo.KeyChar == Character; //Shift is ok, it only determines casing of letter
+    }
+
+    private static char MapToCharacter(ConsoleKey key)
+    {
+        var keyString = key.ToString();
+        return keyString switch
+        {
+            { Length: 1 } => keyString[0],
+            "Enter" => '\n',
+            "Spacebar" => ' ',
+            "Escape" => '\x1b',
+            "Tab" => '\t',
+            _ => '\0'
+        };
     }
 
     private string GetDebuggerDisplay()
