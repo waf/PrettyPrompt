@@ -1,3 +1,12 @@
+# Release 3.0.6
+
+- Configurable Keybindings for history scrolling (#197)
+- Persistent history deduplication (#189)
+- Better history scrolling in multiline statements (#181, #193)
+- Ensure scrolling forward/backwards through filtered history provides consistent results (#192)
+- Smarter history filtering (#195, #196)
+- When a ConsoleKey KeyPressPattern is provided in a keybinding, map the ConsoleKey to a char (#199)
+
 # Release 3.0.5
 
 - Performance improvement of IConsole.Write(FormattedString).
