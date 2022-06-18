@@ -78,7 +78,7 @@ internal static class CellRenderer
                 {
                     if (selectedTextBackground.TryGet(out var background))
                     {
-                        cell.Formatting = cell.Formatting with { Background = background };
+                        cell.TransformBackground(background);
                     }
                     else
                     {

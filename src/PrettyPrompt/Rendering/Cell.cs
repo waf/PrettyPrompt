@@ -6,6 +6,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Highlighting;
 using PrettyPrompt.Rendering;
@@ -23,7 +24,11 @@ internal sealed record ScreenArea(ConsoleCoordinate Start, Row[] Rows, bool Trun
 /// <summary>
 /// A row of cells. Just here for the readability of method signatures.
 /// </summary>
-internal sealed record Row(List<Cell> Cells);
+[DebuggerDisplay("Row: {" + nameof(GetDebuggerDisplay) + "()}")]
+internal sealed record Row(List<Cell> Cells)
+{
+    private string GetDebuggerDisplay() => string.Join("", Cells.Select(c => c.Text));
+}
 
 /// <summary>
 /// Represents a single cell in the console, with any associate formatting.
@@ -73,6 +78,8 @@ internal sealed record Cell
                 cells.Add(new Cell(null, formatting, isContinuationOfPreviousCharacter: true));
             }
         }
+
+        Debug.Assert(cells.Count(c => c.Text == "\n") <= 1); //otherwise it should be splitted into multiple rows
         return cells;
     }
 

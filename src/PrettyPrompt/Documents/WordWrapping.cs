@@ -102,15 +102,19 @@ internal static class WordWrapping
     /// </summary>
     public static List<FormattedString> WrapWords(FormattedString input, int maxLength)
     {
-        if (input.Length == 0)
+        Debug.Assert(maxLength >= 0);
+
+        if (input.Length == 0 || maxLength == 0)
         {
             return new List<FormattedString>();
         }
 
         var lines = new List<FormattedString>();
+        var currentLine = new FormattedStringBuilder();
         foreach (var line in input.Split('\n'))
         {
-            var currentLine = new FormattedStringBuilder();
+            currentLine.Clear();
+
             int currentLineWidth = 0;
             foreach (var currentWord in line.Split(' ').SelectMany(word => word.SplitIntoChunks(maxLength)))
             {

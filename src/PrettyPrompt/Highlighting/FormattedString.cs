@@ -102,6 +102,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
         Debug.Assert(length >= 0 && length - startIndex <= Length);
 
         if (Text is null || length == 0) return Empty;
+        if (length - startIndex == Length) return this;
 
         var substring = Text.Substring(startIndex, length);
         if (FormatSpansOrEmpty.Length == 0) return substring;

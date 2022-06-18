@@ -72,7 +72,6 @@ public static class IConsoleX
     {
         console.Write(value);
         console.WriteLine("");
-
     }
 }
 

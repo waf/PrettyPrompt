@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using PrettyPrompt.Documents;
+using PrettyPrompt.Highlighting;
 
 namespace PrettyPrompt;
 
@@ -92,4 +93,20 @@ public static class Extensions
 
     public static ReadOnlySpan<char> AsSpan(this string text, TextSpan span)
         => text.AsSpan(span.Start, span.Length);
+
+    internal static void TransformBackground(this Cell cell, AnsiColor? background)
+    {
+        if (cell.Formatting.Background is null)
+        {
+            cell.Formatting = cell.Formatting with { Background = background };
+        }
+    }
+
+    internal static void TransformBackground(this IEnumerable<Cell> cells, AnsiColor? background)
+    {
+        foreach (var cell in cells)
+        {
+            cell.TransformBackground(background);
+        }
+    }
 }

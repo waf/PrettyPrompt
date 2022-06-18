@@ -11,18 +11,18 @@ namespace PrettyPrompt.Consoles;
 
 public static class AnsiEscapeCodes
 {
-    private const char Escape = '\u001b';
+    private const string Escape = "\u001b";
     private const string ResetForegroundColor = "39";
     private const string ResetBackgroundColor = "49";
     private const string Bold = "1";
     private const string Underline = "4";
     private const string Reverse = "7";
-    public static readonly string ClearLine = $"{Escape}[0K";
-    public static readonly string ClearToEndOfScreen = $"{Escape}[0J";
-    public static readonly string ClearEntireScreen = $"{Escape}[2J";
+    public const string ClearLine = $"{Escape}[0K";
+    public const string ClearToEndOfScreen = $"{Escape}[0J";
+    public const string ClearEntireScreen = $"{Escape}[2J";
 
     /// <summary>
-    /// index starts at 1!
+    /// Index starts at 1!
     /// </summary>
     public static string MoveCursorToColumn(int index) => $"{Escape}[{index}G";
 

@@ -37,5 +37,5 @@ public class KeyBindings
 
         static KeyPressPatterns Get(KeyPressPatterns patterns, params KeyPressPattern[] defaultPatterns)
             => patterns.HasAny ? patterns : new(defaultPatterns);
-}
+    }
 }
