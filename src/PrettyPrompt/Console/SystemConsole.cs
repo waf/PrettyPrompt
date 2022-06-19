@@ -41,10 +41,6 @@ public class SystemConsole : IConsole
         remove => Console.CancelKeyPress -= value;
     }
 
-    /// <summary>
-    /// Enables ANSI escape codes for controlling the terminal.
-    /// https://docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
-    /// </summary>
     public void InitVirtualTerminalProcessing()
     {
         if (!OperatingSystem.IsWindows()) return;

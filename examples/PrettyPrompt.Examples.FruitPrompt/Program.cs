@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
@@ -131,7 +132,7 @@ internal static class Program
         }
     }
 
-    private class FruitPromptCallbacks : PromptCallbacks
+    internal class FruitPromptCallbacks : PromptCallbacks
     {
         protected override IEnumerable<(KeyPressPattern Pattern, KeyPressCallbackAsync Callback)> GetKeyPressCallbacks()
         {
@@ -155,6 +156,7 @@ internal static class Program
                     return new CompletionItem(
                         replacementText: fruit.Name,
                         displayText: displayText,
+                        commitCharacterRules: new[] { new CharacterSetModificationRule(CharacterSetModificationKind.Add, new[] { ' ' }.ToImmutableArray()) }.ToImmutableArray(),
                         getExtendedDescription: _ => Task.FromResult(description)
                     );
                 })
