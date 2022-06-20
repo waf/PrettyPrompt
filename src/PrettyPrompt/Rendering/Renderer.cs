@@ -26,7 +26,7 @@ namespace PrettyPrompt;
 /// This class mostly deals with generating Cells, which the <see cref="IncrementalRendering"/> class then processes
 /// to generate the minimal set of ANSI escape sequences to write to the screen.
 /// </summary>
-internal class Renderer
+internal class Renderer : IDisposable
 {
     private readonly IConsole console;
     private readonly PromptConfiguration configuration;
@@ -128,6 +128,7 @@ internal class Renderer
             // calculate the diff between the previous screen and the
             // screen to be drawn, and output that diff.
             string outputDiff = IncrementalRendering.CalculateDiff(screen, previouslyRenderedScreen, ansiCoordinate);
+            previouslyRenderedScreen.Dispose();
             previouslyRenderedScreen = screen;
 
             Write(outputDiff, outputDiff.Length > 64);
@@ -149,14 +150,16 @@ internal class Renderer
     private ScreenArea BuildCodeScreenArea(CodePane codePane, IReadOnlyCollection<FormatSpan> highlights)
     {
         var highlightedLines = CellRenderer.ApplyColorToCharacters(highlights, codePane.WordWrappedLines, codePane.Selection, configuration.SelectedTextBackground);
+
         // if we've filled up the full line, add a new line at the end so we can render our cursor on this new line.
-        if (highlightedLines[^1].Cells.Count > 0
-            && (highlightedLines[^1].Cells.Count >= codePane.CodeAreaWidth
-                || highlightedLines[^1].Cells[^1]?.Text == "\n"))
+        if (highlightedLines[^1].Length > 0
+            && (highlightedLines[^1].Length >= codePane.CodeAreaWidth
+                || highlightedLines[^1][^1]?.Text == "\n"))
         {
             Array.Resize(ref highlightedLines, highlightedLines.Length + 1);
-            highlightedLines[^1] = new Row(new List<Cell>());
+            highlightedLines[^1] = new Row(0);
         }
+
         var codeWidget = new ScreenArea(ConsoleCoordinate.Zero, highlightedLines, TruncateToScreenHeight: false);
         return codeWidget;
     }
@@ -204,16 +207,16 @@ internal class Renderer
         var completionTopRightCorner = new ConsoleCoordinate(completionStart.Row, completionStart.Column + boxWidth - 1);
         if (connectionHeight > 0)
         {
-            var connectionRow = new Row(Cell.FromText(BoxDrawing.EdgeVertical.ToString(), configuration.CompletionBoxBorderFormat));
+            var connectionRow = new Row(BoxDrawing.EdgeVertical.ToString(), configuration.CompletionBoxBorderFormat);
             var connectionRows = Enumerable.Repeat(connectionRow, connectionHeight - 1)
-                .Prepend(new Row(Cell.FromText(BoxDrawing.EdgeVerticalAndLeftHorizontal.ToString(), configuration.CompletionBoxBorderFormat)))
-                .Append(new Row(Cell.FromText(BoxDrawing.CornerLowerLeft.ToString(), configuration.CompletionBoxBorderFormat)))
+                .Prepend(new Row(BoxDrawing.EdgeVerticalAndLeftHorizontal.ToString(), configuration.CompletionBoxBorderFormat))
+                .Append(new Row(BoxDrawing.CornerLowerLeft.ToString(), configuration.CompletionBoxBorderFormat))
                 .ToArray();
 
             var completionBottomRightCorner = new ConsoleCoordinate(completionStart.Row + completionRows.Length - 1, completionStart.Column + boxWidth - 1);
             var connectionArea = new ScreenArea(completionBottomRightCorner, connectionRows);
 
-            var topRightCornerRow = new Row(Cell.FromText(BoxDrawing.EdgeHorizontalAndLowerVertical.ToString(), configuration.CompletionBoxBorderFormat));
+            var topRightCornerRow = new Row(BoxDrawing.EdgeHorizontalAndLowerVertical.ToString(), configuration.CompletionBoxBorderFormat);
             var topRightCornerArea = new ScreenArea(completionTopRightCorner, new[] { topRightCornerRow });
 
             return new[] { completionArea, documentationArea, topRightCornerArea, connectionArea };
@@ -222,11 +225,11 @@ internal class Renderer
         {
             if (documentationRows.Length > 0)
             {
-                var topRightCornerRow = new Row(Cell.FromText(BoxDrawing.EdgeHorizontalAndLowerVertical.ToString(), configuration.CompletionBoxBorderFormat));
+                var topRightCornerRow = new Row(BoxDrawing.EdgeHorizontalAndLowerVertical.ToString(), configuration.CompletionBoxBorderFormat);
                 var topRightCornerArea = new ScreenArea(completionTopRightCorner, new[] { topRightCornerRow });
 
                 var lowerConnectionCorner = new ConsoleCoordinate(completionStart.Row + documentationRows.Length - 1, completionStart.Column + boxWidth - 1);
-                var bottomRightCornerRow = new Row(Cell.FromText(documentationRows.Length < completionRows.Length ? BoxDrawing.EdgeVerticalAndRightHorizontal.ToString() : BoxDrawing.EdgeHorizontalAndUpperVertical.ToString(), configuration.CompletionBoxBorderFormat));
+                var bottomRightCornerRow = new Row(documentationRows.Length < completionRows.Length ? BoxDrawing.EdgeVerticalAndRightHorizontal.ToString() : BoxDrawing.EdgeHorizontalAndUpperVertical.ToString(), configuration.CompletionBoxBorderFormat);
                 var bottomRightCornerArea = new ScreenArea(lowerConnectionCorner, new[] { bottomRightCornerRow });
 
                 return new[] { completionArea, documentationArea, topRightCornerArea, bottomRightCornerArea };
@@ -249,36 +252,36 @@ internal class Renderer
                 var item = completion.DisplayTextFormatted;
                 var isSelected = selectedItem == completion;
 
-                var rowCells = new List<Cell>();
+                var rowCells = new Row(/*leftEdge*/1 + configuration.SelectedCompletionItemMarker.Length + maxCompletionItemWidth + /*space+RightEdge*/2);
 
                 //left border
-                rowCells.AddRange(Cell.FromText(BoxDrawing.EdgeVertical, configuration.CompletionBoxBorderFormat));
+                rowCells.Add(BoxDrawing.EdgeVertical, configuration.CompletionBoxBorderFormat);
 
                 //(un)selected item marker
                 if (isSelected)
                 {
-                    rowCells.AddRange(Cell.FromText(configuration.SelectedCompletionItemMarker));
+                    rowCells.Add(configuration.SelectedCompletionItemMarker);
                 }
                 else
                 {
-                    rowCells.AddRange(Cell.FromText(configuration.UnselectedCompletionItemMarker));
+                    rowCells.Add(configuration.UnselectedCompletionItemMarker);
                 }
 
                 //item
-                var itemCells = Cell.FromText(TruncateToWindow(item + new string(' ', maxCompletionItemWidth - item.GetUnicodeWidth()), 2 + configuration.SelectedCompletionItemMarker.Length)); // 2 = left border + right border
+                var cellCountBeforeItem = rowCells.Length;
+                rowCells.Add(TruncateToWindow(item + new string(' ', maxCompletionItemWidth - item.GetUnicodeWidth()), 2 + configuration.SelectedCompletionItemMarker.Length)); // 2 = left border + right border
                 if (isSelected)
                 {
-                    itemCells.TransformBackground(configuration.SelectedCompletionItemBackground);
+                    rowCells.TransformBackground(configuration.SelectedCompletionItemBackground, startIndex: cellCountBeforeItem);
                 }
-                rowCells.AddRange(itemCells);
 
                 //right border
-                rowCells.AddRange(Cell.FromText(" " + BoxDrawing.EdgeVertical, configuration.CompletionBoxBorderFormat));
+                rowCells.Add(" " + BoxDrawing.EdgeVertical, configuration.CompletionBoxBorderFormat);
 
-                return new Row(rowCells);
+                return rowCells;
             })
-            .Prepend(new Row(Cell.FromText(BoxDrawing.CornerUpperLeft + horizontalBorder + BoxDrawing.CornerUpperRight, configuration.CompletionBoxBorderFormat)))
-            .Append(new Row(Cell.FromText(BoxDrawing.CornerLowerLeft + horizontalBorder + BoxDrawing.CornerLowerRight, configuration.CompletionBoxBorderFormat)))
+            .Prepend(new Row(BoxDrawing.CornerUpperLeft + horizontalBorder + BoxDrawing.CornerUpperRight, configuration.CompletionBoxBorderFormat))
+            .Append(new Row(BoxDrawing.CornerLowerLeft + horizontalBorder + BoxDrawing.CornerLowerRight, configuration.CompletionBoxBorderFormat))
             .ToArray();
 
         FormattedString TruncateToWindow(FormattedString line, int offset)
@@ -329,15 +332,14 @@ internal class Renderer
 
         return documentationLines
             .Select(line =>
-            {
-                var cells = Cell.FromText(" " + line.Trim() + new string(' ', actualTextWidth - line.GetUnicodeWidth() + 1));
-                cells.TransformBackground(configuration.CompletionItemDescriptionPaneBackground);
-                cells.AddRange(Cell.FromText(BoxDrawing.EdgeVertical, configuration.CompletionBoxBorderFormat));
-                return new Row(cells);
-            }
-            )
-            .Prepend(new Row(Cell.FromText(boxTop, configuration.CompletionBoxBorderFormat)))
-            .Append(new Row(Cell.FromText(boxBottom, configuration.CompletionBoxBorderFormat)))
+                {
+                    var row = new Row(" " + line.Trim() + new string(' ', actualTextWidth - line.GetUnicodeWidth() + 1));
+                    row.TransformBackground(configuration.CompletionItemDescriptionPaneBackground);
+                    row.Add(BoxDrawing.EdgeVertical, configuration.CompletionBoxBorderFormat);
+                    return row;
+                })
+            .Prepend(new Row(boxTop, configuration.CompletionBoxBorderFormat))
+            .Append(new Row(boxBottom, configuration.CompletionBoxBorderFormat))
             .ToArray();
 
         List<FormattedString> GetDocumentationLines(int requestedBoxWidth)
@@ -349,5 +351,10 @@ internal class Renderer
 
         static int GetActualTextWidth(List<FormattedString> documentationLines)
             => documentationLines.Max(line => line.GetUnicodeWidth());
+    }
+
+    public void Dispose()
+    {
+        previouslyRenderedScreen?.Dispose();
     }
 }

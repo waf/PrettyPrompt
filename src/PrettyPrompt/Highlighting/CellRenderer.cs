@@ -40,10 +40,10 @@ internal static class CellRenderer
         {
             WrappedLine line = lines[lineIndex];
             int lineFullWidthCharacterOffset = 0;
-            var cells = Cell.FromText(line.Content);
-            for (int cellIndex = 0; cellIndex < cells.Count; cellIndex++)
+            var row =new Row(line.Content);
+            for (int cellIndex = 0; cellIndex < row.Length; cellIndex++)
             {
-                var cell = cells[cellIndex];
+                var cell = row[cellIndex];
                 if (cell.IsContinuationOfPreviousCharacter)
                     lineFullWidthCharacterOffset++;
 
@@ -51,7 +51,7 @@ internal static class CellRenderer
                 if (currentHighlight.TryGet(out var previousLineHighlight) &&
                     cellIndex == 0)
                 {
-                    currentHighlight = HighlightSpan(previousLineHighlight, cells, cellIndex, previousLineHighlight.Start - line.StartIndex);
+                    currentHighlight = HighlightSpan(previousLineHighlight, row, cellIndex, previousLineHighlight.Start - line.StartIndex);
                 }
 
                 // get current syntaxt highlight start
@@ -62,7 +62,7 @@ internal static class CellRenderer
                 if (currentHighlight.TryGet(out var highlight) &&
                     highlight.Contains(characterPosition))
                 {
-                    currentHighlight = HighlightSpan(highlight, cells, cellIndex, cellIndex);
+                    currentHighlight = HighlightSpan(highlight, row, cellIndex, cellIndex);
                 }
 
                 // if there's text selected, invert colors to represent the highlight of the selected text.
@@ -86,21 +86,21 @@ internal static class CellRenderer
                     }
                 }
             }
-            highlightedRows[lineIndex] = new Row(cells);
+            highlightedRows[lineIndex] = row;
         }
         return highlightedRows;
     }
 
-    private static FormatSpan? HighlightSpan(FormatSpan currentHighlight, List<Cell> cells, int cellIndex, int endPosition)
+    private static FormatSpan? HighlightSpan(FormatSpan currentHighlight, Row row, int cellIndex, int endPosition)
     {
         var highlightedFullWidthOffset = 0;
         int i;
-        for (i = cellIndex; i < Math.Min(endPosition + currentHighlight.Length + highlightedFullWidthOffset, cells.Count); i++)
+        for (i = cellIndex; i < Math.Min(endPosition + currentHighlight.Length + highlightedFullWidthOffset, row.Length); i++)
         {
-            highlightedFullWidthOffset += cells[i].ElementWidth - 1;
-            cells[i].Formatting = currentHighlight.Formatting;
+            highlightedFullWidthOffset += row[i].ElementWidth - 1;
+            row[i].Formatting = currentHighlight.Formatting;
         }
-        if (i != cells.Count)
+        if (i != row.Length)
         {
             return null;
         }

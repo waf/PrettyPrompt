@@ -102,11 +102,13 @@ public static class Extensions
         }
     }
 
-    internal static void TransformBackground(this IEnumerable<Cell> cells, AnsiColor? background)
+    internal static void TransformBackground(this Row row, AnsiColor? background, int startIndex = 0)
     {
-        foreach (var cell in cells)
+        Debug.Assert(startIndex >= 0);
+        Debug.Assert(startIndex <= row.Length);
+        for (int i = startIndex; i < row.Length; i++)
         {
-            cell.TransformBackground(background);
+            row[i].TransformBackground(background);
         }
     }
 }
