@@ -22,7 +22,7 @@ internal sealed class Screen : IDisposable
     public int Width { get; }
     public int Height { get; }
     public ConsoleCoordinate Cursor { get; }
-    public Cell[] CellBuffer { get; }
+    public Cell?[] CellBuffer { get; }
     public int MaxIndex { get; }
 
     public Screen(int width, int height, ConsoleCoordinate cursor, params ScreenArea[] screenAreas)
@@ -88,8 +88,8 @@ internal sealed class Screen : IDisposable
             {
                 Debug.Assert(i > 0);
                 var previousCell = screen.CellBuffer[i - 1];
+                Debug.Assert(previousCell?.Text is not null);
                 Debug.Assert(previousCell.ElementWidth == 2);
-                Debug.Assert(previousCell.Text is not null);
 
                 //e.g. for '界' is previousCell.ElementWidth==2 and previousCell.Text.Length==1
                 //e.g. for '😀' is previousCell.ElementWidth==2 and previousCell.Text.Length==2 (which means cursor is already moved by 2 because of Text length)

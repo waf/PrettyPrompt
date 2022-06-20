@@ -36,14 +36,16 @@ internal static class IncrementalRendering
             column: ansiCoordinate.Column + previousScreen.Cursor.Column
         );
 
-        foreach (var (i, currentCell, previousCell) in currentScreen.CellBuffer.ZipLongest(previousScreen.CellBuffer))
+        foreach (var (i, currentCellIdx, previousCellIdx) in new ZipLongestIndicesEnumerator(currentScreen.CellBuffer.Length, previousScreen.CellBuffer.Length))
         {
+            var currentCell = currentCellIdx != -1 ? currentScreen.CellBuffer[currentCellIdx] : null;
             if (currentCell is not null && currentCell.IsContinuationOfPreviousCharacter)
             {
                 continue;
             }
 
-            if (currentCell == previousCell)
+            var previousCell = previousCellIdx != -1 ? previousScreen.CellBuffer[previousCellIdx] : null;
+            if (Cell.Equals(currentCell, previousCell))
             {
                 continue;
             }
@@ -54,9 +56,9 @@ internal static class IncrementalRendering
             previousCoordinate = cellCoordinate;
 
             // handle when we're erasing characters/formatting from the previously rendered screen.
-            if (currentCell is null || currentCell.Formatting == ConsoleFormat.None)
+            if (currentCell is null || currentCell.Formatting.IsDefault)
             {
-                if (currentFormatRun != ConsoleFormat.None)
+                if (!currentFormatRun.IsDefault)
                 {
                     diff.Append(Reset);
                     currentFormatRun = ConsoleFormat.None;
@@ -75,10 +77,10 @@ internal static class IncrementalRendering
             }
 
             // write out current character, with any formatting
-            if (currentCell.Formatting != currentFormatRun)
+            if (!currentCell.Formatting.Equals(in currentFormatRun))
             {
                 // text selection is implemented by inverting colors. Reset inverted colors if required.
-                if (currentFormatRun != ConsoleFormat.None && currentCell.Formatting.Inverted != currentFormatRun.Inverted)
+                if (!currentFormatRun.IsDefault && currentCell.Formatting.Inverted != currentFormatRun.Inverted)
                 {
                     diff.Append(Reset);
                 }
@@ -106,7 +108,7 @@ internal static class IncrementalRendering
             }
         }
 
-        if (currentFormatRun != ConsoleFormat.None)
+        if (!currentFormatRun.IsDefault)
         {
             diff.Append(Reset);
         }
@@ -185,5 +187,29 @@ internal static class IncrementalRendering
                 : MoveCursorLeft(fromCoordinate.Column - toCoordinate.Column)
             );
         }
+    }
+
+    private struct ZipLongestIndicesEnumerator
+    {
+        private readonly int leftMax;
+        private readonly int rightMax;
+        private int i;
+
+        public ZipLongestIndicesEnumerator(int leftMax, int rightMax)
+        {
+            this.leftMax = leftMax;
+            this.rightMax = rightMax;
+            i = -1;
+        }
+
+        public (int Idx, int Left, int Right) Current => (i, i < leftMax ? i : -1, i < rightMax ? i : -1);
+
+        public bool MoveNext()
+        {
+            ++i;
+            return i < leftMax || i < rightMax;
+        }
+
+        public ZipLongestIndicesEnumerator GetEnumerator() => this;
     }
 }

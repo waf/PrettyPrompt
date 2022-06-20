@@ -88,10 +88,10 @@ internal class Row : IDisposable
     public void Add(FormattedString formattedString)
         => Cell.AddTo(cells, formattedString);
 
-    public void CopyTo(Cell[] cells, int targetPosition, int count) 
-        => this.cells.CopyTo(0, cells, targetPosition, count);
+    public void CopyTo(Cell?[] cells, int targetPosition, int count)
+        => this.cells.CopyTo(0, cells!, targetPosition, count);
 
-    private string GetDebuggerDisplay() 
+    private string GetDebuggerDisplay()
         => string.Join("", cells.Select(c => c.Text));
 }
 
@@ -109,14 +109,14 @@ internal class Row : IDisposable
 // This because we are making copies of lists of cells and they are smaller when they are reference types.
 // Pooling of cells is currently better.
 [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
-internal sealed record Cell
+internal sealed class Cell
 {
-    public string? Text { get; }
-    public bool IsContinuationOfPreviousCharacter { get; }
-    public int ElementWidth { get; }
+    public readonly string? Text;
+    public readonly bool IsContinuationOfPreviousCharacter;
+    public readonly int ElementWidth;
 
-    public ConsoleFormat Formatting { get; set; }
-    public bool TruncateToScreenHeight { get; set; }
+    public ConsoleFormat Formatting;
+    public bool TruncateToScreenHeight;
 
     private Cell(string? text, ConsoleFormat Formatting, int elementWidth = 1, bool isContinuationOfPreviousCharacter = false)
     {
@@ -142,6 +142,32 @@ internal sealed record Cell
         }
 
         Debug.Assert(cells.Count(c => c.Text == "\n") <= 1); //otherwise it should be splitted into multiple rows
+    }
+
+    public static bool Equals(Cell? left, Cell? right)
+    {
+        //this is hot from IncrementalRendering.CalculateDiff, so we want to use custom optimized Equals
+        if (!ReferenceEquals(left, right))
+        {
+            if (left is not null)
+            {
+                return left.Equals(right);
+            }
+            return false;
+        }
+        return true;
+    }
+
+    public bool Equals(Cell? other)
+    {
+        //this is hot from IncrementalRendering.CalculateDiff, so we want to use custom optimized Equals
+        return
+            other is not null &&
+            Text == other.Text &&
+            IsContinuationOfPreviousCharacter == other.IsContinuationOfPreviousCharacter &&
+            //ElementWidth == other.ElementWidth && //is given by Text, so we don't need to check
+            Formatting.Equals(in other.Formatting) &&
+            TruncateToScreenHeight == other.TruncateToScreenHeight;
     }
 
     private string GetDebuggerDisplay() => Text + " " + Formatting.ToString();

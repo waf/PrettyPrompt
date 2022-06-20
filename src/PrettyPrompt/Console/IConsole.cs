@@ -52,7 +52,7 @@ public static class IConsoleX
             console.Write(AnsiEscapeCodes.Reset);
             foreach (var (element, formatting) in value.EnumerateTextElements())
             {
-                if (lastFormatting != formatting)
+                if (!lastFormatting.Equals(in formatting))
                 {
                     console.Write(AnsiEscapeCodes.Reset);
                     console.Write(AnsiEscapeCodes.ToAnsiEscapeSequence(formatting));
