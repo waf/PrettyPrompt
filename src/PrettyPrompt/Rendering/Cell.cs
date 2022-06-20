@@ -4,96 +4,13 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using PrettyPrompt.Consoles;
 using PrettyPrompt.Highlighting;
 using PrettyPrompt.Rendering;
 
 namespace PrettyPrompt;
-
-/// <summary>
-/// An area of the screen that's being rendered at a coordinate.
-/// This is conceptually a UI pane, rasterized into characters.
-/// </summary>
-internal sealed record ScreenArea(ConsoleCoordinate Start, Row[] Rows, bool TruncateToScreenHeight = true) : IDisposable
-{
-    public void Dispose()
-    {
-        foreach (var row in Rows)
-        {
-            row.Dispose();
-        }
-#if DEBUG
-        Array.Clear(Rows, 0, Rows.Length);
-#endif
-    }
-}
-
-/// <summary>
-/// A row of cells. Just here for the readability of method signatures.
-/// </summary>
-[DebuggerDisplay("Row: {" + nameof(GetDebuggerDisplay) + "()}")]
-internal class Row : IDisposable
-{
-    private readonly List<Cell> cells;
-    private bool disposed;
-
-    public int Length => cells.Count;
-    public Cell this[int index] => cells[index];
-
-    public Row(int capacity)
-    {
-        cells = ListPool<Cell>.Shared.Get(capacity);
-    }
-
-    public Row(char text, ConsoleFormat formatting)
-      : this(new FormattedString(text.ToString(), formatting))
-    { }
-
-    public Row(string text)
-        : this(new FormattedString(text))
-    { }
-
-    public Row(string text, ConsoleFormat formatting)
-        : this(new FormattedString(text, formatting))
-    { }
-
-    public Row(FormattedString formattedString)
-        : this(capacity: 6 * formattedString.Length / 5)
-    {
-        Cell.AddTo(cells, formattedString);
-    }
-
-    public void Dispose()
-    {
-        if (!disposed)
-        {
-            ListPool<Cell>.Shared.Put(cells);
-            disposed = true;
-        }
-    }
-
-    public void Add(char text, ConsoleFormat formatting)
-        => Add(new FormattedString(text.ToString(), formatting));
-
-    public void Add(string text)
-        => Add(text, ConsoleFormat.None);
-
-    public void Add(string text, ConsoleFormat formatting)
-        => Add(new FormattedString(text, formatting));
-
-    public void Add(FormattedString formattedString)
-        => Cell.AddTo(cells, formattedString);
-
-    public void CopyTo(Cell?[] cells, int targetPosition, int count)
-        => this.cells.CopyTo(0, cells!, targetPosition, count);
-
-    private string GetDebuggerDisplay()
-        => string.Join("", cells.Select(c => c.Text));
-}
 
 /// <summary>
 /// Represents a single cell in the console, with any associate formatting.
@@ -111,21 +28,29 @@ internal class Row : IDisposable
 [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
 internal sealed class Cell
 {
-    public readonly string? Text;
-    public readonly bool IsContinuationOfPreviousCharacter;
-    public readonly int ElementWidth;
+    public static readonly Pool<Cell, InitArg> SharedPool = new(() => new(), (Cell c, in InitArg arg) => c.Initialize(arg));
+
+    private string? text;
+    private bool isContinuationOfPreviousCharacter;
+    private int elementWidth;
+
+    public string? Text => text;
+    public bool IsContinuationOfPreviousCharacter => isContinuationOfPreviousCharacter;
+    public int ElementWidth => elementWidth;
 
     public ConsoleFormat Formatting;
     public bool TruncateToScreenHeight;
 
-    private Cell(string? text, ConsoleFormat Formatting, int elementWidth = 1, bool isContinuationOfPreviousCharacter = false)
+    private Cell() { }
+
+    private void Initialize(InitArg arg)
     {
-        this.Text = text;
-        this.Formatting = Formatting;
+        this.text = arg.Text;
+        this.Formatting = arg.Formatting;
 
         // full-width handling properties
-        this.IsContinuationOfPreviousCharacter = isContinuationOfPreviousCharacter;
-        this.ElementWidth = elementWidth;
+        this.isContinuationOfPreviousCharacter = arg.IsContinuationOfPreviousCharacter;
+        this.elementWidth = arg.ElementWidth;
     }
 
     public static void AddTo(List<Cell> cells, FormattedString formattedString)
@@ -134,14 +59,14 @@ internal sealed class Cell
         foreach (var (element, formatting) in formattedString.EnumerateTextElements())
         {
             var elementWidth = UnicodeWidth.GetWidth(element);
-            cells.Add(new Cell(element, formatting, elementWidth));
+            cells.Add(SharedPool.Get(new InitArg(element, formatting, elementWidth)));
             for (int i = 1; i < elementWidth; i++)
             {
-                cells.Add(new Cell(null, formatting, isContinuationOfPreviousCharacter: true));
+                cells.Add(SharedPool.Get(new InitArg(null, formatting, isContinuationOfPreviousCharacter: true)));
             }
         }
 
-        Debug.Assert(cells.Count(c => c.Text == "\n") <= 1); //otherwise it should be splitted into multiple rows
+        Debug.Assert(cells.Count(c => c.text == "\n") <= 1); //otherwise it should be splitted into multiple rows
     }
 
     public static bool Equals(Cell? left, Cell? right)
@@ -163,12 +88,28 @@ internal sealed class Cell
         //this is hot from IncrementalRendering.CalculateDiff, so we want to use custom optimized Equals
         return
             other is not null &&
-            Text == other.Text &&
-            IsContinuationOfPreviousCharacter == other.IsContinuationOfPreviousCharacter &&
+            text == other.text &&
+            isContinuationOfPreviousCharacter == other.isContinuationOfPreviousCharacter &&
             //ElementWidth == other.ElementWidth && //is given by Text, so we don't need to check
             Formatting.Equals(in other.Formatting) &&
             TruncateToScreenHeight == other.TruncateToScreenHeight;
     }
 
-    private string GetDebuggerDisplay() => Text + " " + Formatting.ToString();
+    private string GetDebuggerDisplay() => text + " " + Formatting.ToString();
+
+    public readonly struct InitArg
+    {
+        public readonly string? Text;
+        public readonly ConsoleFormat Formatting;
+        public readonly int ElementWidth;
+        public readonly bool IsContinuationOfPreviousCharacter;
+
+        public InitArg(string? text, ConsoleFormat formatting, int elementWidth = 1, bool isContinuationOfPreviousCharacter = false)
+        {
+            Text = text;
+            Formatting = formatting;
+            ElementWidth = elementWidth;
+            IsContinuationOfPreviousCharacter = isContinuationOfPreviousCharacter;
+        }
+    }
 }
