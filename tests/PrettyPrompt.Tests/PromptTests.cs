@@ -316,7 +316,7 @@ public class PromptTests
             (
                 new KeyPressPattern(F1),
                 (inputArg, caretArg, _) => { input = inputArg; caret = caretArg; return Task.FromResult<KeyPressCallbackResult?>(null); }
-        )),
+            )),
             console: console);
 
         _ = await prompt.ReadLineAsync();

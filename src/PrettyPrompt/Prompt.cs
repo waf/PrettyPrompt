@@ -20,7 +20,7 @@ using TextCopy;
 namespace PrettyPrompt;
 
 /// <inheritdoc cref="IPrompt" />
-public sealed class Prompt : IPrompt
+public sealed class Prompt : IPrompt, IAsyncDisposable
 {
     private readonly IConsole console;
     private readonly HistoryLog history;
@@ -29,6 +29,7 @@ public sealed class Prompt : IPrompt
     private readonly IClipboard clipboard;
     private readonly SyntaxHighlighter highlighter;
     private readonly IPromptCallbacks promptCallbacks;
+    private Task? savePersistentHistoryTask;
 
     /// <summary>
     /// Instantiates a prompt object. This object can be re-used for multiple invocations of <see cref="ReadLineAsync()"/>.
@@ -96,7 +97,10 @@ public sealed class Prompt : IPrompt
 
             if (result is not null)
             {
-                _ = history.SavePersistentHistoryAsync(inputText);
+                //wait for potential previous saving
+                await (savePersistentHistoryTask ?? Task.CompletedTask).ConfigureAwait(false);
+
+                savePersistentHistoryTask = history.SavePersistentHistoryAsync(inputText);
                 cancellationManager.AllowControlCToCancelResult(result);
                 return result;
             }
@@ -110,7 +114,7 @@ public sealed class Prompt : IPrompt
     {
         if (!completionPane.WouldKeyPressCommitCompletionItem(key))
         {
-            key = await promptCallbacks.TransformKeyPressAsync(codePane.Document.GetText(), codePane.Document.Caret, key, cancellationToken).ConfigureAwait(false); 
+            key = await promptCallbacks.TransformKeyPressAsync(codePane.Document.GetText(), codePane.Document.Caret, key, cancellationToken).ConfigureAwait(false);
         }
 
         foreach (var panes in new IKeyPressHandler[] { completionPane, history, codePane })
@@ -161,6 +165,11 @@ public sealed class Prompt : IPrompt
             ansiCoordinate: initialCursor
         );
         return output;
+    }
+
+    async ValueTask IAsyncDisposable.DisposeAsync()
+    {
+        await (savePersistentHistoryTask ?? Task.CompletedTask).ConfigureAwait(false);
     }
 }
 

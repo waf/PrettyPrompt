@@ -40,17 +40,25 @@ public class FuzzingTests
         {
             console.StubInput(randomKeys);
 
-            var prompt = new Prompt(persistentHistoryFilepath: Path.GetTempFileName(), console: console);
-
+            var persistentHistoryFilepath = Path.GetTempFileName();
             try
             {
-                var result = await prompt.ReadLineAsync();
-                Assert.NotNull(result);
+                await using var prompt = new Prompt(persistentHistoryFilepath, console: console);
+
+                try
+                {
+                    var result = await prompt.ReadLineAsync();
+                    Assert.NotNull(result);
+                }
+                catch (Exception ex)
+                {
+                    throw new InvalidOperationException("Fuzzing failed for seed: " + seed, ex);
+                }
             }
-            catch (Exception ex)
+            finally
             {
-                throw new InvalidOperationException("Fuzzing failed for seed: " + seed, ex);
-            } 
+                File.Delete(persistentHistoryFilepath);
+            }
         }
     }
 
@@ -86,16 +94,24 @@ public class FuzzingTests
         var console = ConsoleStub.NewConsole();
         console.StubInput(randomKeys);
 
-        var prompt = new Prompt(persistentHistoryFilepath: Path.GetTempFileName(), console: console);
-
+        var persistentHistoryFilepath = Path.GetTempFileName();
         try
         {
-            var result = await prompt.ReadLineAsync();
-            Assert.NotNull(result);
+            await using var prompt = new Prompt(persistentHistoryFilepath, console: console);
+
+            try
+            {
+                var result = await prompt.ReadLineAsync();
+                Assert.NotNull(result);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Fuzzing failed for seed: " + seed, ex);
+            }
         }
-        catch (Exception ex)
+        finally
         {
-            throw new InvalidOperationException("Fuzzing failed for seed: " + seed, ex);
+            File.Delete(persistentHistoryFilepath);
         }
     }
 
@@ -132,22 +148,30 @@ public class FuzzingTests
         var console = ConsoleStub.NewConsole();
         console.StubInput(randomKeys);
 
-        var prompt = new Prompt(
-            persistentHistoryFilepath: Path.GetTempFileName(),
+        var persistentHistoryFilepath = Path.GetTempFileName();
+        try
+        {
+            await using var prompt = new Prompt(
+            persistentHistoryFilepath,
             callbacks: new TestPromptCallbacks
             {
                 CompletionCallback = new CompletionTestData(null).CompletionHandlerAsync
             },
             console: console);
 
-        try
-        {
-            var result = await prompt.ReadLineAsync();
-            Assert.NotNull(result);
+            try
+            {
+                var result = await prompt.ReadLineAsync();
+                Assert.NotNull(result);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Fuzzing failed for seed: " + seed, ex);
+            }
         }
-        catch (Exception ex)
+        finally
         {
-            throw new InvalidOperationException("Fuzzing failed for seed: " + seed, ex);
+            File.Delete(persistentHistoryFilepath);
         }
     }
 
@@ -186,22 +210,30 @@ public class FuzzingTests
         var console = ConsoleStub.NewConsole();
         console.StubInput(randomKeys);
 
-        var prompt = new Prompt(
-            persistentHistoryFilepath: Path.GetTempFileName(),
-            callbacks: new TestPromptCallbacks
-            {
-                CompletionCallback = new CompletionTestData(null).CompletionHandlerAsync
-            },
-            console: console);
-
+        var persistentHistoryFilepath = Path.GetTempFileName();
         try
         {
-            var result = await prompt.ReadLineAsync();
-            Assert.NotNull(result);
+            await using var prompt = new Prompt(
+                persistentHistoryFilepath,
+                callbacks: new TestPromptCallbacks
+                {
+                    CompletionCallback = new CompletionTestData(null).CompletionHandlerAsync
+                },
+                console: console);
+
+            try
+            {
+                var result = await prompt.ReadLineAsync();
+                Assert.NotNull(result);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException("Fuzzing failed for seed: " + seed, ex);
+            }
         }
-        catch (Exception ex)
+        finally
         {
-            throw new InvalidOperationException("Fuzzing failed for seed: " + seed, ex);
+            File.Delete(persistentHistoryFilepath);
         }
     }
 }

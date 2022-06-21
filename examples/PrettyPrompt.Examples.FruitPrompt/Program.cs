@@ -18,7 +18,7 @@ internal static class Program
         Console.WriteLine("Welcome! Try typing some fruit names.");
         Console.WriteLine();
 
-        var prompt = new Prompt(
+        await using var prompt = new Prompt(
             persistentHistoryFilepath: "./history-file",
             callbacks: new FruitPromptCallbacks(),
             configuration: new PromptConfiguration(

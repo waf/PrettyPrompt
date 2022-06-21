@@ -191,16 +191,20 @@ public class HistoryTests
         try
         {
             var console = ConsoleStub.NewConsole();
-            var prompt = new Prompt(console: console, persistentHistoryFilepath: historyFile);
-            console.StubInput($"Entry One{Enter}");
-            var result = await prompt.ReadLineAsync();
-            Assert.Equal("Entry One", result.Text);
+            await using (var prompt = new Prompt(console: console, persistentHistoryFilepath: historyFile))
+            {
+                console.StubInput($"Entry One{Enter}");
+                var result = await prompt.ReadLineAsync();
+                Assert.Equal("Entry One", result.Text);
+            }
 
             console = ConsoleStub.NewConsole();
-            prompt = new Prompt(console: console, persistentHistoryFilepath: historyFile);
-            console.StubInput($"{UpArrow}{Enter}");
-            result = await prompt.ReadLineAsync();
-            Assert.Equal("Entry One", result.Text); // did not navigate to "Entry One" above
+            await using (var prompt = new Prompt(console: console, persistentHistoryFilepath: historyFile))
+            {
+                console.StubInput($"{UpArrow}{Enter}");
+                var result = await prompt.ReadLineAsync();
+                Assert.Equal("Entry One", result.Text); // did not navigate to "Entry One" above
+            }
         }
         finally
         {
@@ -220,7 +224,7 @@ public class HistoryTests
             foreach (var input in new[] { "a", "b", "b", "b" })
             {
                 var console = ConsoleStub.NewConsole();
-                var prompt = new Prompt(console: console, persistentHistoryFilepath: historyFile);
+                await using var prompt = new Prompt(console: console, persistentHistoryFilepath: historyFile);
                 console.StubInput($"{input}{Enter}");
                 var result = await prompt.ReadLineAsync();
                 Assert.Equal(input, result.Text);
@@ -228,7 +232,7 @@ public class HistoryTests
 
             {
                 var console = ConsoleStub.NewConsole();
-                var prompt = new Prompt(console: console, persistentHistoryFilepath: historyFile);
+                await using var prompt = new Prompt(console: console, persistentHistoryFilepath: historyFile);
                 console.StubInput($"{UpArrow}{UpArrow}{Enter}");
                 var result = await prompt.ReadLineAsync();
                 Assert.Equal("a", result.Text);
