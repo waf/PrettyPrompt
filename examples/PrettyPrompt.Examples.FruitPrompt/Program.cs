@@ -92,7 +92,7 @@ internal static class Program
         if (Fruits.Any(f => f.Name.ToLower() == wordUnderCursor))
         {
             // wikipedia is the definitive fruit documentation.
-            LaunchBrowser("https://en.wikipedia.org/wiki/" + Uri.EscapeUriString(wordUnderCursor));
+            LaunchBrowser("https://en.wikipedia.org/wiki/" + Uri.EscapeDataString(wordUnderCursor));
         }
 
         // since we return a null KeyPressCallbackResult here, the user will remain on the current prompt
