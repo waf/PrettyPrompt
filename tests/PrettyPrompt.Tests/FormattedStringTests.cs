@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using PrettyPrompt.Highlighting;
 using Xunit;
 
@@ -269,8 +270,8 @@ public class FormattedStringTests
             new FormatSpan(1, 1, Green),
             new FormatSpan(2, 1, Yellow));
 
-        var elements = value.EnumerateTextElements().ToArray();
-        Assert.Equal(3, elements.Length);
+        var elements = ToList(value.EnumerateTextElements());
+        Assert.Equal(3, elements.Count);
         Assert.Equal(("a", Red), elements[0]);
         Assert.Equal(("b", Green), elements[1]);
         Assert.Equal(("c", Yellow), elements[2]);
@@ -282,8 +283,8 @@ public class FormattedStringTests
             new FormatSpan(4, 2, Green),
             new FormatSpan(7, 1, Yellow));
 
-        elements = value.EnumerateTextElements().ToArray();
-        Assert.Equal(8, elements.Length);
+        elements = ToList(value.EnumerateTextElements());
+        Assert.Equal(8, elements.Count);
         Assert.Equal(("a", Red), elements[0]);
         Assert.Equal(("a", Red), elements[1]);
         Assert.Equal(("a", Red), elements[2]);
@@ -292,5 +293,15 @@ public class FormattedStringTests
         Assert.Equal(("b", Green), elements[5]);
         Assert.Equal((" ", ConsoleFormat.None), elements[6]);
         Assert.Equal(("c", Yellow), elements[7]);
+
+        static List<(string Element, ConsoleFormat Formatting)> ToList(FormattedString.TextElementsEnumerator enumerator)
+        {
+            var list = new List<(string, ConsoleFormat)>();
+            foreach (var (e, f) in enumerator)
+            {
+                list.Add((e.ToString(), f));
+            }
+            return list;
+        }
     }
 }

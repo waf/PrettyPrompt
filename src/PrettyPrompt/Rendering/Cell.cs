@@ -4,9 +4,11 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Runtime.InteropServices;
 using PrettyPrompt.Highlighting;
 using PrettyPrompt.Rendering;
 
@@ -58,8 +60,8 @@ internal sealed class Cell
         // note, this method is fairly hot, please profile when making changes to it.
         foreach (var (element, formatting) in formattedString.EnumerateTextElements())
         {
-            var elementWidth = UnicodeWidth.GetWidth(element);
-            cells.Add(SharedPool.Get(new InitArg(element, formatting, elementWidth)));
+            var elementText = StringCache.Shared.Get(element, out var elementWidth);
+            cells.Add(SharedPool.Get(new InitArg(elementText, formatting, elementWidth)));
             for (int i = 1; i < elementWidth; i++)
             {
                 cells.Add(SharedPool.Get(new InitArg(null, formatting, isContinuationOfPreviousCharacter: true)));

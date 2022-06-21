@@ -58,7 +58,7 @@ public static class IConsoleX
                     console.Write(AnsiEscapeCodes.ToAnsiEscapeSequence(formatting));
                     lastFormatting = formatting;
                 }
-                console.Write(element);
+                console.Write(element.ToString());
             }
             console.Write(AnsiEscapeCodes.Reset);
         }

@@ -8,6 +8,10 @@ namespace PrettyPrompt.Rendering;
 
 internal static class BoxDrawing
 {
+    //
+    // ATTENTION: When changing collection of following characters don't forget to update MinUsedCharacterValue/MaxUsedCharacterValue constants.
+    //            Also make sure their difference is sufficiently small because we allocate cache of that size.
+    //
     public const char CornerUpperRight = '┐';
     public const char CornerLowerRight = '┘';
     public const char CornerUpperLeft = '┌';
@@ -18,6 +22,9 @@ internal static class BoxDrawing
     public const char EdgeVerticalAndRightHorizontal = '├';
     public const char EdgeHorizontalAndLowerVertical = '┬';
     public const char EdgeHorizontalAndUpperVertical = '┴';
+
+    public const int MinUsedCharacterValue = EdgeHorizontal;
+    public const int MaxUsedCharacterValue = EdgeHorizontalAndUpperVertical;
 
     public static (string top, string bottom) HorizontalBorders(int width, bool leftCorner = true, bool rightCorner = true)
     {

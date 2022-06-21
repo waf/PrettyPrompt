@@ -306,43 +306,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
         }
     }
 
-    public IEnumerable<(string Element, ConsoleFormat Formatting)> EnumerateTextElements()
-    {
-        var enumerator = StringInfo.GetTextElementEnumerator(TextOrEmpty);
-        int textIndex = 0;
-        int formatIndex = 0;
-        while (enumerator.MoveNext())
-        {
-            var element = enumerator.GetTextElement();
-
-            ConsoleFormat formatting;
-            if (formatIndex < formatSpans.Length)
-            {
-                var span = formatSpans[formatIndex];
-                if (span.Contains(textIndex))
-                {
-                    formatting = span.Formatting;
-                }
-                else
-                {
-                    formatting = ConsoleFormat.None;
-                }
-            }
-            else
-            {
-                formatting = ConsoleFormat.None;
-            }
-
-            yield return (element, formatting);
-
-            textIndex += element.Length;
-            if (formatIndex < formatSpans.Length &&
-                textIndex >= formatSpans[formatIndex].End)
-            {
-                formatIndex++;
-            }
-        }
-    }
+    public TextElementsEnumerator EnumerateTextElements() => new(TextOrEmpty, formatSpans);
 
     private void CheckFormatSpans()
     {
@@ -385,4 +349,107 @@ public readonly struct FormattedString : IEquatable<FormattedString>
 
     public static bool operator ==(FormattedString left, FormattedString right) => left.Equals(right);
     public static bool operator !=(FormattedString left, FormattedString right) => !(left == right);
+
+    public ref struct TextElementsEnumerator
+    {
+        private TextElementEnumeratorFast elementsEnumerator;
+        private readonly FormatSpan[] formatSpans;
+        private int textIndex;
+        private int formatIndex;
+        private Result current;
+
+        public TextElementsEnumerator(string text, FormatSpan[] formatSpans)
+        {
+            elementsEnumerator = new TextElementEnumeratorFast(text);
+            this.formatSpans = formatSpans;
+            textIndex = 0;
+            formatIndex = 0;
+            current = default;
+        }
+
+        public Result Current => current;
+
+        public bool MoveNext()
+        {
+            if (!elementsEnumerator.MoveNext()) return false;
+
+            var element = elementsEnumerator.Current;
+
+            ConsoleFormat formatting;
+            if (formatIndex < formatSpans.Length)
+            {
+                var span = formatSpans[formatIndex];
+                if (span.Contains(textIndex))
+                {
+                    formatting = span.Formatting;
+                }
+                else
+                {
+                    formatting = ConsoleFormat.None;
+                }
+            }
+            else
+            {
+                formatting = ConsoleFormat.None;
+            }
+
+            current = new Result(element, formatting);
+
+            textIndex += element.Length;
+            if (formatIndex < formatSpans.Length &&
+                textIndex >= formatSpans[formatIndex].End)
+            {
+                formatIndex++;
+            }
+
+            return true;
+        }
+
+        public TextElementsEnumerator GetEnumerator() => this;
+
+        public readonly ref struct Result
+        {
+            public readonly ReadOnlySpan<char> Element;
+            public readonly ConsoleFormat Formatting;
+
+            public Result(ReadOnlySpan<char> element, ConsoleFormat formatting)
+            {
+                Element = element;
+                Formatting = formatting;
+            }
+
+            public void Deconstruct(out ReadOnlySpan<char> element, out ConsoleFormat formatting)
+            {
+                element = Element;
+                formatting = Formatting;
+            }
+        }
+
+        private struct TextElementEnumeratorFast
+        {
+            private readonly string text;
+            private int i;
+            private int elementLength;
+
+            public TextElementEnumeratorFast(string text)
+            {
+                this.text = text;
+                i = 0;
+                elementLength = 0;
+            }
+
+            public ReadOnlySpan<char> Current => text.AsSpan(i, elementLength);
+
+            public bool MoveNext()
+            {
+                i += elementLength;
+                if (i < text.Length)
+                {
+                    elementLength = StringInfo.GetNextTextElementLength(text, i);
+                    return true;
+                }
+                return false;
+            }
+        }
+    }
 }
