@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31019.35
+# Visual Studio Version 17
+VisualStudioVersion = 17.1.32328.378
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PrettyPrompt", "src\PrettyPrompt\PrettyPrompt.csproj", "{1F9726E2-DB89-4FD8-947A-F6CBFE885495}"
 EndProject
@@ -16,6 +16,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		nuget.config = nuget.config
 		README.md = README.md
 	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PrettyPrompt.Benchmarks", "tests\PrettyPrompt.Benchmarks\PrettyPrompt.Benchmarks.csproj", "{9C8B74CD-CD66-43DE-8B52-EEEEE91642C1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,6 +37,10 @@ Global
 		{C94F0EFC-9533-46F2-BD61-65231F939D52}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C94F0EFC-9533-46F2-BD61-65231F939D52}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C94F0EFC-9533-46F2-BD61-65231F939D52}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9C8B74CD-CD66-43DE-8B52-EEEEE91642C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9C8B74CD-CD66-43DE-8B52-EEEEE91642C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9C8B74CD-CD66-43DE-8B52-EEEEE91642C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9C8B74CD-CD66-43DE-8B52-EEEEE91642C1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

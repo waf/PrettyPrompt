@@ -30,6 +30,11 @@ public interface IConsole
     void HideCursor();
     bool KeyAvailable { get; }
     ConsoleKeyInfo ReadKey(bool intercept);
+
+    /// <summary>
+    /// Enables ANSI escape codes for controlling the terminal.
+    /// https://docs.microsoft.com/en-us/windows/console/console-virtual-terminal-sequences
+    /// </summary>
     void InitVirtualTerminalProcessing();
 
     event ConsoleCancelEventHandler CancelKeyPress;

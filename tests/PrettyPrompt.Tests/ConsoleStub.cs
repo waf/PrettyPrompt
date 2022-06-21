@@ -122,7 +122,7 @@ internal static class ConsoleStub
             .Returns(keys.First(), keys.Skip(1).ToArray());
     }
 
-    private static List<ConsoleKeyInfo> MapToConsoleKeyPresses(FormattableString input)
+    internal static List<ConsoleKeyInfo> MapToConsoleKeyPresses(FormattableString input)
     {
         ConsoleModifiers modifiersPressed = 0;
         // split the formattable strings into a mix of format placeholders (e.g. {0}, {1}) and literal characters.
