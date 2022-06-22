@@ -84,10 +84,8 @@ internal static class IncrementalRendering
                 {
                     diff.Append(Reset);
                 }
-                diff.Append(
-                    ToAnsiEscapeSequence(currentCell.Formatting)
-                    + currentCell.Text
-                );
+                AppendAnsiEscapeSequence(diff, currentCell.Formatting);
+                diff.Append(currentCell.Text);
                 currentFormatRun = currentCell.Formatting;
             }
             else

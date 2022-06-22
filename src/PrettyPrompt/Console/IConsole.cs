@@ -55,7 +55,7 @@ public static class IConsoleX
                 if (!lastFormatting.Equals(in formatting))
                 {
                     console.Write(AnsiEscapeCodes.Reset);
-                    console.Write(AnsiEscapeCodes.ToAnsiEscapeSequence(formatting));
+                    console.Write(AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(formatting).ToString());
                     lastFormatting = formatting;
                 }
                 console.Write(element.ToString());

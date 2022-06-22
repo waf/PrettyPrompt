@@ -27,7 +27,7 @@ public class OutputTests
         }, 100);
 
         Assert.Equal(
-            ToAnsiEscapeSequence(format1) + "here" + Reset + " is " + ToAnsiEscapeSequence(format2) + "some" + Reset + " output" + MoveCursorLeft(19),
+            ToAnsiEscapeSequenceSlow(format1) + "here" + Reset + " is " + ToAnsiEscapeSequenceSlow(format2) + "some" + Reset + " output" + MoveCursorLeft(19),
             output
         );
     }
@@ -45,9 +45,9 @@ public class OutputTests
 
         Assert.Equal(
             expected:
-                ToAnsiEscapeSequence(format1) + "here\n" + MoveCursorLeft(3) +
+                ToAnsiEscapeSequenceSlow(format1) + "here\n" + MoveCursorLeft(3) +
                 Reset + " is \n" + MoveCursorLeft(3) +
-                ToAnsiEscapeSequence(format2) + "some\n" + MoveCursorLeft(3) +
+                ToAnsiEscapeSequenceSlow(format2) + "some\n" + MoveCursorLeft(3) +
                 Reset + " out\n" + MoveCursorLeft(3) +
                 "put" + MoveCursorLeft(3),
             actual: output

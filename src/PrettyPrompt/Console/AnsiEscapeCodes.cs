@@ -4,18 +4,18 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using System.Linq;
+using System.Text;
 using PrettyPrompt.Highlighting;
 
 namespace PrettyPrompt.Consoles;
-
 public static class AnsiEscapeCodes
 {
+    private const char EscapeChar = '\u001b';
     private const string Escape = "\u001b";
     private const string ResetForegroundColor = "39";
     private const string ResetBackgroundColor = "49";
-    private const string Bold = "1";
-    private const string Underline = "4";
+    private const char Bold = '1';
+    private const char Underline = '4';
     private const string Reverse = "7";
     public const string ClearLine = $"{Escape}[0K";
     public const string ClearToEndOfScreen = $"{Escape}[0J";
@@ -35,28 +35,40 @@ public static class AnsiEscapeCodes
 
     internal static string ToAnsiEscapeSequence(string colorCode) => $"{Escape}[{colorCode}m";
 
-    public static string ToAnsiEscapeSequence(ConsoleFormat formatting) =>
-       Escape
-        + "["
-        + string.Join(
-            separator: ";",
-            values:
-            (
-                formatting.Inverted ?
-                new[]
-                {
-                        ResetForegroundColor,
-                        ResetBackgroundColor,
-                        Reverse
-                } :
-                new[]
-                {
-                        formatting.ForegroundCode ?? ResetForegroundColor,
-                        formatting.BackgroundCode ?? ResetBackgroundColor,
-                        formatting.Bold ? Bold : null,
-                        formatting.Underline ? Underline : null,
-                }
-            ).Where(format => format is not null)
-          )
-        + "m";
+    public static string ToAnsiEscapeSequenceSlow(ConsoleFormat formatting)
+    {
+        var sb = new StringBuilder();
+        AppendAnsiEscapeSequence(sb, formatting);
+        return sb.ToString();
+    }
+
+    public static void AppendAnsiEscapeSequence(StringBuilder stringBuilder, ConsoleFormat formatting)
+    {
+        stringBuilder.Append(EscapeChar);
+        stringBuilder.Append('[');
+        if (formatting.Inverted)
+        {
+            const string ResetAndReverse = ResetForegroundColor + ";" + ResetBackgroundColor + ";" + Reverse;
+            stringBuilder.Append(ResetAndReverse);
+        }
+        else
+        {
+            stringBuilder.Append(formatting.ForegroundCode ?? ResetForegroundColor);
+            stringBuilder.Append(';');
+            stringBuilder.Append(formatting.BackgroundCode ?? ResetBackgroundColor);
+
+            if (formatting.Bold)
+            {
+                stringBuilder.Append(';');
+                stringBuilder.Append(Bold);
+            }
+
+            if (formatting.Underline)
+            {
+                stringBuilder.Append(';');
+                stringBuilder.Append(Underline);
+            }
+        }
+        stringBuilder.Append('m');
+    }
 }
