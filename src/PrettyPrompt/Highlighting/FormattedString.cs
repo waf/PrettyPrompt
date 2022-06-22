@@ -5,6 +5,7 @@
 #endregion
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
@@ -41,14 +42,44 @@ public readonly struct FormattedString : IEquatable<FormattedString>
     public FormattedString(string? text, params FormatSpan[]? formatSpans)
     {
         Text = text;
-        if ((formatSpans?.Length ?? 0) == 0)
+        if (formatSpans is null)
         {
             this.formatSpans = Array.Empty<FormatSpan>();
         }
         else
         {
-            this.formatSpans = formatSpans!.Where(s => s.Length > 0).OrderBy(s => s.Start).ToArray();
-            CheckFormatSpans();
+            switch (formatSpans.Length)
+            {
+                case 0:
+                    this.formatSpans = formatSpans;
+                    break;
+                case 1:
+                    this.formatSpans = formatSpans[0].Length > 0 ? formatSpans : Array.Empty<FormatSpan>();
+                    break;
+                default:
+                    //slow path
+                    this.formatSpans = formatSpans!.Where(s => s.Length > 0).OrderBy(s => s.Start).ToArray();
+                    CheckFormatSpans();
+                    break;
+            }
+        }
+    }
+
+    public FormattedString(string? text, List<FormatSpan> formatSpans)
+    {
+        Text = text;
+        switch (formatSpans.Count)
+        {
+            case 0:
+                this.formatSpans = Array.Empty<FormatSpan>();
+                break;
+            case 1:
+                this.formatSpans = formatSpans[0].Length > 0 ? formatSpans.ToArray() : Array.Empty<FormatSpan>();
+                break;
+            default:
+                //slow path
+                this = new FormattedString(text, formatSpans.ToArray());
+                break;
         }
     }
 
@@ -107,7 +138,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
         var substring = Text.Substring(startIndex, length);
         if (FormatSpansOrEmpty.Length == 0) return substring;
 
-        var resultFormatSpans = new List<FormatSpan>(formatSpans.Length);
+        var resultFormatSpans = ListPool<FormatSpan>.Shared.Get(formatSpans.Length);
         foreach (var formatSpan in formatSpans)
         {
             if (formatSpan.Overlap(startIndex, length).TryGet(out var newSpan))
@@ -116,7 +147,9 @@ public readonly struct FormattedString : IEquatable<FormattedString>
             }
         }
 
-        return new(substring, resultFormatSpans);
+        var result = new FormattedString(substring, resultFormatSpans);
+        ListPool<FormatSpan>.Shared.Put(resultFormatSpans);
+        return result;
     }
 
     /// <summary>
@@ -199,7 +232,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
         else
         {
             int partStart = 0;
-            var formattingList = new List<FormatSpan>(formatSpans.Length);
+            var formattingList = ListPool<FormatSpan>.Shared.Get(formatSpans.Length);
             int usedFormattingCount = 0;
             int previousFormattingCharsUsed = 0;
             while (partStart < text.Length)
@@ -215,6 +248,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
                 yield return new FormattedString(text.AsSpan(partStart, partLength).ToString(), formattingList);
                 partStart += partLength + 1; //+1 to skip separator
             }
+            ListPool<FormatSpan>.Shared.Put(formattingList);
         }
     }
 
@@ -233,7 +267,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
         }
 
         int partStart = 0;
-        var formattingList = new List<FormatSpan>(formatSpans.Length);
+        var formattingList = ListPool<FormatSpan>.Shared.Get(formatSpans.Length);
         int usedFormattingCount = 0;
         int previousFormattingCharsUsed = 0;
         while (partStart < text.Length)
@@ -251,6 +285,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
             yield return new FormattedString(text.AsSpan(partStart, partLength).ToString(), formattingList);
             partStart += partLength;
         }
+        ListPool<FormatSpan>.Shared.Put(formattingList);
     }
 
     private void GenerateFormattingsForPart(
