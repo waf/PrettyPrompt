@@ -36,15 +36,18 @@ internal static class IncrementalRendering
             column: ansiCoordinate.Column + previousScreen.Cursor.Column
         );
 
-        foreach (var (i, currentCellIdx, previousCellIdx) in new ZipLongestIndicesEnumerator(currentScreen.CellBuffer.Length, previousScreen.CellBuffer.Length))
+        var currentBuffer = currentScreen.CellBuffer;
+        var previousBuffer = previousScreen.CellBuffer;
+        var maxIndex = Math.Max(currentBuffer.Length, previousBuffer.Length);
+        for (int i = 0; i < maxIndex; i++)
         {
-            var currentCell = currentCellIdx != -1 ? currentScreen.CellBuffer[currentCellIdx] : null;
+            var currentCell = i < currentBuffer.Length ? currentBuffer[i] : null;
             if (currentCell is not null && currentCell.IsContinuationOfPreviousCharacter)
             {
                 continue;
             }
 
-            var previousCell = previousCellIdx != -1 ? previousScreen.CellBuffer[previousCellIdx] : null;
+            var previousCell = i < previousBuffer.Length ? previousBuffer[i] : null;
             if (Cell.Equals(currentCell, previousCell))
             {
                 continue;
@@ -185,29 +188,5 @@ internal static class IncrementalRendering
                 : MoveCursorLeft(fromCoordinate.Column - toCoordinate.Column)
             );
         }
-    }
-
-    private struct ZipLongestIndicesEnumerator
-    {
-        private readonly int leftMax;
-        private readonly int rightMax;
-        private int i;
-
-        public ZipLongestIndicesEnumerator(int leftMax, int rightMax)
-        {
-            this.leftMax = leftMax;
-            this.rightMax = rightMax;
-            i = -1;
-        }
-
-        public (int Idx, int Left, int Right) Current => (i, i < leftMax ? i : -1, i < rightMax ? i : -1);
-
-        public bool MoveNext()
-        {
-            ++i;
-            return i < leftMax || i < rightMax;
-        }
-
-        public ZipLongestIndicesEnumerator GetEnumerator() => this;
     }
 }
