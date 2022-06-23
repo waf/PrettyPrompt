@@ -404,6 +404,8 @@ public readonly struct FormattedString : IEquatable<FormattedString>
 
         public Result Current => current;
 
+        internal static ref readonly Result GetCurrentByRef(in TextElementsEnumerator enumerator) => ref enumerator.current;
+
         public bool MoveNext()
         {
             if (!elementsEnumerator.MoveNext()) return false;
@@ -487,4 +489,10 @@ public readonly struct FormattedString : IEquatable<FormattedString>
             }
         }
     }
+}
+
+public static class TextElementsEnumeratorX
+{
+    public static ref readonly FormattedString.TextElementsEnumerator.Result GetCurrentByRef(in this FormattedString.TextElementsEnumerator enumerator) 
+        => ref FormattedString.TextElementsEnumerator.GetCurrentByRef(in enumerator);
 }

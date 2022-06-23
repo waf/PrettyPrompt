@@ -4,13 +4,10 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using System.Runtime.InteropServices;
 using PrettyPrompt.Highlighting;
-using PrettyPrompt.Rendering;
 
 namespace PrettyPrompt;
 
@@ -58,13 +55,17 @@ internal sealed class Cell
     public static void AddTo(List<Cell> cells, FormattedString formattedString)
     {
         // note, this method is fairly hot, please profile when making changes to it.
-        foreach (var (element, formatting) in formattedString.EnumerateTextElements())
+        // don't use: foreach (var (element, formatting) in formattedString.EnumerateTextElements())
+        //            manual enumeration and using by-ref values is faster
+        var enumerator = formattedString.EnumerateTextElements();
+        while (enumerator.MoveNext())
         {
-            var elementText = StringCache.Shared.Get(element, out var elementWidth);
-            cells.Add(SharedPool.Get(new InitArg(elementText, formatting, elementWidth)));
+            ref readonly var elem = ref enumerator.GetCurrentByRef();
+            var elementText = StringCache.Shared.Get(elem.Element, out var elementWidth);
+            cells.Add(SharedPool.Get(new InitArg(elementText, elem.Formatting, elementWidth)));
             for (int i = 1; i < elementWidth; i++)
             {
-                cells.Add(SharedPool.Get(new InitArg(null, formatting, isContinuationOfPreviousCharacter: true)));
+                cells.Add(SharedPool.Get(new InitArg(null, elem.Formatting, isContinuationOfPreviousCharacter: true)));
             }
         }
 
