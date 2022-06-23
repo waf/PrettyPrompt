@@ -11,6 +11,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using PrettyPrompt.Rendering;
 
@@ -412,29 +413,34 @@ public readonly struct FormattedString : IEquatable<FormattedString>
 
             var element = elementsEnumerator.Current;
 
-            ConsoleFormat formatting;
-            if (formatIndex < formatSpans.Length)
+            //this method is hot so we need to be little bit hardcore
+            var formatSpans = this.formatSpans; //local copy to remove double bound checking
+            ref var span =
+                ref (uint)formatIndex < (uint)formatSpans.Length ? //uints to check also lower bound and remove boudn checks
+                ref formatSpans[formatIndex] :
+                ref Unsafe.NullRef<FormatSpan>();
+
+            if (!Unsafe.IsNullRef(ref span))
             {
-                var span = formatSpans[formatIndex];
                 if (span.Contains(textIndex))
                 {
-                    formatting = span.Formatting;
+                    current.Formatting = span.Formatting; //write directly to current to avoid double copy
                 }
                 else
                 {
-                    formatting = ConsoleFormat.None;
+                    current.Formatting = ConsoleFormat.None; //write directly to current to avoid double copy
                 }
             }
             else
             {
-                formatting = ConsoleFormat.None;
+                current.Formatting = ConsoleFormat.None; //write directly to current to avoid double copy
             }
 
-            current = new Result(element, formatting);
+            current.Element = element;
 
             textIndex += element.Length;
-            if (formatIndex < formatSpans.Length &&
-                textIndex >= formatSpans[formatIndex].End)
+            if (!Unsafe.IsNullRef(ref span) &&
+                textIndex >= span.End)
             {
                 formatIndex++;
             }
@@ -444,10 +450,10 @@ public readonly struct FormattedString : IEquatable<FormattedString>
 
         public TextElementsEnumerator GetEnumerator() => this;
 
-        public readonly ref struct Result
+        public ref struct Result
         {
-            public readonly ReadOnlySpan<char> Element;
-            public readonly ConsoleFormat Formatting;
+            public ReadOnlySpan<char> Element;
+            public ConsoleFormat Formatting;
 
             public Result(ReadOnlySpan<char> element, ConsoleFormat formatting)
             {
@@ -493,6 +499,6 @@ public readonly struct FormattedString : IEquatable<FormattedString>
 
 public static class TextElementsEnumeratorX
 {
-    public static ref readonly FormattedString.TextElementsEnumerator.Result GetCurrentByRef(in this FormattedString.TextElementsEnumerator enumerator) 
+    public static ref readonly FormattedString.TextElementsEnumerator.Result GetCurrentByRef(in this FormattedString.TextElementsEnumerator enumerator)
         => ref FormattedString.TextElementsEnumerator.GetCurrentByRef(in enumerator);
 }
