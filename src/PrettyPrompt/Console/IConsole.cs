@@ -46,7 +46,7 @@ public static class IConsoleX
     public static void Write(this IConsole console, FormattedString value)
     {
         if (!PromptConfiguration.HasUserOptedOutFromColor &&
-            value.FormatSpans.Count > 0)
+            value.FormatSpans.Length > 0)
         {
             var lastFormatting = ConsoleFormat.None;
             console.Write(AnsiEscapeCodes.Reset);

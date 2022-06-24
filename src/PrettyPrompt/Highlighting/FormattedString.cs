@@ -27,7 +27,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
     public string? Text { get; }
     private readonly FormatSpan[] formatSpans;
 
-    public IReadOnlyList<FormatSpan> FormatSpans => formatSpans ?? Array.Empty<FormatSpan>();
+    public ReadOnlySpan<FormatSpan> FormatSpans => formatSpans ?? Array.Empty<FormatSpan>();
     public int Length => Text?.Length ?? 0;
 
     private string TextOrEmpty => Text ?? "";
@@ -302,7 +302,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
         var partEnd = partStart + partLength;
         for (int i = usedFormattingCount; i < formatSpans.Length; i++)
         {
-            var formatting = formatSpans[i];
+            ref readonly var formatting = ref formatSpans[i];
             if (formatting.Start >= partEnd)
             {
                 //no more formattings for this part
@@ -355,13 +355,13 @@ public readonly struct FormattedString : IEquatable<FormattedString>
         {
             for (int i = 0; i < formatSpans.Length; i++)
             {
-                var span = formatSpans[i];
+                ref readonly var span = ref formatSpans[i];
                 if (span.Start >= textLen) throw new ArgumentException("Span start cannot be larger than text length.", nameof(formatSpans));
                 if (span.Start + span.Length > textLen) throw new ArgumentException("Span end cannot be outside of text.", nameof(formatSpans));
 
                 if (i > 0)
                 {
-                    var previousSpan = formatSpans[i - 1];
+                    ref readonly var previousSpan = ref formatSpans[i - 1];
                     if (span.Start < previousSpan.End) throw new ArgumentException("Spans cannot overlap.", nameof(formatSpans));
                 }
             }
@@ -371,10 +371,12 @@ public readonly struct FormattedString : IEquatable<FormattedString>
     public bool Equals(FormattedString other)
     {
         if (Text != other.Text) return false;
-        if (FormatSpans.Count != other.FormatSpans.Count) return false;
-        for (int i = 0; i < FormatSpans.Count; i++)
+        var formatSpans = FormatSpans;
+        var otherFormatSpans = other.FormatSpans;
+        if (formatSpans.Length != otherFormatSpans.Length) return false;
+        for (int i = 0; i < formatSpans.Length; i++)
         {
-            if (FormatSpans[i] != other.FormatSpans[i]) return false;
+            if (!formatSpans[i].Equals(in otherFormatSpans[i])) return false;
         }
         return true;
     }

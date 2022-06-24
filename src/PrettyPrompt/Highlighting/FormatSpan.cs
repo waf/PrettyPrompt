@@ -13,8 +13,8 @@ public readonly record struct FormatSpan
 {
     public static readonly FormatSpan Empty = new(0, 0, ConsoleFormat.None);
 
-    public TextSpan Span { get; }
-    public ConsoleFormat Formatting { get; }
+    public readonly TextSpan Span;
+    public readonly ConsoleFormat Formatting;
 
     /// <summary>
     /// Start point of the span.
@@ -132,4 +132,12 @@ public readonly record struct FormatSpan
     public FormatSpan WithLength(int length) => new(Start, length, Formatting);
 
     public override string ToString() => $"[{Start}..{End})";
+
+    public bool Equals(in FormatSpan other)
+    {
+        //struct is big so we use custom by-ref equals
+        return
+            Span == other.Span &&
+            Formatting.Equals(in other.Formatting);
+    }
 }
