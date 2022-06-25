@@ -37,7 +37,7 @@ internal static class WordWrapping
         int textIndex = 0;
         int cursorColumn = 0;
         int cursorRow = 0;
-        foreach (ReadOnlyMemory<char> chunkMemory in input.GetChunks())
+        foreach (var chunkMemory in input.GetChunks())
         {
             var chunk = chunkMemory.Span;
             for (var i = 0; i < chunk.Length; i++)

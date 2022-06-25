@@ -23,7 +23,34 @@ internal static class IncrementalRendering
     /// A more complicated case, like finishing a word that triggers syntax highlighting, we should redraw just that word in the new color.
     /// An even more complicated case, like opening the autocomplete menu, should draw the autocomplete menu, and return the cursor to the correct position.
     /// </summary>
+    public static void CalculateDiffAndWriteToConsole(Screen currentScreen, Screen previousScreen, ConsoleCoordinate ansiCoordinate, IConsole console)
+    {
+        var diff = CalculateDiffInternal(currentScreen, previousScreen, ansiCoordinate);
+        var hideCursor = diff.Length > 64; //rough heuristic
+        console.Write(diff, hideCursor);
+        StringBuilderPool.Shared.Put(diff);
+    }
+
+    /// <summary>
+    /// Given a new screen and the previously rendered screen,
+    /// returns the minimum required ansi escape sequences to
+    /// render the new screen.
+    /// 
+    /// In the simple case, where the user typed a single character, we should only return that character (e.g. the returned string will be of length 1).
+    /// A more complicated case, like finishing a word that triggers syntax highlighting, we should redraw just that word in the new color.
+    /// An even more complicated case, like opening the autocomplete menu, should draw the autocomplete menu, and return the cursor to the correct position.
+    /// 
+    /// This method needs to allocate string for result. If you want to just write result to console use <see cref="CalculateDiffAndWriteToConsole(Screen, Screen, ConsoleCoordinate, IConsole)"/> instead.
+    /// </summary>
     public static string CalculateDiff(Screen currentScreen, Screen previousScreen, ConsoleCoordinate ansiCoordinate)
+    {
+        var diff = CalculateDiffInternal(currentScreen, previousScreen, ansiCoordinate);
+        var result = diff.ToString();
+        StringBuilderPool.Shared.Put(diff);
+        return result;
+    }
+
+    private static StringBuilder CalculateDiffInternal(Screen currentScreen, Screen previousScreen, ConsoleCoordinate ansiCoordinate)
     {
         // if there are multiple characters with the same formatting, don't output formatting
         // instructions per character; instead output one instruction at the beginning for all
@@ -126,9 +153,7 @@ internal static class IncrementalRendering
             )
         );
 
-        var result = diff.ToString();
-        StringBuilderPool.Shared.Put(diff);
-        return result;
+        return diff;
     }
 
     private static void UpdateCoordinateFromCursorMove(Screen currentScreen, ConsoleCoordinate ansiCoordinate, StringBuilder diff, ref ConsoleCoordinate previousCoordinate, Cell? currentCell)

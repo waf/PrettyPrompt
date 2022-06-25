@@ -129,5 +129,9 @@ public class PromptBenchmark
         void IConsole.WriteError(string? value) { }
         void IConsole.WriteErrorLine(string? value) { }
         void IConsole.WriteLine(string? value) { }
+        void IConsole.Write(ReadOnlySpan<char> value) { }
+        void IConsole.WriteError(ReadOnlySpan<char> value) { }
+        void IConsole.WriteErrorLine(ReadOnlySpan<char> value) { }
+        void IConsole.WriteLine(ReadOnlySpan<char> value) { }
     }
 }

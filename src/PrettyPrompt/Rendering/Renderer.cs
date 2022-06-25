@@ -71,7 +71,7 @@ internal class Renderer : IDisposable
                 await Redraw(cancellationToken).ConfigureAwait(false);
             }
 
-            Write(
+            console.Write(
                 GetMoveCursorDown(codePane.WordWrappedLines.Count - codePane.Cursor.Row - 1)
                 + GetMoveCursorToColumn(1)
                 + "\n"
@@ -127,21 +127,10 @@ internal class Renderer : IDisposable
 
             // calculate the diff between the previous screen and the
             // screen to be drawn, and output that diff.
-            string outputDiff = IncrementalRendering.CalculateDiff(screen, previouslyRenderedScreen, ansiCoordinate);
+            IncrementalRendering.CalculateDiffAndWriteToConsole(screen, previouslyRenderedScreen, ansiCoordinate, console);
             previouslyRenderedScreen.Dispose();
             previouslyRenderedScreen = screen;
-
-            Write(outputDiff, outputDiff.Length > 64);
         }
-    }
-
-    private void Write(string output, bool hideCursor = false)
-    {
-        // rough heuristic. HideCursor() is surprisingly slow, don't use it unless we're rendering something large.
-        // the issue mainly shows when e.g. repeating characters by holding down a key (e.g. spacebar)
-        if (hideCursor) console.HideCursor();
-        console.Write(output);
-        if (hideCursor) console.ShowCursor();
     }
 
     private static bool DidCodeAreaResize(Screen previousScreen, Screen currentScreen) =>
