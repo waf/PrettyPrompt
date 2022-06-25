@@ -5,10 +5,11 @@
 #endregion
 
 using System.Collections.Generic;
+using System.Text;
 
 namespace PrettyPrompt;
 
-internal class ListPool<T>
+internal sealed class ListPool<T>
 {
     private readonly Stack<List<T>> pool = new();
 
@@ -39,6 +40,46 @@ internal class ListPool<T>
     }
 
     public void Put(List<T> list)
+    {
+        list.Clear();
+        lock (pool)
+        {
+            pool.Push(list);
+        }
+    }
+}
+
+internal sealed class StringBuilderPool
+{
+    private readonly Stack<StringBuilder> pool = new();
+
+    public static readonly StringBuilderPool Shared = new();
+
+    public StringBuilder Get(int capacity)
+    {
+        StringBuilder? result = null;
+        lock (pool)
+        {
+            if (pool.Count > 0)
+            {
+                result = pool.Pop();
+            }
+        }
+        if (result is null)
+        {
+            result = new StringBuilder(capacity);
+        }
+        else
+        {
+            if (result.Capacity < capacity)
+            {
+                result.Capacity = capacity;
+            }
+        }
+        return result;
+    }
+
+    public void Put(StringBuilder list)
     {
         list.Clear();
         lock (pool)

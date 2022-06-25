@@ -46,7 +46,7 @@ internal class Renderer : IDisposable
         var min = CompletionPane.VerticalBordersHeight + configuration.MinCompletionItemsCount;
         var max = CompletionPane.VerticalBordersHeight + configuration.MaxCompletionItemsCount;
         var newLinesCount = ((int)(configuration.ProportionOfWindowHeightForCompletionPane * console.WindowHeight)).Clamp(min, max);
-        console.Write(new string('\n', newLinesCount) + MoveCursorUp(newLinesCount) + MoveCursorToColumn(1) + Reset);
+        console.Write(new string('\n', newLinesCount) + GetMoveCursorUp(newLinesCount) + GetMoveCursorToColumn(1) + Reset);
         console.Write(configuration.Prompt);
     }
 
@@ -72,8 +72,8 @@ internal class Renderer : IDisposable
             }
 
             Write(
-                MoveCursorDown(codePane.WordWrappedLines.Count - codePane.Cursor.Row - 1)
-                + MoveCursorToColumn(1)
+                GetMoveCursorDown(codePane.WordWrappedLines.Count - codePane.Cursor.Row - 1)
+                + GetMoveCursorToColumn(1)
                 + "\n"
                 + ClearToEndOfScreen,
                 hideCursor: true

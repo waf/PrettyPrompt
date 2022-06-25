@@ -25,8 +25,6 @@ internal static class IncrementalRendering
     /// </summary>
     public static string CalculateDiff(Screen currentScreen, Screen previousScreen, ConsoleCoordinate ansiCoordinate)
     {
-        var diff = new StringBuilder();
-
         // if there are multiple characters with the same formatting, don't output formatting
         // instructions per character; instead output one instruction at the beginning for all
         // characters that share the same formatting.
@@ -39,6 +37,7 @@ internal static class IncrementalRendering
         var currentBuffer = currentScreen.CellBuffer;
         var previousBuffer = previousScreen.CellBuffer;
         var maxIndex = Math.Max(currentBuffer.Length, previousBuffer.Length);
+        var diff = StringBuilderPool.Shared.Get(maxIndex);
         for (int i = 0; i < maxIndex; i++)
         {
             var currentCell = i < currentBuffer.Length ? currentBuffer[i] : null;
@@ -53,7 +52,8 @@ internal static class IncrementalRendering
                 continue;
             }
 
-            var cellCoordinate = ansiCoordinate.Offset(i / currentScreen.Width, i % currentScreen.Width);
+            var (rowOffset, columnOffset) = Math.DivRem(i, currentScreen.Width);
+            var cellCoordinate = ansiCoordinate.Offset(rowOffset, columnOffset);
 
             MoveCursorIfRequired(diff, previousCoordinate, cellCoordinate);
             previousCoordinate = cellCoordinate;
@@ -126,7 +126,9 @@ internal static class IncrementalRendering
             )
         );
 
-        return diff.ToString();
+        var result = diff.ToString();
+        StringBuilderPool.Shared.Put(diff);
+        return result;
     }
 
     private static void UpdateCoordinateFromCursorMove(Screen currentScreen, ConsoleCoordinate ansiCoordinate, StringBuilder diff, ref ConsoleCoordinate previousCoordinate, Cell? currentCell)
@@ -176,17 +178,13 @@ internal static class IncrementalRendering
 
         if (fromCoordinate.Row != toCoordinate.Row)
         {
-            diff.Append(fromCoordinate.Row < toCoordinate.Row
-                ? MoveCursorDown(toCoordinate.Row - fromCoordinate.Row)
-                : MoveCursorUp(fromCoordinate.Row - toCoordinate.Row)
-            );
+            if (fromCoordinate.Row < toCoordinate.Row) AppendMoveCursorDown(diff, toCoordinate.Row - fromCoordinate.Row);
+            else AppendMoveCursorUp(diff, fromCoordinate.Row - toCoordinate.Row);
         }
         if (fromCoordinate.Column != toCoordinate.Column)
         {
-            diff.Append(fromCoordinate.Column < toCoordinate.Column
-                ? MoveCursorRight(toCoordinate.Column - fromCoordinate.Column)
-                : MoveCursorLeft(fromCoordinate.Column - toCoordinate.Column)
-            );
+            if (fromCoordinate.Column < toCoordinate.Column) AppendMoveCursorRight(diff, toCoordinate.Column - fromCoordinate.Column);
+            else AppendMoveCursorLeft(diff, fromCoordinate.Column - toCoordinate.Column);
         }
     }
 }

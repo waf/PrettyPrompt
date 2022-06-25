@@ -12,7 +12,7 @@ public class OutputTests
     {
         var output = Prompt.RenderAnsiOutput("here is some output", System.Array.Empty<FormatSpan>(), 100);
 
-        Assert.Equal("here is some output" + MoveCursorLeft(19), output);
+        Assert.Equal("here is some output" + GetMoveCursorLeft(19), output);
     }
 
     [Fact]
@@ -27,7 +27,7 @@ public class OutputTests
         }, 100);
 
         Assert.Equal(
-            ToAnsiEscapeSequenceSlow(format1) + "here" + Reset + " is " + ToAnsiEscapeSequenceSlow(format2) + "some" + Reset + " output" + MoveCursorLeft(19),
+            ToAnsiEscapeSequenceSlow(format1) + "here" + Reset + " is " + ToAnsiEscapeSequenceSlow(format2) + "some" + Reset + " output" + GetMoveCursorLeft(19),
             output
         );
     }
@@ -45,11 +45,11 @@ public class OutputTests
 
         Assert.Equal(
             expected:
-                ToAnsiEscapeSequenceSlow(format1) + "here\n" + MoveCursorLeft(3) +
-                Reset + " is \n" + MoveCursorLeft(3) +
-                ToAnsiEscapeSequenceSlow(format2) + "some\n" + MoveCursorLeft(3) +
-                Reset + " out\n" + MoveCursorLeft(3) +
-                "put" + MoveCursorLeft(3),
+                ToAnsiEscapeSequenceSlow(format1) + "here\n" + GetMoveCursorLeft(3) +
+                Reset + " is \n" + GetMoveCursorLeft(3) +
+                ToAnsiEscapeSequenceSlow(format2) + "some\n" + GetMoveCursorLeft(3) +
+                Reset + " out\n" + GetMoveCursorLeft(3) +
+                "put" + GetMoveCursorLeft(3),
             actual: output
         );
     }

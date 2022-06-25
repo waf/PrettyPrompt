@@ -6,7 +6,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Documents;
@@ -31,16 +30,14 @@ internal static class CellRenderer
 
         bool selectionHighlight = false;
 
-        var highlightsLookup = highlights
-            .ToLookup(h => h.Start)
-            .ToDictionary(h => h.Key, conflictingHighlights => conflictingHighlights.OrderByDescending(h => h.Length).First());
+        var highlightsLookup = HighlightsGroupingPool.Shared.Get(highlights);
         var highlightedRows = new Row[lines.Count];
         FormatSpan? currentHighlight = null;
         for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
         {
             WrappedLine line = lines[lineIndex];
             int lineFullWidthCharacterOffset = 0;
-            var row =new Row(line.Content);
+            var row = new Row(line.Content);
             for (int cellIndex = 0; cellIndex < row.Length; cellIndex++)
             {
                 var cell = row[cellIndex];
@@ -116,5 +113,58 @@ internal static class CellRenderer
     {
         var wrapped = WordWrapping.WrapEditableCharacters(new StringBuilder(text), 0, textWidth);
         return ApplyColorToCharacters(highlights, wrapped.WrappedLines, selection: null, selectedTextBackground: null);
+    }
+
+    private sealed class HighlightsGroupingPool
+    {
+        private readonly Stack<Dictionary<int, FormatSpan>> pool = new();
+
+        public static readonly HighlightsGroupingPool Shared = new();
+
+        public Dictionary<int, FormatSpan> Get(IReadOnlyCollection<FormatSpan> highlights)
+        {
+            Dictionary<int, FormatSpan>? result = null;
+            lock (pool)
+            {
+                if (pool.Count > 0)
+                {
+                    result = pool.Pop();
+                }
+            }
+            if (result is null)
+            {
+                result = new Dictionary<int, FormatSpan>(highlights.Count);
+            }
+            else
+            {
+                result.EnsureCapacity(highlights.Count);
+            }
+
+            foreach (var highlight in highlights)
+            {
+                if (result.TryGetValue(highlight.Start, out var formatSpan))
+                {
+                    if (highlight.Length > formatSpan.Length)
+                    {
+                        result[highlight.Start] = highlight;
+                    }
+                }
+                else
+                {
+                    result.Add(highlight.Start, highlight);
+                }
+            }
+
+            return result;
+        }
+
+        public void Put(Dictionary<int, FormatSpan> list)
+        {
+            list.Clear();
+            lock (pool)
+            {
+                pool.Push(list);
+            }
+        }
     }
 }

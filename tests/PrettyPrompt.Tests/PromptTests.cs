@@ -101,9 +101,9 @@ public class PromptTests
         var finalOutput = console.GetFinalOutput();
 
         Assert.Equal(
-            expected: "111\n" + MoveCursorLeft(2) +
-                      "222\n" + MoveCursorLeft(2) +
-                      "333\n" + MoveCursorLeft(2),
+            expected: "111\n" + GetMoveCursorLeft(2) +
+                      "222\n" + GetMoveCursorLeft(2) +
+                      "333\n" + GetMoveCursorLeft(2),
             actual: finalOutput
         );
     }

@@ -12,7 +12,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Runtime.CompilerServices;
-using System.Text;
 using PrettyPrompt.Rendering;
 
 namespace PrettyPrompt.Highlighting;
@@ -97,11 +96,20 @@ public readonly struct FormattedString : IEquatable<FormattedString>
 
         var leftFormatSpans = left.FormatSpansOrEmpty;
         var rightFormatSpans = right.FormatSpansOrEmpty;
-        var resultFormatSpans = new FormatSpan[leftFormatSpans.Length + rightFormatSpans.Length];
-        leftFormatSpans.AsSpan().CopyTo(resultFormatSpans);
-        for (int i = 0; i < rightFormatSpans.Length; i++)
+        var resultFormatSpansCount = leftFormatSpans.Length + rightFormatSpans.Length;
+        FormatSpan[] resultFormatSpans;
+        if (resultFormatSpansCount > 0)
         {
-            resultFormatSpans[leftFormatSpans.Length + i] = rightFormatSpans[i].Offset(left.TextOrEmpty.Length);
+            resultFormatSpans = new FormatSpan[resultFormatSpansCount];
+            leftFormatSpans.AsSpan().CopyTo(resultFormatSpans);
+            for (int i = 0; i < rightFormatSpans.Length; i++)
+            {
+                resultFormatSpans[leftFormatSpans.Length + i] = rightFormatSpans[i].Offset(left.TextOrEmpty.Length);
+            }
+        }
+        else
+        {
+            resultFormatSpans = Array.Empty<FormatSpan>();
         }
 
         return new FormattedString(resultText, resultFormatSpans);
@@ -164,7 +172,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
         var text = Text.AsSpan();
         int currentOffsetInPartialyReplacedText = 0;
 
-        var sb = new StringBuilder();
+        var sb = StringBuilderPool.Shared.Get(oldValue.Length);
         var formatSpans = this.formatSpans.ToArray();
         int formatIndex = 0;
         while (true)
@@ -212,7 +220,9 @@ public readonly struct FormattedString : IEquatable<FormattedString>
 
         sb.Append(text);
 
-        return new FormattedString(sb.ToString(), formatSpans);
+        var resultText = sb.ToString();
+        StringBuilderPool.Shared.Put(sb);
+        return new FormattedString(resultText, formatSpans);
     }
 
     /// <summary>

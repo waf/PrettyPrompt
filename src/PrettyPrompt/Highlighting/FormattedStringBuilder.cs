@@ -21,7 +21,7 @@ public readonly struct FormattedStringBuilder
 
     public FormattedStringBuilder Append(FormattedString text)
     {
-        foreach (var span in text.FormatSpans)
+        foreach (ref readonly var span in text.FormatSpans)
         {
             formatSpans.Add(span.Offset(stringBuilder.Length));
         }

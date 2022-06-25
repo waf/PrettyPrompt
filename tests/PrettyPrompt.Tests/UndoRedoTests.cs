@@ -64,7 +64,7 @@ public class UndoRedoTests
 
         var outputs = console.GetAllOutput();
         Assert.Equal("a", outputs[2]);
-        Assert.Equal($"{MoveCursorLeft(1)} {MoveCursorLeft(1)}", outputs[3]); //delete of 'a'
+        Assert.Equal($"{GetMoveCursorLeft(1)} {GetMoveCursorLeft(1)}", outputs[3]); //delete of 'a'
         Assert.Equal("a", outputs[4]);
 
         //---------------------------------------------
@@ -234,9 +234,9 @@ public class UndoRedoTests
 
         var outputs = console.GetAllOutput();
         Assert.Equal("a", outputs[2]);
-        Assert.Equal($"{MoveCursorLeft(1)} {MoveCursorLeft(1)}", outputs[3]); //delete of 'a'
+        Assert.Equal($"{GetMoveCursorLeft(1)} {GetMoveCursorLeft(1)}", outputs[3]); //delete of 'a'
         Assert.Equal("b", outputs[4]);
-        Assert.Equal($"{MoveCursorLeft(1)} {MoveCursorLeft(1)}", outputs[5]); //delete of 'b'
+        Assert.Equal($"{GetMoveCursorLeft(1)} {GetMoveCursorLeft(1)}", outputs[5]); //delete of 'b'
     }
 
     /// <summary>
