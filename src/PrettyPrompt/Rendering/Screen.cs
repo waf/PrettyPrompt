@@ -15,14 +15,14 @@ namespace PrettyPrompt.Rendering;
 /// Represents characters (TextElements) rendered on a screen.
 /// Used as part of <see cref="IncrementalRendering"/>.
 /// </summary>
-internal sealed class Screen
+internal sealed class Screen : IDisposable
 {
     private readonly ScreenArea[] screenAreas;
 
     public int Width { get; }
     public int Height { get; }
     public ConsoleCoordinate Cursor { get; }
-    public Cell[] CellBuffer { get; }
+    public Cell?[] CellBuffer { get; }
     public int MaxIndex { get; }
 
     public Screen(int width, int height, ConsoleCoordinate cursor, params ScreenArea[] screenAreas)
@@ -49,17 +49,17 @@ internal sealed class Screen
             int rowCountToRender = Math.Min(area.Rows.Length, Height - area.Start.Row);
             for (var i = 0; i < rowCountToRender; i++)
             {
-                var row = area.Start.Row + i;
-                var line = area.Rows[i].Cells;
-                var position = row * Width + area.Start.Column;
-                var length = Math.Min(line.Count, CellBuffer.Length - position);
+                var rowPosition = area.Start.Row + i;
+                var row = area.Rows[i];
+                var position = rowPosition * Width + area.Start.Column;
+                var length = Math.Min(row.Length, CellBuffer.Length - position);
                 if (length > 0)
                 {
-                    foreach (var cell in line)
+                    for (int cellIndex = 0; cellIndex < row.Length; cellIndex++)
                     {
-                        cell.TruncateToScreenHeight = area.TruncateToScreenHeight;
+                        row[cellIndex].TruncateToScreenHeight = area.TruncateToScreenHeight;
                     }
-                    line.CopyTo(0, CellBuffer, position, length);
+                    row.CopyTo(CellBuffer, position, length);
                     maxIndex = Math.Max(maxIndex, position + length);
                 }
             }
@@ -88,8 +88,8 @@ internal sealed class Screen
             {
                 Debug.Assert(i > 0);
                 var previousCell = screen.CellBuffer[i - 1];
+                Debug.Assert(previousCell?.Text is not null);
                 Debug.Assert(previousCell.ElementWidth == 2);
-                Debug.Assert(previousCell.Text is not null);
 
                 //e.g. for '界' is previousCell.ElementWidth==2 and previousCell.Text.Length==1
                 //e.g. for '😀' is previousCell.ElementWidth==2 and previousCell.Text.Length==2 (which means cursor is already moved by 2 because of Text length)
@@ -104,4 +104,12 @@ internal sealed class Screen
     }
 
     public Screen Resize(int width, int height) => new(width, height, Cursor, screenAreas);
+
+    public void Dispose()
+    {
+        foreach (var screenArea in screenAreas)
+        {
+            screenArea.Dispose();
+        }
+    }
 }

@@ -7,8 +7,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Highlighting;
 using PrettyPrompt.Rendering;
@@ -35,11 +33,11 @@ internal static class WordWrapping
 
         var lines = new List<WrappedLine>();
         int currentLineLength = 0;
-        var line = new StringBuilder(width);
+        var line = StringBuilderPool.Shared.Get(width);
         int textIndex = 0;
         int cursorColumn = 0;
         int cursorRow = 0;
-        foreach (ReadOnlyMemory<char> chunkMemory in input.GetChunks())
+        foreach (var chunkMemory in input.GetChunks())
         {
             var chunk = chunkMemory.Span;
             for (var i = 0; i < chunk.Length; i++)
@@ -71,7 +69,7 @@ internal static class WordWrapping
                         cursorColumn = 0;
                     }
                     lines.Add(new WrappedLine(textIndex - line.Length, line.ToString()));
-                    line = new StringBuilder();
+                    line.Clear();
                     currentLineLength = 0;
                 }
             }
@@ -89,6 +87,7 @@ internal static class WordWrapping
             lines.Add(WrappedLine.Empty(startIndex: textIndex));
         }
 
+        StringBuilderPool.Shared.Put(line);
         return new WordWrappedText(lines, new ConsoleCoordinate(cursorRow, cursorColumn));
 
         static bool NextCharacterIsFullWidthAndWillWrap(int width, int currentLineLength, ReadOnlySpan<char> chunk, int i)
@@ -102,39 +101,59 @@ internal static class WordWrapping
     /// </summary>
     public static List<FormattedString> WrapWords(FormattedString input, int maxLength)
     {
-        if (input.Length == 0)
+        Debug.Assert(maxLength >= 0);
+
+        if (input.Length == 0 || maxLength == 0)
         {
             return new List<FormattedString>();
         }
 
         var lines = new List<FormattedString>();
+        var currentLine = new FormattedStringBuilder();
         foreach (var line in input.Split('\n'))
         {
-            var currentLine = new FormattedStringBuilder();
+            currentLine.Clear();
+
             int currentLineWidth = 0;
-            foreach (var currentWord in line.Split(' ').SelectMany(word => word.SplitIntoChunks(maxLength)))
+            foreach (var word in line.Split(' '))
             {
-                var wordLength = currentWord.GetUnicodeWidth();
-                var wordWithSpaceLength = currentLineWidth == 0 ? wordLength : wordLength + 1;
-
-                if (currentLineWidth > maxLength ||
-                    currentLineWidth + wordWithSpaceLength > maxLength)
+                if (word.Length <= maxLength)
                 {
-                    lines.Add(currentLine.ToFormattedString());
-                    currentLine.Clear();
-                    currentLineWidth = 0;
-                }
-
-                if (currentLineWidth == 0)
-                {
-                    currentLine.Append(currentWord);
-                    currentLineWidth += wordLength;
+                    ProcessWord(word);
                 }
                 else
                 {
-                    currentLine.Append(" ");
-                    currentLine.Append(currentWord);
-                    currentLineWidth += wordLength + 1;
+                    //slow path
+                    foreach (var currentWord in word.SplitIntoChunks(maxLength))
+                    {
+                        ProcessWord(currentWord);
+                    }
+                }
+
+                void ProcessWord(FormattedString currentWord)
+                {
+                    var wordLength = currentWord.GetUnicodeWidth();
+                    var wordWithSpaceLength = currentLineWidth == 0 ? wordLength : wordLength + 1;
+
+                    if (currentLineWidth > maxLength ||
+                        currentLineWidth + wordWithSpaceLength > maxLength)
+                    {
+                        lines.Add(currentLine.ToFormattedString());
+                        currentLine.Clear();
+                        currentLineWidth = 0;
+                    }
+
+                    if (currentLineWidth == 0)
+                    {
+                        currentLine.Append(currentWord);
+                        currentLineWidth += wordLength;
+                    }
+                    else
+                    {
+                        currentLine.Append(" ");
+                        currentLine.Append(currentWord);
+                        currentLineWidth += wordLength + 1;
+                    }
                 }
             }
 

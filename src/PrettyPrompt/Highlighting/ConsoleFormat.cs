@@ -17,4 +17,22 @@ public readonly record struct ConsoleFormat(
 
     public string? ForegroundCode => Foreground?.GetCode(AnsiColor.Type.Foreground);
     public string? BackgroundCode => Background?.GetCode(AnsiColor.Type.Background);
+
+    public readonly bool Equals(in ConsoleFormat other)
+    {
+        //this is hot from IncrementalRendering.CalculateDiff, so we want to use custom Equals where 'other' is by-ref
+        return
+            Foreground == other.Foreground &&
+            Background == other.Background &&
+            Bold == other.Bold &&
+            Underline == other.Underline &&
+            Inverted == other.Inverted;
+    }
+
+    public bool IsDefault =>
+        !Foreground.HasValue &&
+        !Background.HasValue &&
+        !Bold &&
+        !Underline &&
+        !Inverted;
 }

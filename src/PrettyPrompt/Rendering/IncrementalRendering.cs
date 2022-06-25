@@ -23,10 +23,35 @@ internal static class IncrementalRendering
     /// A more complicated case, like finishing a word that triggers syntax highlighting, we should redraw just that word in the new color.
     /// An even more complicated case, like opening the autocomplete menu, should draw the autocomplete menu, and return the cursor to the correct position.
     /// </summary>
+    public static void CalculateDiffAndWriteToConsole(Screen currentScreen, Screen previousScreen, ConsoleCoordinate ansiCoordinate, IConsole console)
+    {
+        var diff = CalculateDiffInternal(currentScreen, previousScreen, ansiCoordinate);
+        var hideCursor = diff.Length > 64; //rough heuristic
+        console.Write(diff, hideCursor);
+        StringBuilderPool.Shared.Put(diff);
+    }
+
+    /// <summary>
+    /// Given a new screen and the previously rendered screen,
+    /// returns the minimum required ansi escape sequences to
+    /// render the new screen.
+    /// 
+    /// In the simple case, where the user typed a single character, we should only return that character (e.g. the returned string will be of length 1).
+    /// A more complicated case, like finishing a word that triggers syntax highlighting, we should redraw just that word in the new color.
+    /// An even more complicated case, like opening the autocomplete menu, should draw the autocomplete menu, and return the cursor to the correct position.
+    /// 
+    /// This method needs to allocate string for result. If you want to just write result to console use <see cref="CalculateDiffAndWriteToConsole(Screen, Screen, ConsoleCoordinate, IConsole)"/> instead.
+    /// </summary>
     public static string CalculateDiff(Screen currentScreen, Screen previousScreen, ConsoleCoordinate ansiCoordinate)
     {
-        var diff = new StringBuilder();
+        var diff = CalculateDiffInternal(currentScreen, previousScreen, ansiCoordinate);
+        var result = diff.ToString();
+        StringBuilderPool.Shared.Put(diff);
+        return result;
+    }
 
+    private static StringBuilder CalculateDiffInternal(Screen currentScreen, Screen previousScreen, ConsoleCoordinate ansiCoordinate)
+    {
         // if there are multiple characters with the same formatting, don't output formatting
         // instructions per character; instead output one instruction at the beginning for all
         // characters that share the same formatting.
@@ -36,27 +61,34 @@ internal static class IncrementalRendering
             column: ansiCoordinate.Column + previousScreen.Cursor.Column
         );
 
-        foreach (var (i, currentCell, previousCell) in currentScreen.CellBuffer.ZipLongest(previousScreen.CellBuffer))
+        var currentBuffer = currentScreen.CellBuffer;
+        var previousBuffer = previousScreen.CellBuffer;
+        var maxIndex = Math.Max(currentBuffer.Length, previousBuffer.Length);
+        var diff = StringBuilderPool.Shared.Get(maxIndex);
+        for (int i = 0; i < maxIndex; i++)
         {
+            var currentCell = i < currentBuffer.Length ? currentBuffer[i] : null;
             if (currentCell is not null && currentCell.IsContinuationOfPreviousCharacter)
             {
                 continue;
             }
 
-            if (currentCell == previousCell)
+            var previousCell = i < previousBuffer.Length ? previousBuffer[i] : null;
+            if (Cell.Equals(currentCell, previousCell))
             {
                 continue;
             }
 
-            var cellCoordinate = ansiCoordinate.Offset(i / currentScreen.Width, i % currentScreen.Width);
+            var (rowOffset, columnOffset) = Math.DivRem(i, currentScreen.Width);
+            var cellCoordinate = ansiCoordinate.Offset(rowOffset, columnOffset);
 
             MoveCursorIfRequired(diff, previousCoordinate, cellCoordinate);
             previousCoordinate = cellCoordinate;
 
             // handle when we're erasing characters/formatting from the previously rendered screen.
-            if (currentCell is null || currentCell.Formatting == ConsoleFormat.None)
+            if (currentCell is null || currentCell.Formatting.IsDefault)
             {
-                if (currentFormatRun != ConsoleFormat.None)
+                if (!currentFormatRun.IsDefault)
                 {
                     diff.Append(Reset);
                     currentFormatRun = ConsoleFormat.None;
@@ -75,17 +107,15 @@ internal static class IncrementalRendering
             }
 
             // write out current character, with any formatting
-            if (currentCell.Formatting != currentFormatRun)
+            if (!currentCell.Formatting.Equals(in currentFormatRun))
             {
                 // text selection is implemented by inverting colors. Reset inverted colors if required.
-                if (currentFormatRun != ConsoleFormat.None && currentCell.Formatting.Inverted != currentFormatRun.Inverted)
+                if (!currentFormatRun.IsDefault && currentCell.Formatting.Inverted != currentFormatRun.Inverted)
                 {
                     diff.Append(Reset);
                 }
-                diff.Append(
-                    ToAnsiEscapeSequence(currentCell.Formatting)
-                    + currentCell.Text
-                );
+                AppendAnsiEscapeSequence(diff, currentCell.Formatting);
+                diff.Append(currentCell.Text);
                 currentFormatRun = currentCell.Formatting;
             }
             else
@@ -106,7 +136,7 @@ internal static class IncrementalRendering
             }
         }
 
-        if (currentFormatRun != ConsoleFormat.None)
+        if (!currentFormatRun.IsDefault)
         {
             diff.Append(Reset);
         }
@@ -123,7 +153,7 @@ internal static class IncrementalRendering
             )
         );
 
-        return diff.ToString();
+        return diff;
     }
 
     private static void UpdateCoordinateFromCursorMove(Screen currentScreen, ConsoleCoordinate ansiCoordinate, StringBuilder diff, ref ConsoleCoordinate previousCoordinate, Cell? currentCell)
@@ -173,17 +203,13 @@ internal static class IncrementalRendering
 
         if (fromCoordinate.Row != toCoordinate.Row)
         {
-            diff.Append(fromCoordinate.Row < toCoordinate.Row
-                ? MoveCursorDown(toCoordinate.Row - fromCoordinate.Row)
-                : MoveCursorUp(fromCoordinate.Row - toCoordinate.Row)
-            );
+            if (fromCoordinate.Row < toCoordinate.Row) AppendMoveCursorDown(diff, toCoordinate.Row - fromCoordinate.Row);
+            else AppendMoveCursorUp(diff, fromCoordinate.Row - toCoordinate.Row);
         }
         if (fromCoordinate.Column != toCoordinate.Column)
         {
-            diff.Append(fromCoordinate.Column < toCoordinate.Column
-                ? MoveCursorRight(toCoordinate.Column - fromCoordinate.Column)
-                : MoveCursorLeft(fromCoordinate.Column - toCoordinate.Column)
-            );
+            if (fromCoordinate.Column < toCoordinate.Column) AppendMoveCursorRight(diff, toCoordinate.Column - fromCoordinate.Column);
+            else AppendMoveCursorLeft(diff, fromCoordinate.Column - toCoordinate.Column);
         }
     }
 }

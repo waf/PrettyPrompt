@@ -6,7 +6,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Documents;
@@ -31,19 +30,17 @@ internal static class CellRenderer
 
         bool selectionHighlight = false;
 
-        var highlightsLookup = highlights
-            .ToLookup(h => h.Start)
-            .ToDictionary(h => h.Key, conflictingHighlights => conflictingHighlights.OrderByDescending(h => h.Length).First());
+        var highlightsLookup = HighlightsGroupingPool.Shared.Get(highlights);
         var highlightedRows = new Row[lines.Count];
         FormatSpan? currentHighlight = null;
         for (int lineIndex = 0; lineIndex < lines.Count; lineIndex++)
         {
             WrappedLine line = lines[lineIndex];
             int lineFullWidthCharacterOffset = 0;
-            var cells = Cell.FromText(line.Content);
-            for (int cellIndex = 0; cellIndex < cells.Count; cellIndex++)
+            var row = new Row(line.Content);
+            for (int cellIndex = 0; cellIndex < row.Length; cellIndex++)
             {
-                var cell = cells[cellIndex];
+                var cell = row[cellIndex];
                 if (cell.IsContinuationOfPreviousCharacter)
                     lineFullWidthCharacterOffset++;
 
@@ -51,7 +48,7 @@ internal static class CellRenderer
                 if (currentHighlight.TryGet(out var previousLineHighlight) &&
                     cellIndex == 0)
                 {
-                    currentHighlight = HighlightSpan(previousLineHighlight, cells, cellIndex, previousLineHighlight.Start - line.StartIndex);
+                    currentHighlight = HighlightSpan(previousLineHighlight, row, cellIndex, previousLineHighlight.Start - line.StartIndex);
                 }
 
                 // get current syntaxt highlight start
@@ -62,7 +59,7 @@ internal static class CellRenderer
                 if (currentHighlight.TryGet(out var highlight) &&
                     highlight.Contains(characterPosition))
                 {
-                    currentHighlight = HighlightSpan(highlight, cells, cellIndex, cellIndex);
+                    currentHighlight = HighlightSpan(highlight, row, cellIndex, cellIndex);
                 }
 
                 // if there's text selected, invert colors to represent the highlight of the selected text.
@@ -78,7 +75,7 @@ internal static class CellRenderer
                 {
                     if (selectedTextBackground.TryGet(out var background))
                     {
-                        cell.Formatting = cell.Formatting with { Background = background };
+                        cell.TransformBackground(background);
                     }
                     else
                     {
@@ -86,21 +83,21 @@ internal static class CellRenderer
                     }
                 }
             }
-            highlightedRows[lineIndex] = new Row(cells);
+            highlightedRows[lineIndex] = row;
         }
         return highlightedRows;
     }
 
-    private static FormatSpan? HighlightSpan(FormatSpan currentHighlight, List<Cell> cells, int cellIndex, int endPosition)
+    private static FormatSpan? HighlightSpan(FormatSpan currentHighlight, Row row, int cellIndex, int endPosition)
     {
         var highlightedFullWidthOffset = 0;
         int i;
-        for (i = cellIndex; i < Math.Min(endPosition + currentHighlight.Length + highlightedFullWidthOffset, cells.Count); i++)
+        for (i = cellIndex; i < Math.Min(endPosition + currentHighlight.Length + highlightedFullWidthOffset, row.Length); i++)
         {
-            highlightedFullWidthOffset += cells[i].ElementWidth - 1;
-            cells[i].Formatting = currentHighlight.Formatting;
+            highlightedFullWidthOffset += row[i].ElementWidth - 1;
+            row[i].Formatting = currentHighlight.Formatting;
         }
-        if (i != cells.Count)
+        if (i != row.Length)
         {
             return null;
         }
@@ -116,5 +113,58 @@ internal static class CellRenderer
     {
         var wrapped = WordWrapping.WrapEditableCharacters(new StringBuilder(text), 0, textWidth);
         return ApplyColorToCharacters(highlights, wrapped.WrappedLines, selection: null, selectedTextBackground: null);
+    }
+
+    private sealed class HighlightsGroupingPool
+    {
+        private readonly Stack<Dictionary<int, FormatSpan>> pool = new();
+
+        public static readonly HighlightsGroupingPool Shared = new();
+
+        public Dictionary<int, FormatSpan> Get(IReadOnlyCollection<FormatSpan> highlights)
+        {
+            Dictionary<int, FormatSpan>? result = null;
+            lock (pool)
+            {
+                if (pool.Count > 0)
+                {
+                    result = pool.Pop();
+                }
+            }
+            if (result is null)
+            {
+                result = new Dictionary<int, FormatSpan>(highlights.Count);
+            }
+            else
+            {
+                result.EnsureCapacity(highlights.Count);
+            }
+
+            foreach (var highlight in highlights)
+            {
+                if (result.TryGetValue(highlight.Start, out var formatSpan))
+                {
+                    if (highlight.Length > formatSpan.Length)
+                    {
+                        result[highlight.Start] = highlight;
+                    }
+                }
+                else
+                {
+                    result.Add(highlight.Start, highlight);
+                }
+            }
+
+            return result;
+        }
+
+        public void Put(Dictionary<int, FormatSpan> list)
+        {
+            list.Clear();
+            lock (pool)
+            {
+                pool.Push(list);
+            }
+        }
     }
 }

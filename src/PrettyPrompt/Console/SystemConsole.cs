@@ -23,6 +23,12 @@ public class SystemConsole : IConsole
     public void WriteLine(string? value) => Console.WriteLine(value);
     public void WriteError(string? value) => Console.Error.Write(value);
     public void WriteErrorLine(string? value) => Console.Error.WriteLine(value);
+
+    public void Write(ReadOnlySpan<char> value) => Console.Out.Write(value);
+    public void WriteLine(ReadOnlySpan<char> value) => Console.Out.WriteLine(value);
+    public void WriteError(ReadOnlySpan<char> value) => Console.Error.Write(value);
+    public void WriteErrorLine(ReadOnlySpan<char> value) => Console.Error.WriteLine(value);
+
     public void Clear() => Console.Clear();
     public void ShowCursor() => Console.CursorVisible = true;
     public void HideCursor() => Console.CursorVisible = false;

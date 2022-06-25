@@ -88,7 +88,7 @@ public class ChineseJapaneseKoreanTests
         Assert.Equal("> ", output[1]);
         Assert.Equal("书", output[2]);
         Assert.Equal("桌", output[3]);
-        Assert.Equal("上\n" + AnsiEscapeCodes.MoveCursorLeft(5), output[4]);
+        Assert.Equal("上\n" + AnsiEscapeCodes.GetMoveCursorLeft(5), output[4]);
         Assert.Equal("有", output[5]);
     }
 }

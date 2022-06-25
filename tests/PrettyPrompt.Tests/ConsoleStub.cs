@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -26,7 +27,7 @@ internal static class ConsoleStub
 
     public static IConsoleWithClipboard NewConsole(int width = 100, int height = 100)
     {
-        var console = Substitute.For<IConsoleWithClipboard>();
+        var console = Substitute.For<ConsoleWithClipboard>();
         console.BufferWidth.Returns(width);
         console.WindowHeight.Returns(height);
         console.Clipboard.Returns(new ProtectedClipboard());
@@ -275,4 +276,40 @@ internal static class ConsoleStub
                 throw new InvalidOperationException("If the test uses clipboard the test has to be wrapped by ProtectClipboard() method call.");
         }
     }
+}
+
+public abstract class ConsoleWithClipboard : IConsoleWithClipboard
+{
+    public abstract IClipboard Clipboard { get; }
+    public abstract int CursorTop { get; }
+    public abstract int BufferWidth { get; }
+    public abstract int WindowHeight { get; }
+    public abstract int WindowTop { get; }
+    public abstract bool KeyAvailable { get; }
+    public abstract bool CaptureControlC { get; set; }
+    public abstract void Clear();
+    public abstract void HideCursor();
+    public abstract void InitVirtualTerminalProcessing();
+    public abstract IDisposable ProtectClipboard();
+    public abstract ConsoleKeyInfo ReadKey(bool intercept);
+    public abstract void ShowCursor();
+    public abstract void Write(string? value);
+    public abstract void WriteError(string? value);
+    public abstract void WriteErrorLine(string? value);
+    public abstract void WriteLine(string? value);
+#pragma warning disable 0067
+    public event ConsoleCancelEventHandler? CancelKeyPress;
+#pragma warning restore 0067
+
+    //following implementations is needed because NSubstitute does not support ROS
+    public void Write(ReadOnlySpan<char> value) => Write(value.ToString());
+    public void WriteError(ReadOnlySpan<char> value) => WriteError(value.ToString());
+    public void WriteErrorLine(ReadOnlySpan<char> value) => WriteErrorLine(value.ToString());
+    public void WriteLine(ReadOnlySpan<char> value) => WriteLine(value.ToString());
+
+    //following overrides are needed for determinism (see comment in IConsole)
+    public void Write(StringBuilder value, bool hideCursor) => Write(value.ToString());
+    public void WriteError(StringBuilder value, bool hideCursor) => WriteError(value.ToString());
+    public void WriteErrorLine(StringBuilder value, bool hideCursor) => WriteErrorLine(value.ToString());
+    public void WriteLine(StringBuilder value, bool hideCursor) => WriteLine(value.ToString());
 }

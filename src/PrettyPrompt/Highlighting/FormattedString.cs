@@ -5,12 +5,13 @@
 #endregion
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
-using System.Text;
+using System.Runtime.CompilerServices;
 using PrettyPrompt.Rendering;
 
 namespace PrettyPrompt.Highlighting;
@@ -25,7 +26,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
     public string? Text { get; }
     private readonly FormatSpan[] formatSpans;
 
-    public IReadOnlyList<FormatSpan> FormatSpans => formatSpans ?? Array.Empty<FormatSpan>();
+    public ReadOnlySpan<FormatSpan> FormatSpans => formatSpans ?? Array.Empty<FormatSpan>();
     public int Length => Text?.Length ?? 0;
 
     private string TextOrEmpty => Text ?? "";
@@ -41,14 +42,44 @@ public readonly struct FormattedString : IEquatable<FormattedString>
     public FormattedString(string? text, params FormatSpan[]? formatSpans)
     {
         Text = text;
-        if ((formatSpans?.Length ?? 0) == 0)
+        if (formatSpans is null)
         {
             this.formatSpans = Array.Empty<FormatSpan>();
         }
         else
         {
-            this.formatSpans = formatSpans!.Where(s => s.Length > 0).OrderBy(s => s.Start).ToArray();
-            CheckFormatSpans();
+            switch (formatSpans.Length)
+            {
+                case 0:
+                    this.formatSpans = formatSpans;
+                    break;
+                case 1:
+                    this.formatSpans = formatSpans[0].Length > 0 ? formatSpans : Array.Empty<FormatSpan>();
+                    break;
+                default:
+                    //slow path
+                    this.formatSpans = formatSpans!.Where(s => s.Length > 0).OrderBy(s => s.Start).ToArray();
+                    CheckFormatSpans();
+                    break;
+            }
+        }
+    }
+
+    public FormattedString(string? text, List<FormatSpan> formatSpans)
+    {
+        Text = text;
+        switch (formatSpans.Count)
+        {
+            case 0:
+                this.formatSpans = Array.Empty<FormatSpan>();
+                break;
+            case 1:
+                this.formatSpans = formatSpans[0].Length > 0 ? formatSpans.ToArray() : Array.Empty<FormatSpan>();
+                break;
+            default:
+                //slow path
+                this = new FormattedString(text, formatSpans.ToArray());
+                break;
         }
     }
 
@@ -65,11 +96,20 @@ public readonly struct FormattedString : IEquatable<FormattedString>
 
         var leftFormatSpans = left.FormatSpansOrEmpty;
         var rightFormatSpans = right.FormatSpansOrEmpty;
-        var resultFormatSpans = new FormatSpan[leftFormatSpans.Length + rightFormatSpans.Length];
-        leftFormatSpans.AsSpan().CopyTo(resultFormatSpans);
-        for (int i = 0; i < rightFormatSpans.Length; i++)
+        var resultFormatSpansCount = leftFormatSpans.Length + rightFormatSpans.Length;
+        FormatSpan[] resultFormatSpans;
+        if (resultFormatSpansCount > 0)
         {
-            resultFormatSpans[leftFormatSpans.Length + i] = rightFormatSpans[i].Offset(left.TextOrEmpty.Length);
+            resultFormatSpans = new FormatSpan[resultFormatSpansCount];
+            leftFormatSpans.AsSpan().CopyTo(resultFormatSpans);
+            for (int i = 0; i < rightFormatSpans.Length; i++)
+            {
+                resultFormatSpans[leftFormatSpans.Length + i] = rightFormatSpans[i].Offset(left.TextOrEmpty.Length);
+            }
+        }
+        else
+        {
+            resultFormatSpans = Array.Empty<FormatSpan>();
         }
 
         return new FormattedString(resultText, resultFormatSpans);
@@ -102,11 +142,12 @@ public readonly struct FormattedString : IEquatable<FormattedString>
         Debug.Assert(length >= 0 && length - startIndex <= Length);
 
         if (Text is null || length == 0) return Empty;
+        if (length - startIndex == Length) return this;
 
         var substring = Text.Substring(startIndex, length);
         if (FormatSpansOrEmpty.Length == 0) return substring;
 
-        var resultFormatSpans = new List<FormatSpan>(formatSpans.Length);
+        var resultFormatSpans = ListPool<FormatSpan>.Shared.Get(formatSpans.Length);
         foreach (var formatSpan in formatSpans)
         {
             if (formatSpan.Overlap(startIndex, length).TryGet(out var newSpan))
@@ -115,7 +156,9 @@ public readonly struct FormattedString : IEquatable<FormattedString>
             }
         }
 
-        return new(substring, resultFormatSpans);
+        var result = new FormattedString(substring, resultFormatSpans);
+        ListPool<FormatSpan>.Shared.Put(resultFormatSpans);
+        return result;
     }
 
     /// <summary>
@@ -129,7 +172,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
         var text = Text.AsSpan();
         int currentOffsetInPartialyReplacedText = 0;
 
-        var sb = new StringBuilder();
+        var sb = StringBuilderPool.Shared.Get(oldValue.Length);
         var formatSpans = this.formatSpans.ToArray();
         int formatIndex = 0;
         while (true)
@@ -177,7 +220,9 @@ public readonly struct FormattedString : IEquatable<FormattedString>
 
         sb.Append(text);
 
-        return new FormattedString(sb.ToString(), formatSpans);
+        var resultText = sb.ToString();
+        StringBuilderPool.Shared.Put(sb);
+        return new FormattedString(resultText, formatSpans);
     }
 
     /// <summary>
@@ -198,7 +243,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
         else
         {
             int partStart = 0;
-            var formattingList = new List<FormatSpan>(formatSpans.Length);
+            var formattingList = ListPool<FormatSpan>.Shared.Get(formatSpans.Length);
             int usedFormattingCount = 0;
             int previousFormattingCharsUsed = 0;
             while (partStart < text.Length)
@@ -214,6 +259,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
                 yield return new FormattedString(text.AsSpan(partStart, partLength).ToString(), formattingList);
                 partStart += partLength + 1; //+1 to skip separator
             }
+            ListPool<FormatSpan>.Shared.Put(formattingList);
         }
     }
 
@@ -232,7 +278,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
         }
 
         int partStart = 0;
-        var formattingList = new List<FormatSpan>(formatSpans.Length);
+        var formattingList = ListPool<FormatSpan>.Shared.Get(formatSpans.Length);
         int usedFormattingCount = 0;
         int previousFormattingCharsUsed = 0;
         while (partStart < text.Length)
@@ -250,6 +296,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
             yield return new FormattedString(text.AsSpan(partStart, partLength).ToString(), formattingList);
             partStart += partLength;
         }
+        ListPool<FormatSpan>.Shared.Put(formattingList);
     }
 
     private void GenerateFormattingsForPart(
@@ -265,7 +312,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
         var partEnd = partStart + partLength;
         for (int i = usedFormattingCount; i < formatSpans.Length; i++)
         {
-            var formatting = formatSpans[i];
+            ref readonly var formatting = ref formatSpans[i];
             if (formatting.Start >= partEnd)
             {
                 //no more formattings for this part
@@ -305,43 +352,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
         }
     }
 
-    public IEnumerable<(string Element, ConsoleFormat Formatting)> EnumerateTextElements()
-    {
-        var enumerator = StringInfo.GetTextElementEnumerator(TextOrEmpty);
-        int textIndex = 0;
-        int formatIndex = 0;
-        while (enumerator.MoveNext())
-        {
-            var element = enumerator.GetTextElement();
-
-            ConsoleFormat formatting;
-            if (formatIndex < formatSpans.Length)
-            {
-                var span = formatSpans[formatIndex];
-                if (span.Contains(textIndex))
-                {
-                    formatting = span.Formatting;
-                }
-                else
-                {
-                    formatting = ConsoleFormat.None;
-                }
-            }
-            else
-            {
-                formatting = ConsoleFormat.None;
-            }
-
-            yield return (element, formatting);
-
-            textIndex += element.Length;
-            if (formatIndex < formatSpans.Length &&
-                textIndex >= formatSpans[formatIndex].End)
-            {
-                formatIndex++;
-            }
-        }
-    }
+    public TextElementsEnumerator EnumerateTextElements() => new(TextOrEmpty, formatSpans);
 
     private void CheckFormatSpans()
     {
@@ -354,13 +365,13 @@ public readonly struct FormattedString : IEquatable<FormattedString>
         {
             for (int i = 0; i < formatSpans.Length; i++)
             {
-                var span = formatSpans[i];
+                ref readonly var span = ref formatSpans[i];
                 if (span.Start >= textLen) throw new ArgumentException("Span start cannot be larger than text length.", nameof(formatSpans));
                 if (span.Start + span.Length > textLen) throw new ArgumentException("Span end cannot be outside of text.", nameof(formatSpans));
 
                 if (i > 0)
                 {
-                    var previousSpan = formatSpans[i - 1];
+                    ref readonly var previousSpan = ref formatSpans[i - 1];
                     if (span.Start < previousSpan.End) throw new ArgumentException("Spans cannot overlap.", nameof(formatSpans));
                 }
             }
@@ -370,10 +381,12 @@ public readonly struct FormattedString : IEquatable<FormattedString>
     public bool Equals(FormattedString other)
     {
         if (Text != other.Text) return false;
-        if (FormatSpans.Count != other.FormatSpans.Count) return false;
-        for (int i = 0; i < FormatSpans.Count; i++)
+        var formatSpans = FormatSpans;
+        var otherFormatSpans = other.FormatSpans;
+        if (formatSpans.Length != otherFormatSpans.Length) return false;
+        for (int i = 0; i < formatSpans.Length; i++)
         {
-            if (FormatSpans[i] != other.FormatSpans[i]) return false;
+            if (!formatSpans[i].Equals(in otherFormatSpans[i])) return false;
         }
         return true;
     }
@@ -384,4 +397,120 @@ public readonly struct FormattedString : IEquatable<FormattedString>
 
     public static bool operator ==(FormattedString left, FormattedString right) => left.Equals(right);
     public static bool operator !=(FormattedString left, FormattedString right) => !(left == right);
+
+    public ref struct TextElementsEnumerator
+    {
+        private TextElementEnumeratorFast elementsEnumerator;
+        private readonly FormatSpan[] formatSpans;
+        private int textIndex;
+        private int formatIndex;
+        private Result current;
+
+        public TextElementsEnumerator(string text, FormatSpan[] formatSpans)
+        {
+            elementsEnumerator = new TextElementEnumeratorFast(text);
+            this.formatSpans = formatSpans;
+            textIndex = 0;
+            formatIndex = 0;
+            current = default;
+        }
+
+        public Result Current => current;
+
+        internal static ref readonly Result GetCurrentByRef(in TextElementsEnumerator enumerator) => ref enumerator.current;
+
+        public bool MoveNext()
+        {
+            if (!elementsEnumerator.MoveNext()) return false;
+
+            var element = elementsEnumerator.Current;
+
+            //this method is hot so we need to be little bit hardcore
+            var formatSpans = this.formatSpans; //local copy to remove double bound checking
+            ref var span =
+                ref (uint)formatIndex < (uint)formatSpans.Length ? //uints to check also lower bound and remove boudn checks
+                ref formatSpans[formatIndex] :
+                ref Unsafe.NullRef<FormatSpan>();
+
+            if (!Unsafe.IsNullRef(ref span))
+            {
+                if (span.Contains(textIndex))
+                {
+                    current.Formatting = span.Formatting; //write directly to current to avoid double copy
+                }
+                else
+                {
+                    current.Formatting = ConsoleFormat.None; //write directly to current to avoid double copy
+                }
+            }
+            else
+            {
+                current.Formatting = ConsoleFormat.None; //write directly to current to avoid double copy
+            }
+
+            current.Element = element;
+
+            textIndex += element.Length;
+            if (!Unsafe.IsNullRef(ref span) &&
+                textIndex >= span.End)
+            {
+                formatIndex++;
+            }
+
+            return true;
+        }
+
+        public TextElementsEnumerator GetEnumerator() => this;
+
+        public ref struct Result
+        {
+            public ReadOnlySpan<char> Element;
+            public ConsoleFormat Formatting;
+
+            public Result(ReadOnlySpan<char> element, ConsoleFormat formatting)
+            {
+                Element = element;
+                Formatting = formatting;
+            }
+
+            public void Deconstruct(out ReadOnlySpan<char> element, out ConsoleFormat formatting)
+            {
+                element = Element;
+                formatting = Formatting;
+            }
+        }
+
+        private struct TextElementEnumeratorFast
+        {
+            private readonly string text;
+            private int i;
+            private int elementLength;
+
+            public TextElementEnumeratorFast(string text)
+            {
+                this.text = text;
+                i = 0;
+                elementLength = 0;
+            }
+
+            public ReadOnlySpan<char> Current => text.AsSpan(i, elementLength);
+
+            public bool MoveNext()
+            {
+                i += elementLength;
+                if (i < text.Length)
+                {
+                    elementLength = StringInfo.GetNextTextElementLength(text, i);
+                    return true;
+                }
+                return false;
+            }
+        }
+    }
+}
+
+public static class TextElementsEnumeratorX
+{
+    public static ref readonly FormattedString.TextElementsEnumerator.Result GetCurrentByRef(in this FormattedString.TextElementsEnumerator enumerator)
+        => ref FormattedString.TextElementsEnumerator.GetCurrentByRef(in enumerator);
 }

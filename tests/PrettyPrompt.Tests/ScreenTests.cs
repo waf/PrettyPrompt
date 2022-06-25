@@ -63,7 +63,7 @@ public class ScreenTests
                 new ConsoleCoordinate(0, 0),
                 new[]
                 {
-                    new Row(Cell.FromText(text))
+                    new Row(text)
                 }));
 
         Assert.Equal(new ConsoleCoordinate(0, expectedCursorPosition), screen.Cursor);

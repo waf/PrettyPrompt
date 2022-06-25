@@ -162,7 +162,7 @@ public static class UnicodeWidth
     *    - The null character (U+0000) has a column width of 0.
     *
     *    - Other C0/C1 control characters and DEL will lead to a return
-    *      value of -1.
+    *      value of -1. PrettyPrompt: we use 0.
     *
     *    - Non-spacing and enclosing combining characters (general
     *      category code Mn or Me in the Unicode database) have a
@@ -196,7 +196,8 @@ public static class UnicodeWidth
         if (character == 10) // PrettyPrompt addition, handle newline. This is a bit suspect.
             return 1;
         if (character < 32 || (character >= 0x7f && character < 0xa0))
-            return -1;
+            //return -1;
+            return 0; //PrettyPrompt
 
         // the following two conditions were added for PrettyPrompt fast paths.
         if (character < 0x0300) // frequent character fast path
@@ -246,10 +247,6 @@ public static class UnicodeWidth
         for (int i = 0; i < text.Length; i++)
         {
             int w = GetWidth(text[i]);
-            if (w < 0)
-            {
-                return -1;
-            }
             width += w;
         }
         return width;

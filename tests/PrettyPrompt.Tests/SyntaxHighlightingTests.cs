@@ -39,15 +39,15 @@ public class SyntaxHighlightingTests
         // although the words are typed character-by-character, we should still "go back" and redraw
         // it once we know the word should be drawn in a syntax-highlighted color.
         Assert.Contains(
-            MoveCursorLeft("red".Length - 1) + ToAnsiEscapeSequence(SyntaxHighlighterTestData.RedFormat) + "red" + Reset, // when we press 'd' go back two chars and to rewrite the word "red"
+            GetMoveCursorLeft("red".Length - 1) + ToAnsiEscapeSequenceSlow(SyntaxHighlighterTestData.RedFormat) + "red" + Reset, // when we press 'd' go back two chars and to rewrite the word "red"
             output
         );
         Assert.Contains(
-            MoveCursorLeft("green".Length - 1) + ToAnsiEscapeSequence(SyntaxHighlighterTestData.GreenFormat) + "green" + Reset,
+            GetMoveCursorLeft("green".Length - 1) + ToAnsiEscapeSequenceSlow(SyntaxHighlighterTestData.GreenFormat) + "green" + Reset,
             output
         );
         Assert.Contains(
-            MoveCursorLeft("blue".Length - 1) + ToAnsiEscapeSequence(SyntaxHighlighterTestData.BlueFormat) + "blue" + Reset,
+            GetMoveCursorLeft("blue".Length - 1) + ToAnsiEscapeSequenceSlow(SyntaxHighlighterTestData.BlueFormat) + "blue" + Reset,
             output
         );
 
@@ -86,19 +86,19 @@ public class SyntaxHighlightingTests
         // although the words are typed character-by-character, we should still "go back" and redraw
         // it once we know the word should be drawn in a syntax-highlighted color.
         Assert.Contains(
-            MoveCursorLeft(2) + ToAnsiEscapeSequence(format1) + "苹果" + Reset,
+            GetMoveCursorLeft(2) + ToAnsiEscapeSequenceSlow(format1) + "苹果" + Reset,
             output
         );
 
         Assert.Contains(
-            MoveCursorLeft(2) + ToAnsiEscapeSequence(format2) + "蓝莓" + Reset,
+            GetMoveCursorLeft(2) + ToAnsiEscapeSequenceSlow(format2) + "蓝莓" + Reset,
             output
         );
 
         // avocado is green, but wrapped because the console width is narrow.
         Assert.Contains(
             output,
-            str => str.Contains(ToAnsiEscapeSequence(format3) + "avoc\n")
+            str => str.Contains(ToAnsiEscapeSequenceSlow(format3) + "avoc\n")
         );
 
         Assert.Contains(

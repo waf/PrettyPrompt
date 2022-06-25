@@ -59,7 +59,7 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
     /// <inheritdoc cref="IPrompt.ReadLineAsync()" />
     public async Task<PromptResult> ReadLineAsync()
     {
-        var renderer = new Renderer(console, configuration);
+        using var renderer = new Renderer(console, configuration);
         renderer.RenderPrompt();
 
         // code pane contains the code the user is typing. It does not include the prompt (i.e. "> ")

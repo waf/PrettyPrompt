@@ -6,24 +6,10 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
-using PrettyPrompt.Consoles;
+using System.Linq;
 using PrettyPrompt.Highlighting;
-using PrettyPrompt.Rendering;
 
 namespace PrettyPrompt;
-
-/// <summary>
-/// An area of the screen that's being rendered at a coordinate.
-/// This is conceptually a UI pane, rasterized into characters.
-/// </summary>
-internal sealed record ScreenArea(ConsoleCoordinate Start, Row[] Rows, bool TruncateToScreenHeight = true)
-{
-}
-
-/// <summary>
-/// A row of cells. Just here for the readability of method signatures.
-/// </summary>
-internal sealed record Row(List<Cell> Cells);
 
 /// <summary>
 /// Represents a single cell in the console, with any associate formatting.
@@ -34,49 +20,111 @@ internal sealed record Row(List<Cell> Cells);
 /// it as two consecutive cells. The first cell will have <see cref="ElementWidth"/> of 2.
 /// the trailing cell will have <see cref="IsContinuationOfPreviousCharacter"/> set to true.
 /// </summary>
+//
+// Do not change to struct without benchmarking. With some work it's possible, but I tried and performace was much worse.
+// This because we are making copies of lists of cells and they are smaller when they are reference types.
+// Pooling of cells is currently better.
 [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
-internal sealed record Cell
+internal sealed class Cell
 {
-    public string? Text { get; }
-    public bool IsContinuationOfPreviousCharacter { get; }
-    public int ElementWidth { get; }
+    public static readonly Pool SharedPool = new();
 
-    public ConsoleFormat Formatting { get; set; }
-    public bool TruncateToScreenHeight { get; set; }
+    private string? text;
+    private bool isContinuationOfPreviousCharacter;
+    private int elementWidth;
 
-    private Cell(string? text, ConsoleFormat Formatting, int elementWidth = 1, bool isContinuationOfPreviousCharacter = false)
+    public string? Text => text;
+    public bool IsContinuationOfPreviousCharacter => isContinuationOfPreviousCharacter;
+    public int ElementWidth => elementWidth;
+
+    public ConsoleFormat Formatting;
+    public bool TruncateToScreenHeight;
+
+    private Cell() { }
+
+    private void Initialize(string? text, in ConsoleFormat formatting, int elementWidth, bool isContinuationOfPreviousCharacter)
     {
-        this.Text = text;
-        this.Formatting = Formatting;
+        this.text = text;
+        this.Formatting = formatting;
 
         // full-width handling properties
-        this.IsContinuationOfPreviousCharacter = isContinuationOfPreviousCharacter;
-        this.ElementWidth = elementWidth;
+        this.isContinuationOfPreviousCharacter = isContinuationOfPreviousCharacter;
+        this.elementWidth = elementWidth;
     }
 
-    public static List<Cell> FromText(char text, ConsoleFormat formatting)
-        => FromText(new FormattedString(text.ToString(), formatting));
-
-    public static List<Cell> FromText(string text, ConsoleFormat formatting)
-        => FromText(new FormattedString(text, formatting));
-
-    public static List<Cell> FromText(FormattedString formattedString)
+    public static void AddTo(List<Cell> cells, FormattedString formattedString)
     {
         // note, this method is fairly hot, please profile when making changes to it.
-        var cells = new List<Cell>(formattedString.Length);
-        foreach (var (element, formatting) in formattedString.EnumerateTextElements())
+        // don't use: foreach (var (element, formatting) in formattedString.EnumerateTextElements())
+        //            manual enumeration and using by-ref values is faster
+        var enumerator = formattedString.EnumerateTextElements();
+        while (enumerator.MoveNext())
         {
-            var elementWidth = UnicodeWidth.GetWidth(element);
-            cells.Add(new Cell(element, formatting, elementWidth));
+            ref readonly var elem = ref enumerator.GetCurrentByRef();
+            var elementText = StringCache.Shared.Get(elem.Element, out var elementWidth);
+            cells.Add(SharedPool.Get(elementText, elem.Formatting, elementWidth));
             for (int i = 1; i < elementWidth; i++)
             {
-                cells.Add(new Cell(null, formatting, isContinuationOfPreviousCharacter: true));
+                cells.Add(SharedPool.Get(null, elem.Formatting, isContinuationOfPreviousCharacter: true));
             }
         }
-        return cells;
+
+        Debug.Assert(cells.Count(c => c.text == "\n") <= 1); //otherwise it should be splitted into multiple rows
     }
 
-    public static List<Cell> FromText(string text) => FromText(text, ConsoleFormat.None);
+    public static bool Equals(Cell? left, Cell? right)
+    {
+        //this is hot from IncrementalRendering.CalculateDiff, so we want to use custom optimized Equals
+        if (!ReferenceEquals(left, right))
+        {
+            if (left is not null)
+            {
+                return left.Equals(right);
+            }
+            return false;
+        }
+        return true;
+    }
 
-    private string GetDebuggerDisplay() => Text + " " + Formatting.ToString();
+    public bool Equals(Cell? other)
+    {
+        //this is hot from IncrementalRendering.CalculateDiff, so we want to use custom optimized Equals
+        return
+            other is not null &&
+            text == other.text &&
+            isContinuationOfPreviousCharacter == other.isContinuationOfPreviousCharacter &&
+            //ElementWidth == other.ElementWidth && //is given by Text, so we don't need to check
+            Formatting.Equals(in other.Formatting) &&
+            TruncateToScreenHeight == other.TruncateToScreenHeight;
+    }
+
+    private string GetDebuggerDisplay() => text + " " + Formatting.ToString();
+
+    internal class Pool
+    {
+        private readonly Stack<Cell> pool = new();
+
+        public Cell Get(string? text, in ConsoleFormat formatting, int elementWidth = 1, bool isContinuationOfPreviousCharacter = false)
+        {
+            Cell? result = null;
+            lock (pool)
+            {
+                if (pool.Count > 0)
+                {
+                    result = pool.Pop();
+                }
+            }
+            result ??= new Cell();
+            result.Initialize(text, in formatting, elementWidth, isContinuationOfPreviousCharacter);
+            return result;
+        }
+
+        public void Put(Cell value)
+        {
+            lock (pool)
+            {
+                pool.Push(value);
+            }
+        }
+    }
 }
