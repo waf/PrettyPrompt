@@ -27,7 +27,7 @@ namespace PrettyPrompt;
 [DebuggerDisplay("{" + nameof(GetDebuggerDisplay) + "(),nq}")]
 internal sealed class Cell
 {
-    public static readonly Pool<Cell, InitArg> SharedPool = new(() => new(), (Cell c, in InitArg arg) => c.Initialize(arg));
+    public static readonly Pool SharedPool = new();
 
     private string? text;
     private bool isContinuationOfPreviousCharacter;
@@ -42,14 +42,14 @@ internal sealed class Cell
 
     private Cell() { }
 
-    private void Initialize(InitArg arg)
+    private void Initialize(string? text, in ConsoleFormat formatting, int elementWidth, bool isContinuationOfPreviousCharacter)
     {
-        this.text = arg.Text;
-        this.Formatting = arg.Formatting;
+        this.text = text;
+        this.Formatting = formatting;
 
         // full-width handling properties
-        this.isContinuationOfPreviousCharacter = arg.IsContinuationOfPreviousCharacter;
-        this.elementWidth = arg.ElementWidth;
+        this.isContinuationOfPreviousCharacter = isContinuationOfPreviousCharacter;
+        this.elementWidth = elementWidth;
     }
 
     public static void AddTo(List<Cell> cells, FormattedString formattedString)
@@ -62,10 +62,10 @@ internal sealed class Cell
         {
             ref readonly var elem = ref enumerator.GetCurrentByRef();
             var elementText = StringCache.Shared.Get(elem.Element, out var elementWidth);
-            cells.Add(SharedPool.Get(new InitArg(elementText, elem.Formatting, elementWidth)));
+            cells.Add(SharedPool.Get(elementText, elem.Formatting, elementWidth));
             for (int i = 1; i < elementWidth; i++)
             {
-                cells.Add(SharedPool.Get(new InitArg(null, elem.Formatting, isContinuationOfPreviousCharacter: true)));
+                cells.Add(SharedPool.Get(null, elem.Formatting, isContinuationOfPreviousCharacter: true));
             }
         }
 
@@ -100,19 +100,31 @@ internal sealed class Cell
 
     private string GetDebuggerDisplay() => text + " " + Formatting.ToString();
 
-    public readonly struct InitArg
+    internal class Pool
     {
-        public readonly string? Text;
-        public readonly ConsoleFormat Formatting;
-        public readonly int ElementWidth;
-        public readonly bool IsContinuationOfPreviousCharacter;
+        private readonly Stack<Cell> pool = new();
 
-        public InitArg(string? text, ConsoleFormat formatting, int elementWidth = 1, bool isContinuationOfPreviousCharacter = false)
+        public Cell Get(string? text, in ConsoleFormat formatting, int elementWidth = 1, bool isContinuationOfPreviousCharacter = false)
         {
-            Text = text;
-            Formatting = formatting;
-            ElementWidth = elementWidth;
-            IsContinuationOfPreviousCharacter = isContinuationOfPreviousCharacter;
+            Cell? result = null;
+            lock (pool)
+            {
+                if (pool.Count > 0)
+                {
+                    result = pool.Pop();
+                }
+            }
+            result ??= new Cell();
+            result.Initialize(text, in formatting, elementWidth, isContinuationOfPreviousCharacter);
+            return result;
+        }
+
+        public void Put(Cell value)
+        {
+            lock (pool)
+            {
+                pool.Push(value);
+            }
         }
     }
 }
