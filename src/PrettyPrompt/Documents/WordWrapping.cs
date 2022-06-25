@@ -138,10 +138,7 @@ internal static class WordWrapping
                 }
             }
 
-            if (currentLineWidth > 0)
-            {
-                lines.Add(currentLine.ToFormattedString());
-            }
+            lines.Add(currentLine.ToFormattedString());
         }
 
         return lines;
