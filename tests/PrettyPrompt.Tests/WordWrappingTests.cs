@@ -17,10 +17,10 @@ public class WordWrappingTests
         Assert.Equal(
             new[]
             {
-                    new WrappedLine(0,  "Here is some text th"),
-                    new WrappedLine(20, "at should be wrapped"),
-                    new WrappedLine(40, " character by charac"),
-                    new WrappedLine(60, "ter"),
+                new WrappedLine(0,  "Here is some text th"),
+                new WrappedLine(20, "at should be wrapped"),
+                new WrappedLine(40, " character by charac"),
+                new WrappedLine(60, "ter"),
             },
             wrapped.WrappedLines
         );
@@ -36,9 +36,9 @@ public class WordWrappingTests
         Assert.Equal(
             new[]
             {
-                    new WrappedLine(0, "每个人都有他的作战策"),
-                    new WrappedLine(10, "略，直到脸上中了一拳"),
-                    new WrappedLine(20, "。"),
+                new WrappedLine(0, "每个人都有他的作战策"),
+                new WrappedLine(10, "略，直到脸上中了一拳"),
+                new WrappedLine(20, "。"),
             },
             wrapped.WrappedLines
         );
@@ -55,9 +55,9 @@ public class WordWrappingTests
         Assert.Equal(
             new[]
             {
-                    new WrappedLine(0, "每个人都有他的作战"),  // case 1: we should wrap early, because the next character is a full-width (2-wide) character.
-                    new WrappedLine(9, "策略， 直到脸上中了"), // case 2: single width space ("normal" space) sets us to align to width 19 exactly.
-                    new WrappedLine(19, "一拳。")
+                new WrappedLine(0, "每个人都有他的作战"),  // case 1: we should wrap early, because the next character is a full-width (2-wide) character.
+                new WrappedLine(9, "策略， 直到脸上中了"), // case 2: single width space ("normal" space) sets us to align to width 19 exactly.
+                new WrappedLine(19, "一拳。")
             },
             wrapped.WrappedLines
         );
@@ -75,12 +75,12 @@ public class WordWrappingTests
         Assert.Equal(
             new[]
             {
-                    "Here is some text",
-                    "that should be",
-                    "wrapped word by",
-                    "word.",
-                    "supercalifragilistic",
-                    "expialidocious",
+                "Here is some text",
+                "that should be",
+                "wrapped word by",
+                "word.",
+                "supercalifragilistic",
+                "expialidocious",
             },
             wrapped
         );
@@ -95,12 +95,12 @@ public class WordWrappingTests
         Assert.Equal(
             new[]
             {
-                    "Here is some",
-                    "text that should be",
-                    "wrapped word by",
-                    "word.",
-                    "supercalifragilistic",
-                    "expialidocious",
+                "Here is some",
+                "text that should be",
+                "wrapped word by",
+                "word.",
+                "supercalifragilistic",
+                "expialidocious",
             },
             wrapped
         );
@@ -115,11 +115,56 @@ public class WordWrappingTests
         Assert.Equal(
             new[]
             {
-                    "每个人都有他的作战策",
-                    "略，直到脸上中了一拳",
-                    "。",
+                "每个人都有他的作战策",
+                "略，直到脸上中了一拳",
+                "。",
             },
             wrapped
         );
+    }
+
+    [Fact]
+    public void WrapWords_MultipleNewlines()
+    {
+        var text = "Here is some text that should be wrapped word by word.\n\nHERE IS SOME TEXT THAT SHOULD BE WRAPPED WORD BY WORD.";
+        var wrapped = WordWrapping.WrapWords(text, 20).Select(l => l.Text);
+
+        Assert.Equal(
+            new[]
+            {
+                "Here is some text",
+                "that should be",
+                "wrapped word by",
+                "word.",
+                "",
+                "HERE IS SOME TEXT",
+                "THAT SHOULD BE",
+                "WRAPPED WORD BY",
+                "WORD.",
+            },
+            wrapped
+        );
+    }
+
+    [Fact]
+    public void WrapWords_LengthEqualsToWrapLength()
+    {
+        var text = "Here is some teeeext"; //Length = 20
+        var wrapped = WordWrapping.WrapWords(text, 20).Select(l => l.Text);
+        Assert.Equal(new[] { "Here is some teeeext" }, wrapped);
+    }
+
+    [Fact]
+    public void WrapWords_Empty()
+    {
+        var wrapped = WordWrapping.WrapWords("", 20).Select(l => l.Text);
+        Assert.Equal(new string[] { }, wrapped);
+    }
+
+    [Fact]
+    public void WrapWords_NewLineAtStart()
+    {
+        var wrapped = WordWrapping.WrapWords("\nhello", 20).Select(l => l.Text);
+        Assert.Equal(new string[] { "", "hello" }, wrapped);
     }
 }
