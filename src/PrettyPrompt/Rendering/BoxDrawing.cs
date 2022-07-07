@@ -13,35 +13,6 @@ namespace PrettyPrompt.Rendering;
 
 internal class BoxDrawing
 {
-    //
-    // ATTENTION: When changing collection of following characters don't forget to update MinUsedCharacterValue/MaxUsedCharacterValue constants.
-    //            Also make sure their difference is sufficiently small because we allocate cache of that size.
-    //
-    public const char CornerUpperRight = '┐';
-    public const char CornerLowerRight = '┘';
-    public const char CornerUpperLeft = '┌';
-    public const char CornerLowerLeft = '└';
-    public const char EdgeHorizontal = '─';
-    public const char EdgeVertical = '│';
-    public const char EdgeVerticalAndLeftHorizontal = '┤';
-    public const char EdgeVerticalAndRightHorizontal = '├';
-    public const char EdgeHorizontalAndLowerVertical = '┬';
-    public const char EdgeHorizontalAndUpperVertical = '┴';
-
-    private const string CornerUpperRightText = "┐";
-    //private const string CornerLowerRightText = "┘";
-    private const string CornerUpperLeftText = "┌";
-    //private const string CornerLowerLeftText = "└";
-    //private const string EdgeHorizontalText = "─";
-    private const string EdgeVerticalText = "│";
-    //private const string EdgeVerticalAndLeftHorizontalText = "┤";
-    //private const string EdgeVerticalAndRightHorizontalText = "├";
-    //private const string EdgeHorizontalAndLowerVerticalText = "┬";
-    //private const string EdgeHorizontalAndUpperVerticalText = "┴";
-
-    public const int MinUsedCharacterValue = EdgeHorizontal;
-    public const int MaxUsedCharacterValue = EdgeHorizontalAndUpperVertical;
-
     private readonly Cell CornerUpperRightCell;
     private readonly Cell CornerLowerRightCell;
     private readonly Cell CornerUpperLeftCell;
@@ -112,7 +83,7 @@ internal class BoxDrawing
         const string Padding = " ";
         int lineMarkerWidth = UnicodeWidth.GetWidth(unselectedLineMarker);
         var leftPaddingWidth = selectedLineIndex.HasValue ? lineMarkerWidth : Padding.Length;
-        if (maxWidth </*leftBorder*/EdgeVerticalText.Length + leftPaddingWidth + /*rightPadding*/Padding.Length + /*leftBorder*/EdgeVerticalText.Length)
+        if (maxWidth </*leftBorder*/1 + leftPaddingWidth + /*rightPadding*/Padding.Length + /*leftBorder*/1)
         {
             return Array.Empty<Row>();
         }
@@ -129,7 +100,7 @@ internal class BoxDrawing
         }
 
         var boxWidth = Math.Min(
-            /*leftBorder*/EdgeVerticalText.Length + leftPaddingWidth + maxLineWidth + /*rightPadding*/Padding.Length + /*rightBorder*/EdgeVerticalText.Length,
+            /*leftBorder*/1 + leftPaddingWidth + maxLineWidth + /*rightPadding*/Padding.Length + /*rightBorder*/1,
             maxWidth);
 
         var rows = ListPool<Row>.Shared.Get(lineList.Count);
@@ -137,12 +108,12 @@ internal class BoxDrawing
         //Top border.
         var row = new Row(boxWidth);
         row.Add(CornerUpperLeftCell);
-        for (int i = CornerUpperLeftText.Length + CornerUpperRightText.Length; i < boxWidth; i++) row.Add(EdgeHorizontalCell);
+        for (int i = /*leftCorner*/1 + /*rightBorder*/1; i < boxWidth; i++) row.Add(EdgeHorizontalCell);
         row.Add(CornerUpperRightCell);
         rows.Add(row);
 
         //Lines.
-        var lineAvailableWidth = boxWidth -/*leftBorder*/EdgeVerticalText.Length - leftPaddingWidth - /*rightPadding*/Padding.Length - /*rightBorder*/EdgeVerticalText.Length;
+        var lineAvailableWidth = boxWidth -/*leftBorder*/1 - leftPaddingWidth - /*rightPadding*/Padding.Length - /*rightBorder*/1;
         for (int i = 0; i < lineList.Count; i++)
         {
             row = new Row(boxWidth);
@@ -154,7 +125,7 @@ internal class BoxDrawing
         //Bottom border.
         row = new Row(boxWidth);
         row.Add(CornerLowerLeftCell);
-        for (int i = CornerUpperLeftText.Length + CornerUpperRightText.Length; i < boxWidth; i++) row.Add(EdgeHorizontalCell);
+        for (int i = /*leftCorner*/1 + /*rightBorder*/1; i < boxWidth; i++) row.Add(EdgeHorizontalCell);
         row.Add(CornerLowerRightCell);
         rows.Add(row);
 
@@ -201,16 +172,16 @@ internal class BoxDrawing
             {
                 row.TransformBackground(
                     background,
-                    startIndex: EdgeVerticalText.Length + lineMarkerWidth,
-                    count: row.Length - EdgeVerticalText.Length - lineMarkerWidth - 1);
+                    startIndex: /*border*/1 + lineMarkerWidth,
+                    count: row.Length - /*border*/1 - lineMarkerWidth - 1);
             }
 
             if (isSelected)
             {
                 row.TransformBackground(
                     configuration.SelectedCompletionItemBackground,
-                    startIndex: EdgeVerticalText.Length + lineMarkerWidth,
-                    count: row.Length - EdgeVerticalText.Length - lineMarkerWidth - 1);
+                    startIndex: /*border*/1 + lineMarkerWidth,
+                    count: row.Length - /*border*/1 - lineMarkerWidth - 1);
             }
 
             //Right border.
