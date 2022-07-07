@@ -192,44 +192,11 @@ internal class Renderer : IDisposable
             completionRowsCount: completionRows.Length
         );
 
+        boxDrawing.Connect(completionRows, documentationRows);
+
         var completionArea = new ScreenArea(completionStart, completionRows);
         var documentationArea = new ScreenArea(documentationStart, documentationRows);
-        var connectionHeight = Math.Max(0, documentationRows.Length - completionRows.Length);
-        var completionTopRightCorner = new ConsoleCoordinate(completionStart.Row, completionStart.Column + boxWidth - 1);
-        if (connectionHeight > 0)
-        {
-            var connectionRow = new Row(BoxDrawing.EdgeVertical.ToString(), configuration.CompletionBoxBorderFormat);
-            var connectionRows = Enumerable.Repeat(connectionRow, connectionHeight - 1)
-                .Prepend(new Row(BoxDrawing.EdgeVerticalAndLeftHorizontal.ToString(), configuration.CompletionBoxBorderFormat))
-                .Append(new Row(BoxDrawing.CornerLowerLeft.ToString(), configuration.CompletionBoxBorderFormat))
-                .ToArray();
-
-            var completionBottomRightCorner = new ConsoleCoordinate(completionStart.Row + completionRows.Length - 1, completionStart.Column + boxWidth - 1);
-            var connectionArea = new ScreenArea(completionBottomRightCorner, connectionRows);
-
-            var topRightCornerRow = new Row(BoxDrawing.EdgeHorizontalAndLowerVertical.ToString(), configuration.CompletionBoxBorderFormat);
-            var topRightCornerArea = new ScreenArea(completionTopRightCorner, new[] { topRightCornerRow });
-
-            return new[] { completionArea, documentationArea, topRightCornerArea, connectionArea };
-        }
-        else
-        {
-            if (documentationRows.Length > 0)
-            {
-                var topRightCornerRow = new Row(BoxDrawing.EdgeHorizontalAndLowerVertical.ToString(), configuration.CompletionBoxBorderFormat);
-                var topRightCornerArea = new ScreenArea(completionTopRightCorner, new[] { topRightCornerRow });
-
-                var lowerConnectionCorner = new ConsoleCoordinate(completionStart.Row + documentationRows.Length - 1, completionStart.Column + boxWidth - 1);
-                var bottomRightCornerRow = new Row(documentationRows.Length < completionRows.Length ? BoxDrawing.EdgeVerticalAndRightHorizontal.ToString() : BoxDrawing.EdgeHorizontalAndUpperVertical.ToString(), configuration.CompletionBoxBorderFormat);
-                var bottomRightCornerArea = new ScreenArea(lowerConnectionCorner, new[] { bottomRightCornerRow });
-
-                return new[] { completionArea, documentationArea, topRightCornerArea, bottomRightCornerArea };
-            }
-            else
-            {
-                return new[] { completionArea, documentationArea, };
-            }
-        }
+        return new[] { completionArea, documentationArea };
     }
 
     private Row[] BuildCompletionRows(CompletionPane completionPane, int codeAreaWidth, ConsoleCoordinate completionBoxStart)

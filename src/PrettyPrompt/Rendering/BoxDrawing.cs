@@ -217,4 +217,42 @@ internal class BoxDrawing
             row.Add(EdgeVerticalCell);
         }
     }
+
+    public void Connect(Row[] completionBox, Row[] documentationBox)
+    {
+        if (completionBox.Length == 0 || documentationBox.Length == 0) return;
+
+        documentationBox[0].Replace(0, EdgeHorizontalAndLowerVerticalCell); // ┬
+        if (completionBox.Length == documentationBox.Length)
+        {
+            //  ┌──────────────┬─────────────────────────────┐
+            //  │ completion 1 │ documentation box with some |
+            //  │ completion 2 │ docs that may wrap.         |
+            //  │ completion 3 │ ............                │
+            //  └──────────────┴─────────────────────────────┘
+
+            documentationBox[^1].Replace(0, EdgeHorizontalAndUpperVerticalCell); // ┴
+        }
+        else if (completionBox.Length > documentationBox.Length)
+        {
+            //  ┌──────────────┬─────────────────────────────┐
+            //  │ completion 1 │ documentation box with some |
+            //  │ completion 2 │ docs that may wrap.         |
+            //  │ completion 3 ├─────────────────────────────┘
+            //  └──────────────┘
+
+            documentationBox[^1].Replace(0, EdgeVerticalAndRightHorizontalCell); // ├
+        }
+        else
+        {
+            //  ┌──────────────┬─────────────────────────────┐
+            //  │ completion 1 │ documentation box with some │
+            //  │ completion 2 │ docs that may wrap.         │
+            //  │ completion 3 │ .............               │
+            //  └──────────────┤ .............               │
+            //                 └─────────────────────────────┘
+
+            documentationBox[completionBox.Length - 1].Replace(0, EdgeVerticalAndLeftHorizontalCell); // ┤
+        }
+    }
 }
