@@ -6,14 +6,12 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using PrettyPrompt.Consoles;
 using PrettyPrompt.Highlighting;
 
 namespace PrettyPrompt.Rendering;
 
-internal static class BoxDrawing
+internal class BoxDrawing
 {
     //
     // ATTENTION: When changing collection of following characters don't forget to update MinUsedCharacterValue/MaxUsedCharacterValue constants.
@@ -31,10 +29,10 @@ internal static class BoxDrawing
     public const char EdgeHorizontalAndUpperVertical = '┴';
 
     private const string CornerUpperRightText = "┐";
-    private const string CornerLowerRightText = "┘";
+    //private const string CornerLowerRightText = "┘";
     private const string CornerUpperLeftText = "┌";
-    private const string CornerLowerLeftText = "└";
-    private const string EdgeHorizontalText = "─";
+    //private const string CornerLowerLeftText = "└";
+    //private const string EdgeHorizontalText = "─";
     private const string EdgeVerticalText = "│";
     //private const string EdgeVerticalAndLeftHorizontalText = "┤";
     //private const string EdgeVerticalAndRightHorizontalText = "├";
@@ -44,7 +42,34 @@ internal static class BoxDrawing
     public const int MinUsedCharacterValue = EdgeHorizontal;
     public const int MaxUsedCharacterValue = EdgeHorizontalAndUpperVertical;
 
-    public static Row[] BuildFromItemList(
+    private readonly Cell CornerUpperRightCell;
+    private readonly Cell CornerLowerRightCell;
+    private readonly Cell CornerUpperLeftCell;
+    private readonly Cell CornerLowerLeftCell;
+    private readonly Cell EdgeHorizontalCell;
+    private readonly Cell EdgeVerticalCell;
+    private readonly Cell EdgeVerticalAndLeftHorizontalCell;
+    private readonly Cell EdgeVerticalAndRightHorizontalCell;
+    private readonly Cell EdgeHorizontalAndLowerVerticalCell;
+    private readonly Cell EdgeHorizontalAndUpperVerticalCell;
+
+    public BoxDrawing(PromptConfiguration configuration)
+    {
+        ref readonly var format = ref configuration.CompletionBoxBorderFormat;
+        CornerUpperRightCell = Cell.CreateSingleNonpoolableCell('┐', format);
+        CornerLowerRightCell = Cell.CreateSingleNonpoolableCell('┘', format);
+        CornerUpperLeftCell = Cell.CreateSingleNonpoolableCell('┌', format);
+        CornerLowerLeftCell = Cell.CreateSingleNonpoolableCell('└', format);
+        EdgeHorizontalCell = Cell.CreateSingleNonpoolableCell('─', format);
+        EdgeVerticalCell = Cell.CreateSingleNonpoolableCell('│', format);
+        EdgeVerticalAndLeftHorizontalCell = Cell.CreateSingleNonpoolableCell('┤', format);
+        EdgeVerticalAndRightHorizontalCell = Cell.CreateSingleNonpoolableCell('├', format);
+        EdgeHorizontalAndLowerVerticalCell = Cell.CreateSingleNonpoolableCell('┬', format);
+        EdgeHorizontalAndUpperVerticalCell = Cell.CreateSingleNonpoolableCell('┴', format);
+
+    }
+
+    public Row[] BuildFromItemList(
         IEnumerable<FormattedString> items,
         PromptConfiguration configuration,
         int maxWidth,
@@ -60,7 +85,7 @@ internal static class BoxDrawing
             background: null);
     }
 
-    public static Row[] BuildFromLines(
+    public Row[] BuildFromLines(
         IEnumerable<FormattedString> lines,
         PromptConfiguration configuration,
         in AnsiColor? background)
@@ -75,7 +100,7 @@ internal static class BoxDrawing
             background);
     }
 
-    private static Row[] BuildInternal(
+    private Row[] BuildInternal(
         IEnumerable<FormattedString> lines,
         PromptConfiguration configuration,
         int maxWidth,
@@ -108,13 +133,12 @@ internal static class BoxDrawing
             maxWidth);
 
         var rows = ListPool<Row>.Shared.Get(lineList.Count);
-        ref readonly var completionBoxBorderFormat = ref configuration.CompletionBoxBorderFormat;
 
         //Top border.
         var row = new Row(boxWidth);
-        row.Add(CornerUpperLeftText, completionBoxBorderFormat);
-        for (int i = CornerUpperLeftText.Length + CornerUpperRightText.Length; i < boxWidth; i++) row.Add(EdgeHorizontalText, completionBoxBorderFormat);
-        row.Add(CornerUpperRightText, completionBoxBorderFormat);
+        row.Add(CornerUpperLeftCell);
+        for (int i = CornerUpperLeftText.Length + CornerUpperRightText.Length; i < boxWidth; i++) row.Add(EdgeHorizontalCell);
+        row.Add(CornerUpperRightCell);
         rows.Add(row);
 
         //Lines.
@@ -123,15 +147,15 @@ internal static class BoxDrawing
         {
             row = new Row(boxWidth);
             var line = lineList[i];
-            FillLineRow(row, line.Substring(0, Math.Min(line.Length, lineAvailableWidth)), i, completionBoxBorderFormat, background);
+            FillLineRow(row, line.Substring(0, Math.Min(line.Length, lineAvailableWidth)), i, background);
             rows.Add(row);
         }
 
         //Bottom border.
         row = new Row(boxWidth);
-        row.Add(CornerLowerLeftText, completionBoxBorderFormat);
-        for (int i = CornerUpperLeftText.Length + CornerUpperRightText.Length; i < boxWidth; i++) row.Add(EdgeHorizontalText, completionBoxBorderFormat);
-        row.Add(CornerLowerRightText, completionBoxBorderFormat);
+        row.Add(CornerLowerLeftCell);
+        for (int i = CornerUpperLeftText.Length + CornerUpperRightText.Length; i < boxWidth; i++) row.Add(EdgeHorizontalCell);
+        row.Add(CornerLowerRightCell);
         rows.Add(row);
 
         var result = rows.ToArray();
@@ -139,10 +163,10 @@ internal static class BoxDrawing
         ListPool<FormattedString>.Shared.Put(lineList);
         return result;
 
-        void FillLineRow(Row row, FormattedString line, int lineIndex, in ConsoleFormat completionBoxBorderFormat, in AnsiColor? background)
+        void FillLineRow(Row row, FormattedString line, int lineIndex, in AnsiColor? background)
         {
             //Left border.
-            row.Add(EdgeVerticalText, completionBoxBorderFormat);
+            row.Add(EdgeVerticalCell);
 
             //Left padding.
             bool isSelected = false;
@@ -190,7 +214,7 @@ internal static class BoxDrawing
             }
 
             //Right border.
-            row.Add(EdgeVerticalText, completionBoxBorderFormat);
+            row.Add(EdgeVerticalCell);
         }
     }
 }

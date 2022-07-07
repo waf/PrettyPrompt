@@ -66,6 +66,9 @@ internal class Row : IDisposable
     public void Add(FormattedString formattedString)
         => Cell.AddTo(cells, formattedString);
 
+    public void Add(Cell cell)
+        => cells.Add(cell);
+
     public void CopyTo(Cell?[] cells, int targetPosition, int count)
         => this.cells.CopyTo(0, cells!, targetPosition, count);
 

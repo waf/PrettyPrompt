@@ -29,6 +29,7 @@ namespace PrettyPrompt;
 internal class Renderer : IDisposable
 {
     private readonly IConsole console;
+    private readonly BoxDrawing boxDrawing;
     private readonly PromptConfiguration configuration;
 
     private Screen previouslyRenderedScreen = new(0, 0, ConsoleCoordinate.Zero);
@@ -37,6 +38,7 @@ internal class Renderer : IDisposable
     public Renderer(IConsole console, PromptConfiguration configuration)
     {
         this.console = console;
+        this.boxDrawing = new BoxDrawing(configuration);
         this.configuration = configuration;
     }
 
@@ -232,7 +234,7 @@ internal class Renderer : IDisposable
 
     private Row[] BuildCompletionRows(CompletionPane completionPane, int codeAreaWidth, ConsoleCoordinate completionBoxStart)
     {
-        return BoxDrawing.BuildFromItemList(
+        return boxDrawing.BuildFromItemList(
             items: completionPane.FilteredView.VisibleItems.Select(c => c.DisplayTextFormatted),
             configuration: configuration,
             maxWidth: codeAreaWidth - completionBoxStart.Column,
@@ -274,7 +276,7 @@ internal class Renderer : IDisposable
 
         Debug.Assert(documentationLines != null);
 
-        return BoxDrawing.BuildFromLines(
+        return boxDrawing.BuildFromLines(
             lines: documentationLines,
             configuration: configuration,
             background: configuration.CompletionItemDescriptionPaneBackground);
