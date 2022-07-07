@@ -24,7 +24,9 @@ public class PromptConfiguration
     /// </summary>
     public FormattedString Prompt { get; }
 
-    public ConsoleFormat CompletionBoxBorderFormat { get; }
+    private readonly ConsoleFormat completionBoxBorderFormat;
+    public ref readonly ConsoleFormat CompletionBoxBorderFormat => ref completionBoxBorderFormat;
+
     public AnsiColor? CompletionItemDescriptionPaneBackground { get; }
     public FormattedString SelectedCompletionItemMarker { get; }
     public string UnselectedCompletionItemMarker { get; }
@@ -66,7 +68,7 @@ public class PromptConfiguration
         KeyBindings = keyBindings ?? new KeyBindings();
         Prompt = prompt ?? "> ";
 
-        CompletionBoxBorderFormat = GetFormat(completionBoxBorderFormat ?? new ConsoleFormat(Foreground: AnsiColor.Blue));
+        this.completionBoxBorderFormat = GetFormat(completionBoxBorderFormat ?? new ConsoleFormat(Foreground: AnsiColor.Blue));
         CompletionItemDescriptionPaneBackground = GetColor(completionItemDescriptionPaneBackground);
 
         SelectedCompletionItemMarker = selectedCompletionItemMarkSymbol ?? new FormattedString(">", new FormatSpan(0, 1, AnsiColor.Cyan));

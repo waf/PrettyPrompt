@@ -57,13 +57,10 @@ internal class Row : IDisposable
         }
     }
 
-    public void Add(char text, ConsoleFormat formatting)
-        => Add(new FormattedString(text.ToString(), formatting));
-
     public void Add(string text)
-        => Add(text, ConsoleFormat.None);
+        => Add(new FormattedString(text));
 
-    public void Add(string text, ConsoleFormat formatting)
+    public void Add(string text, in ConsoleFormat formatting)
         => Add(new FormattedString(text, formatting));
 
     public void Add(FormattedString formattedString)
