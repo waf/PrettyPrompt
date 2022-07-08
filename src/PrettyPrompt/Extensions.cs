@@ -5,7 +5,6 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.Text;
 using PrettyPrompt.Documents;
@@ -60,7 +59,7 @@ public static class Extensions
     public static ReadOnlySpan<char> AsSpan(this string text, TextSpan span)
         => text.AsSpan(span.Start, span.Length);
 
-    internal static void TransformBackground(this Cell cell, AnsiColor? background)
+    internal static void TransformBackground(this Cell cell, in AnsiColor? background)
     {
         if (cell.Formatting.Background is null)
         {
@@ -68,11 +67,16 @@ public static class Extensions
         }
     }
 
-    internal static void TransformBackground(this Row row, AnsiColor? background, int startIndex = 0)
+    internal static void TransformBackground(this Row row, in AnsiColor? background, int startIndex = 0)
+        => TransformBackground(row, background, startIndex, count: row.Length - startIndex);
+
+    internal static void TransformBackground(this Row row, in AnsiColor? background, int startIndex, int count)
     {
         Debug.Assert(startIndex >= 0);
         Debug.Assert(startIndex <= row.Length);
-        for (int i = startIndex; i < row.Length; i++)
+        Debug.Assert(count >= 0);
+        Debug.Assert(startIndex + count <= row.Length);
+        for (int i = startIndex; i < startIndex + count; i++)
         {
             row[i].TransformBackground(background);
         }

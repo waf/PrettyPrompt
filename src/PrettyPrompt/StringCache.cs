@@ -13,7 +13,6 @@ namespace PrettyPrompt;
 internal sealed class StringCache
 {
     private readonly (string Text, byte UnicodeWidth)[] asciiCache = new (string, byte)[256];
-    private readonly string[] boxDrawingCache = new string[BoxDrawing.MaxUsedCharacterValue - BoxDrawing.MinUsedCharacterValue + 1];
 
     public static readonly StringCache Shared = new();
 
@@ -23,13 +22,6 @@ internal sealed class StringCache
         {
             var c = (char)i;
             asciiCache[i] = (c.ToString(), checked((byte)UnicodeWidth.GetWidth(c)));
-        }
-
-        for (int i = 0; i < boxDrawingCache.Length; i++)
-        {
-            var c = (char)(BoxDrawing.MinUsedCharacterValue + i);
-            boxDrawingCache[i] = c.ToString();
-            Debug.Assert(UnicodeWidth.GetWidth(c) == 1);
         }
     }
 
@@ -43,19 +35,10 @@ internal sealed class StringCache
         }
         else
         {
-            idx -= BoxDrawing.MinUsedCharacterValue;
-            if ((uint)idx < (uint)boxDrawingCache.Length)
-            {
-                unicodeWidth = 1;
-                return boxDrawingCache[idx];
-            }
-            else
-            {
-                var result = character.ToString();
-                Debug.Assert(result.Length == 1);
-                unicodeWidth = UnicodeWidth.GetWidth(character);
-                return result;
-            }
+            var result = character.ToString();
+            Debug.Assert(result.Length == 1);
+            unicodeWidth = UnicodeWidth.GetWidth(character);
+            return result;
         }
     }
 

@@ -5,7 +5,6 @@
 #endregion
 
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using PrettyPrompt.Documents;
@@ -17,10 +16,11 @@ namespace PrettyPrompt.Completion;
 /// also has a concept of the window "sliding" to always keep a selected index in view. This datastructure powers
 /// the auto-complete menu, and the window slides to provide the scrolling of the menu.
 /// </summary>
-internal sealed class SlidingArrayWindow : IReadOnlyCollection<CompletionItem>
+internal sealed class SlidingArrayWindow
 {
     private readonly List<CompletionItem> itemsOriginal = new();
     private readonly int windowBuffer;
+    private readonly List<CompletionItem> visibleItems = new();
     private List<(CompletionItem Item, bool IsMatching)> itemsSorted = new();
     private int windowLength;
     private int windowStart;
@@ -31,6 +31,8 @@ internal sealed class SlidingArrayWindow : IReadOnlyCollection<CompletionItem>
         this.windowBuffer = windowBuffer;
     }
 
+    public int? SelectedIndexInAllItems => selectedIndex;
+    public int? SelectedIndexInVisibleItems => selectedIndex - windowStart;
     public CompletionItem? SelectedItem => !IsEmpty && selectedIndex.HasValue ? itemsSorted[selectedIndex.Value].Item : null;
 
     public void UpdateItems(IEnumerable<CompletionItem> items, string documentText, int documentCaret, TextSpan spanToReplace, int windowLength)
@@ -39,19 +41,14 @@ internal sealed class SlidingArrayWindow : IReadOnlyCollection<CompletionItem>
         this.itemsOriginal.Clear();
         this.itemsOriginal.AddRange(items);
 
-        this.itemsSorted.Clear();
-        foreach (var item in items)
-        {
-            this.itemsSorted.Add((item, false));
-        }
-
         Match(documentText, documentCaret, spanToReplace);
-
         ResetSelectedIndex();
+        UpdateVisibleItems();
     }
 
     public void Match(string documentText, int caret, TextSpan spanToBeReplaced)
     {
+        //this could be done more efficiently if we would have in-place stable List<T> sort implementation
         itemsSorted = itemsOriginal
             .Select(i => (Item: i, Priority: i.GetCompletionItemPriority(documentText, caret, spanToBeReplaced)))
             .OrderByDescending(t => t.Priority)
@@ -69,14 +66,15 @@ internal sealed class SlidingArrayWindow : IReadOnlyCollection<CompletionItem>
             return;
         }
 
-        if (selectedIndex == Count - 1)
+        if (selectedIndex == AllItemsCount - 1)
             return;
 
         selectedIndex++;
 
-        if (selectedIndex + windowBuffer >= windowStart + windowLength && windowStart + windowLength < Count)
+        if (selectedIndex + windowBuffer >= windowStart + windowLength && windowStart + windowLength < AllItemsCount)
         {
             windowStart++;
+            UpdateVisibleItems();
         }
     }
 
@@ -96,6 +94,7 @@ internal sealed class SlidingArrayWindow : IReadOnlyCollection<CompletionItem>
         if (selectedIndex - windowBuffer < windowStart && windowStart > 0)
         {
             windowStart--;
+            UpdateVisibleItems();
         }
     }
 
@@ -105,6 +104,7 @@ internal sealed class SlidingArrayWindow : IReadOnlyCollection<CompletionItem>
         itemsSorted.Clear();
         windowLength = 0;
         ResetSelectedIndex();
+        UpdateVisibleItems();
     }
 
     private void ResetSelectedIndex()
@@ -113,13 +113,20 @@ internal sealed class SlidingArrayWindow : IReadOnlyCollection<CompletionItem>
         windowStart = 0;
     }
 
-    public int Count => itemsSorted.Count;
+    private void UpdateVisibleItems()
+    {
+        visibleItems.Clear();
+        var count = Math.Min(windowLength, AllItemsCount);
+        for (int i = windowStart; i < windowStart + count; i++)
+        {
+            visibleItems.Add(itemsSorted[i].Item);
+        }
+    }
 
-    public bool IsEmpty => Count == 0;
+    public int AllItemsCount => itemsSorted.Count;
+    public int VisibleItemsCount => visibleItems.Count;
 
-    int IReadOnlyCollection<CompletionItem>.Count => Count;
-    IEnumerator<CompletionItem> IEnumerable<CompletionItem>.GetEnumerator() => VisibleItems.GetEnumerator();
-    IEnumerator IEnumerable.GetEnumerator() => VisibleItems.GetEnumerator();
+    public bool IsEmpty => AllItemsCount == 0;
 
-    private IEnumerable<CompletionItem> VisibleItems => itemsSorted.Skip(windowStart).Take(Math.Min(windowLength, Count)).Select(t => t.Item);
+    public IReadOnlyList<CompletionItem> VisibleItems => visibleItems;
 }

@@ -40,7 +40,12 @@ internal sealed class Cell
     public ConsoleFormat Formatting;
     public bool TruncateToScreenHeight;
 
-    private Cell() { }
+    private bool isPoolable;
+
+    private Cell(bool isPoolable)
+    {
+        this.isPoolable = isPoolable;
+    }
 
     private void Initialize(string? text, in ConsoleFormat formatting, int elementWidth, bool isContinuationOfPreviousCharacter)
     {
@@ -70,6 +75,16 @@ internal sealed class Cell
         }
 
         Debug.Assert(cells.Count(c => c.text == "\n") <= 1); //otherwise it should be splitted into multiple rows
+    }
+
+    public static Cell CreateSingleNonpoolableCell(char character, in ConsoleFormat formatting)
+    {
+        var list = ListPool<Cell>.Shared.Get(1);
+        AddTo(list, new FormattedString(character.ToString(), formatting));
+        var cell = list.Single();
+        ListPool<Cell>.Shared.Put(list);
+        cell.isPoolable = false;
+        return cell;
     }
 
     public static bool Equals(Cell? left, Cell? right)
@@ -114,16 +129,19 @@ internal sealed class Cell
                     result = pool.Pop();
                 }
             }
-            result ??= new Cell();
+            result ??= new Cell(isPoolable: true);
             result.Initialize(text, in formatting, elementWidth, isContinuationOfPreviousCharacter);
             return result;
         }
 
         public void Put(Cell value)
         {
-            lock (pool)
+            if (value.isPoolable)
             {
-                pool.Push(value);
+                lock (pool)
+                {
+                    pool.Push(value);
+                }
             }
         }
     }

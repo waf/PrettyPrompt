@@ -29,6 +29,7 @@ namespace PrettyPrompt;
 internal class Renderer : IDisposable
 {
     private readonly IConsole console;
+    private readonly BoxDrawing boxDrawing;
     private readonly PromptConfiguration configuration;
 
     private Screen previouslyRenderedScreen = new(0, 0, ConsoleCoordinate.Zero);
@@ -37,6 +38,7 @@ internal class Renderer : IDisposable
     public Renderer(IConsole console, PromptConfiguration configuration)
     {
         this.console = console;
+        this.boxDrawing = new BoxDrawing(configuration);
         this.configuration = configuration;
     }
 
@@ -171,7 +173,7 @@ internal class Renderer : IDisposable
         if (!completionPane.IsOpen || filteredView.IsEmpty)
             return Array.Empty<ScreenArea>();
 
-        int maxCompletionItemWidth = filteredView.Max(w => UnicodeWidth.GetWidth(w.DisplayText));
+        int maxCompletionItemWidth = filteredView.VisibleItems.Max(w => UnicodeWidth.GetWidth(w.DisplayText));
         int boxWidth = maxCompletionItemWidth + 3 + configuration.SelectedCompletionItemMarker.Length; // 3 = left border + right border + space before right border
 
         var completionStart = new ConsoleCoordinate(
@@ -180,9 +182,9 @@ internal class Renderer : IDisposable
                 : cursor.Column + boxWidth >= codeAreaWidth ? codeAreaWidth - boxWidth // not enough room to show to completion box offset to the current cursor. We'll position it stuck to the right.
                 : cursor.Column // enough room, we'll show the completion box offset at the cursor location.
         );
-        var completionRows = BuildCompletionRows(completionPane, codeAreaWidth, maxCompletionItemWidth, completionStart);
+        var completionRows = BuildCompletionRows(completionPane, codeAreaWidth, completionStart);
 
-        var documentationStart = new ConsoleCoordinate(cursor.Row + 1, completionStart.Column + boxWidth);
+        var documentationStart = new ConsoleCoordinate(cursor.Row + 1, completionStart.Column + boxWidth - 1);
         var selectedItemDescription = filteredView.SelectedItem != null ? await filteredView.SelectedItem.GetExtendedDescriptionAsync(cancellationToken).ConfigureAwait(false) : default;
         var documentationRows = BuildDocumentationRows(
             documentation: selectedItemDescription,
@@ -190,94 +192,20 @@ internal class Renderer : IDisposable
             completionRowsCount: completionRows.Length
         );
 
+        boxDrawing.Connect(completionRows, documentationRows);
+
         var completionArea = new ScreenArea(completionStart, completionRows);
         var documentationArea = new ScreenArea(documentationStart, documentationRows);
-        var connectionHeight = Math.Max(0, documentationRows.Length - completionRows.Length);
-        var completionTopRightCorner = new ConsoleCoordinate(completionStart.Row, completionStart.Column + boxWidth - 1);
-        if (connectionHeight > 0)
-        {
-            var connectionRow = new Row(BoxDrawing.EdgeVertical.ToString(), configuration.CompletionBoxBorderFormat);
-            var connectionRows = Enumerable.Repeat(connectionRow, connectionHeight - 1)
-                .Prepend(new Row(BoxDrawing.EdgeVerticalAndLeftHorizontal.ToString(), configuration.CompletionBoxBorderFormat))
-                .Append(new Row(BoxDrawing.CornerLowerLeft.ToString(), configuration.CompletionBoxBorderFormat))
-                .ToArray();
-
-            var completionBottomRightCorner = new ConsoleCoordinate(completionStart.Row + completionRows.Length - 1, completionStart.Column + boxWidth - 1);
-            var connectionArea = new ScreenArea(completionBottomRightCorner, connectionRows);
-
-            var topRightCornerRow = new Row(BoxDrawing.EdgeHorizontalAndLowerVertical.ToString(), configuration.CompletionBoxBorderFormat);
-            var topRightCornerArea = new ScreenArea(completionTopRightCorner, new[] { topRightCornerRow });
-
-            return new[] { completionArea, documentationArea, topRightCornerArea, connectionArea };
-        }
-        else
-        {
-            if (documentationRows.Length > 0)
-            {
-                var topRightCornerRow = new Row(BoxDrawing.EdgeHorizontalAndLowerVertical.ToString(), configuration.CompletionBoxBorderFormat);
-                var topRightCornerArea = new ScreenArea(completionTopRightCorner, new[] { topRightCornerRow });
-
-                var lowerConnectionCorner = new ConsoleCoordinate(completionStart.Row + documentationRows.Length - 1, completionStart.Column + boxWidth - 1);
-                var bottomRightCornerRow = new Row(documentationRows.Length < completionRows.Length ? BoxDrawing.EdgeVerticalAndRightHorizontal.ToString() : BoxDrawing.EdgeHorizontalAndUpperVertical.ToString(), configuration.CompletionBoxBorderFormat);
-                var bottomRightCornerArea = new ScreenArea(lowerConnectionCorner, new[] { bottomRightCornerRow });
-
-                return new[] { completionArea, documentationArea, topRightCornerArea, bottomRightCornerArea };
-            }
-            else
-            {
-                return new[] { completionArea, documentationArea, };
-            }
-        }
+        return new[] { completionArea, documentationArea };
     }
 
-    private Row[] BuildCompletionRows(CompletionPane completionPane, int codeAreaWidth, int maxCompletionItemWidth, ConsoleCoordinate completionBoxStart)
+    private Row[] BuildCompletionRows(CompletionPane completionPane, int codeAreaWidth, ConsoleCoordinate completionBoxStart)
     {
-        var horizontalBorder = TruncateToWindow(new string(BoxDrawing.EdgeHorizontal, maxCompletionItemWidth + configuration.SelectedCompletionItemMarker.Length + 1), 2).Text; // +1 = space after item (=space before right border)
-
-        var selectedItem = completionPane.FilteredView.SelectedItem;
-        return completionPane.FilteredView
-            .Select(completion =>
-            {
-                var item = completion.DisplayTextFormatted;
-                var isSelected = selectedItem == completion;
-
-                var rowCells = new Row(/*leftEdge*/1 + configuration.SelectedCompletionItemMarker.Length + maxCompletionItemWidth + /*space+RightEdge*/2);
-
-                //left border
-                rowCells.Add(BoxDrawing.EdgeVertical, configuration.CompletionBoxBorderFormat);
-
-                //(un)selected item marker
-                if (isSelected)
-                {
-                    rowCells.Add(configuration.SelectedCompletionItemMarker);
-                }
-                else
-                {
-                    rowCells.Add(configuration.UnselectedCompletionItemMarker);
-                }
-
-                //item
-                var cellCountBeforeItem = rowCells.Length;
-                rowCells.Add(TruncateToWindow(item + new string(' ', maxCompletionItemWidth - item.GetUnicodeWidth()), 2 + configuration.SelectedCompletionItemMarker.Length)); // 2 = left border + right border
-                if (isSelected)
-                {
-                    rowCells.TransformBackground(configuration.SelectedCompletionItemBackground, startIndex: cellCountBeforeItem);
-                }
-
-                //right border
-                rowCells.Add(" " + BoxDrawing.EdgeVertical, configuration.CompletionBoxBorderFormat);
-
-                return rowCells;
-            })
-            .Prepend(new Row(BoxDrawing.CornerUpperLeft + horizontalBorder + BoxDrawing.CornerUpperRight, configuration.CompletionBoxBorderFormat))
-            .Append(new Row(BoxDrawing.CornerLowerLeft + horizontalBorder + BoxDrawing.CornerLowerRight, configuration.CompletionBoxBorderFormat))
-            .ToArray();
-
-        FormattedString TruncateToWindow(FormattedString line, int offset)
-        {
-            var availableWidth = Math.Max(0, codeAreaWidth - completionBoxStart.Column - offset);
-            return line.Substring(0, Math.Min(line.Length, availableWidth));
-        }
+        return boxDrawing.BuildFromItemList(
+            items: completionPane.FilteredView.VisibleItems.Select(c => c.DisplayTextFormatted),
+            configuration: configuration,
+            maxWidth: codeAreaWidth - completionBoxStart.Column,
+            selectedLineIndex: completionPane.FilteredView.SelectedIndexInVisibleItems);
     }
 
     private Row[] BuildDocumentationRows(FormattedString documentation, int maxWidth, int completionRowsCount)
@@ -314,22 +242,11 @@ internal class Renderer : IDisposable
         }
 
         Debug.Assert(documentationLines != null);
-        var actualTextWidth = GetActualTextWidth(documentationLines);
-        var actualBoxWidth = actualTextWidth + CompletionPane.HorizontalBordersWidth;
 
-        var (boxTop, boxBottom) = BoxDrawing.HorizontalBorders(actualBoxWidth - 1, leftCorner: false);
-
-        return documentationLines
-            .Select(line =>
-                {
-                    var row = new Row(" " + line.Trim() + new string(' ', actualTextWidth - line.GetUnicodeWidth() + 1));
-                    row.TransformBackground(configuration.CompletionItemDescriptionPaneBackground);
-                    row.Add(BoxDrawing.EdgeVertical, configuration.CompletionBoxBorderFormat);
-                    return row;
-                })
-            .Prepend(new Row(boxTop, configuration.CompletionBoxBorderFormat))
-            .Append(new Row(boxBottom, configuration.CompletionBoxBorderFormat))
-            .ToArray();
+        return boxDrawing.BuildFromLines(
+            lines: documentationLines,
+            configuration: configuration,
+            background: configuration.CompletionItemDescriptionPaneBackground);
 
         List<FormattedString> GetDocumentationLines(int requestedBoxWidth)
         {

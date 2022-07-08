@@ -39,6 +39,12 @@ public readonly struct FormattedString : IEquatable<FormattedString>
         : this(text, formatSpans?.ToArray())
     { }
 
+    public FormattedString(string? text)
+    {
+        Text = text;
+        formatSpans = Array.Empty<FormatSpan>();
+    }
+
     public FormattedString(string? text, params FormatSpan[]? formatSpans)
     {
         Text = text;
@@ -83,7 +89,7 @@ public readonly struct FormattedString : IEquatable<FormattedString>
         }
     }
 
-    public FormattedString(string? text, ConsoleFormat formatting)
+    public FormattedString(string? text, in ConsoleFormat formatting)
         : this(text, (text?.Length ?? 0) == 0 ? Array.Empty<FormatSpan>() : new[] { new FormatSpan(0, text!.Length, formatting) })
     {
     }
