@@ -55,6 +55,7 @@ internal sealed class SlidingArrayWindow
             .Select(t => (t.Item, t.Priority >= 0))
             .ToList();
 
+        UpdateVisibleItems();
         ResetSelectedIndex();
     }
 

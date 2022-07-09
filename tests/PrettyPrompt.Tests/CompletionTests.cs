@@ -678,6 +678,26 @@ public class CompletionTests
         Assert.Equal("aaa", result.Text);
     }
 
+    [Fact]
+    public async Task ReadLine_RenderingBug()
+    {
+        var console = ConsoleStub.NewConsole();
+        var prompt = ConfigurePrompt(
+            console,
+            completions: new[] { "aaa", "bbb" });
+        console.StubInput(
+            $"a",
+            $"{Backspace}",
+            $"b",
+            $"{Escape}", //close completion list
+            $"{Enter}"); //submit prompt
+        await prompt.ReadLineAsync();
+
+        var output = console.GetAllOutput();
+        Assert.Contains("aaa [34;49m│[0m a vivid description of aaa", output[2]); //after press of 'a'
+        Assert.Contains("bbb [34;49m│[0m a vivid description of bbb", output[4]); //after press of 'b' (here was the bug)
+    }
+
     public static Prompt ConfigurePrompt(IConsole console, PromptConfiguration? configuration = null, string[]? completions = null) =>
         new(
             callbacks: new TestPromptCallbacks
