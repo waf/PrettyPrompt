@@ -21,8 +21,10 @@ jobs:
       run: |
         $csproj = [xml](Get-Content ./src/PrettyPrompt/PrettyPrompt.csproj)
         $localversion = $csproj.Project.PropertyGroup.Version[0]
-        $publishedversions = (Invoke-RestMethod https://api.nuget.org/v3-flatcontainer/PrettyPrompt/index.json).versions
+        echo "Version in the repository is $localversion"
+        $publishedversions = (Invoke-RestMethod "https://api.nuget.org/v3-flatcontainer/PrettyPrompt/index.json").versions
         $isReleaseRequired = (-not $publishedversions.Contains($localversion)).ToString().ToLower()
+        echo "Release required: $isReleaseRequired"
         echo "::set-output name=LOCAL_VERSION::v$localversion"
         echo "::set-output name=IS_RELEASE_REQUIRED::$isReleaseRequired"
       
