@@ -21,8 +21,8 @@ jobs:
       run: |
         $csproj = [xml](Get-Content ./src/PrettyPrompt/PrettyPrompt.csproj)
         $localversion = $csproj.Project.PropertyGroup.Version[0]
-        $latestversion = (Invoke-RestMethod https://api.nuget.org/v3-flatcontainer/PrettyPrompt/index.json).versions | select -Last 1
-        $isReleaseRequired = ($localversion -ne $latestversion).ToString().ToLower()
+        $publishedversions = (Invoke-RestMethod https://api.nuget.org/v3-flatcontainer/PrettyPrompt/index.json).versions
+        $isReleaseRequired = (-not $publishedversions.Contains($localversion)).ToString().ToLower()
         echo "::set-output name=IS_RELEASE_REQUIRED::$isReleaseRequired"
       
     - name: Install Dotnet
