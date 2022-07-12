@@ -23,6 +23,7 @@ jobs:
         $localversion = $csproj.Project.PropertyGroup.Version[0]
         $publishedversions = (Invoke-RestMethod https://api.nuget.org/v3-flatcontainer/PrettyPrompt/index.json).versions
         $isReleaseRequired = (-not $publishedversions.Contains($localversion)).ToString().ToLower()
+        echo "::set-output name=LOCAL_VERSION::v$localversion"
         echo "::set-output name=IS_RELEASE_REQUIRED::$isReleaseRequired"
       
     - name: Install Dotnet
@@ -41,4 +42,14 @@ jobs:
       if: steps.CheckReleaseRequired.outputs.IS_RELEASE_REQUIRED == 'true' 
       run: dotnet nuget push --skip-duplicate --api-key ${{secrets.NUGET_API_KEY}} --source 'https://api.nuget.org/v3/index.json' ./src/PrettyPrompt/bin/Release/PrettyPrompt.*.npkg
 
-    
+    - name: Create Git Tag
+      if: steps.CheckReleaseRequired.outputs.IS_RELEASE_REQUIRED == 'true' 
+      uses: actions/github-script@v6
+      with:
+        script: |
+          github.rest.git.createRef({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: 'refs/tags/' + steps.CheckReleaseRequired.outputs.LOCAL_VERSION,
+            sha: context.sha
+          }) 
