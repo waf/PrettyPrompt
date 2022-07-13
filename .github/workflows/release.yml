@@ -20,7 +20,7 @@ jobs:
       shell: pwsh
       run: |
         if (-not (Get-InstalledModule PackageManagement -ErrorAction silentlycontinue)){
-            Install-Module PackageManagement -Confirm:$False -Force -Scope CurrentUser
+            Install-Module PackageManagement -Confirm:$False -Scope CurrentUser
         }
         Import-Module -Name PackageManagement
         $publishedversions = (Find-Package -AllVersions -AllowPrereleaseVersions -Name "PrettyPrompt").Version
