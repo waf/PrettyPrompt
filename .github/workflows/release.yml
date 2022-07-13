@@ -19,11 +19,8 @@ jobs:
       id: CheckReleaseRequired
       shell: pwsh
       run: |
-        if (-not (Get-InstalledModule PackageManagement -ErrorAction silentlycontinue)){
-            Install-Module PackageManagement -Confirm:$False -Scope CurrentUser
-        }
-        Import-Module -Name PackageManagement
         $publishedversions = (Find-Package -AllVersions -AllowPrereleaseVersions -Name "PrettyPrompt").Version
+        echo "Found published versions: $publishedversions"
         if ($publishedversions.Count -gt 0) {
             $csproj = [xml](Get-Content ./src/PrettyPrompt/PrettyPrompt.csproj)
             $localversion = $csproj.Project.PropertyGroup.Version[0]
