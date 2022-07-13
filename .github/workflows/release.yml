@@ -19,12 +19,12 @@ jobs:
       id: CheckReleaseRequired
       shell: pwsh
       run: |
+        Install-Module PackageManagement
+        Import-Module -Name PackageManagement
+        $publishedversions = (Find-Package -AllVersions -AllowPrereleaseVersions -Name "PrettyPrompt").Version
         $csproj = [xml](Get-Content ./src/PrettyPrompt/PrettyPrompt.csproj)
         $localversion = $csproj.Project.PropertyGroup.Version[0]
         echo "Version in the repository is $localversion"
-        $nugetServer = "https://api.nuget.org/v3-flatcontainer/PrettyPrompt/index.json"
-        echo "Querying $nugetServer for latest version"
-        $publishedversions = (Invoke-RestMethod -Method Get -Uri $nugetServer -Verbose).versions
         $isReleaseRequired = (-not $publishedversions.Contains($localversion)).ToString().ToLower()
         echo "Release required: $isReleaseRequired"
         echo "::set-output name=LOCAL_VERSION::v$localversion"
