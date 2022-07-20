@@ -33,6 +33,7 @@ internal class CodePane : IKeyPressHandler
     private int windowTop;
     private WordWrappedText wordWrappedText;
     private CompletionPane completionPane = null!;
+    private OverloadPane overloadPane = null!;
 
     /// <summary>
     /// The input text being edited in the pane
@@ -94,6 +95,22 @@ internal class CodePane : IKeyPressHandler
 
     public string TabSpaces { get; }
 
+    public int EmptySpaceAtBottomOfWindowHeight
+    {
+        get
+        {
+            var overloadPaneMin = OverloadPane.MinHeight;
+
+            var completionPaneMin = BoxDrawing.VerticalBordersHeight + configuration.MinCompletionItemsCount;
+            var completionPaneMax = BoxDrawing.VerticalBordersHeight + configuration.MaxCompletionItemsCount;
+
+            var min = Math.Min(overloadPaneMin, completionPaneMin);
+            var max = completionPaneMax;
+
+            return ((int)(configuration.ProportionOfWindowHeightForCompletionPane * console.WindowHeight)).Clamp(min, max);
+        }
+    }
+
     public CodePane(IConsole console, PromptConfiguration configuration, IClipboard clipboard)
     {
         this.console = console;
@@ -113,7 +130,11 @@ internal class CodePane : IKeyPressHandler
         void WordWrap() => wordWrappedText = Document.WrapEditableCharacters(CodeAreaWidth);
     }
 
-    internal void Bind(CompletionPane completionPane) => this.completionPane = completionPane;
+    internal void Bind(CompletionPane completionPane, OverloadPane overloadPane)
+    {
+        this.completionPane = completionPane;
+        this.overloadPane = overloadPane;
+    }
 
     public async Task OnKeyDown(KeyPress key, CancellationToken cancellationToken)
     {
@@ -237,6 +258,7 @@ internal class CodePane : IKeyPressHandler
                 if (newSelection.HasValue)
                 {
                     completionPane.IsOpen = false;
+                    overloadPane.IsOpen = false;
                 }
                 break;
             case (Control, Y):
@@ -245,6 +267,7 @@ internal class CodePane : IKeyPressHandler
                 if (newSelection.HasValue)
                 {
                     completionPane.IsOpen = false;
+                    overloadPane.IsOpen = false;
                 }
                 break;
             default:
@@ -385,6 +408,29 @@ internal class CodePane : IKeyPressHandler
         await selectionHandler.OnKeyUp(key, cancellationToken).ConfigureAwait(false);
 
         CheckConsistency();
+    }
+
+    public ConsoleCoordinate GetHelperPanesStartPosition()
+    {
+        var filteredView = completionPane.FilteredView;
+
+        int completionPaneWidth =
+            filteredView.VisibleItems.Count > 0 ?
+            BoxDrawing.GetHorizontalBordersWidth(BoxType.CompletionItems, configuration) + filteredView.VisibleItems.Max(w => UnicodeWidth.GetWidth(w.DisplayText)) :
+            0;
+
+        int overloadPaneWidth = overloadPane.Width;
+        int documentationWidth = completionPane.SelectedItemDocumentationWidth;
+
+        int requiredWidth = Math.Max(completionPaneWidth + documentationWidth - 1, overloadPaneWidth); //-1 because completionPane shares 1 column with documentationBox
+        var codeAreaStartColumn = configuration.Prompt.Length;
+        var cursor = Cursor;
+        return new ConsoleCoordinate(
+            row: cursor.Row + 1,
+            column: requiredWidth > codeAreaWidth ? codeAreaStartColumn // not enough room to show to completion box. We'll position all the way to the left, and truncate the box.
+                : cursor.Column + requiredWidth >= codeAreaWidth ? codeAreaWidth - requiredWidth // not enough room to show to completion box offset to the current cursor. We'll position it stuck to the right.
+                : cursor.Column // enough room, we'll show the completion box offset at the cursor location.
+        );
     }
 
     [Conditional("DEBUG")]

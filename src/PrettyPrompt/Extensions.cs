@@ -81,4 +81,21 @@ public static class Extensions
             row[i].TransformBackground(background);
         }
     }
+
+    internal static int ArgMax(this Span<int> values)
+    {
+        Debug.Assert(values.Length > 0);
+        int maxIdx = 0;
+        int maxValue = values[0];
+        for (int i = 1; i < values.Length; i++)
+        {
+            var val = values[i];
+            if (val > maxValue)
+            {
+                maxIdx = i;
+                maxValue = val;
+            }
+        }
+        return maxIdx;
+    }
 }

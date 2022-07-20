@@ -13,6 +13,8 @@ using System.Threading.Tasks;
 using PrettyPrompt.Completion;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Documents;
+using PrettyPrompt.Highlighting;
+using PrettyPrompt.Rendering;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
 
@@ -21,23 +23,14 @@ namespace PrettyPrompt.Panes;
 internal class CompletionPane : IKeyPressHandler
 {
     /// <summary>
-    /// Left padding + right padding + right border.
+    /// Cursor + box borders.
     /// </summary>
-    public const int HorizontalBordersWidth = 3;
-
-    /// <summary>
-    /// Top border + bottom border.
-    /// </summary>
-    public const int VerticalBordersHeight = 2;
-
-    /// <summary>
-    /// Cursor + top border + bottom border.
-    /// </summary>
-    private const int VerticalPaddingHeight = 1 + VerticalBordersHeight;
+    private const int VerticalPaddingHeight = 1 + BoxDrawing.VerticalBordersHeight;
 
     private readonly CodePane codePane;
     private readonly IPromptCallbacks promptCallbacks;
     private readonly PromptConfiguration configuration;
+    private readonly OverloadPane overloadPane;
 
     private TextSpan? lastSpanToReplaceOnKeyDown;
     private bool completionListTriggeredOnKeyDown;
@@ -57,14 +50,23 @@ internal class CompletionPane : IKeyPressHandler
     /// </summary>
     public bool IsOpen { get; set; }
 
+    public IReadOnlyList<FormattedString> SelectedItemDocumentation { get; private set; } = Array.Empty<FormattedString>();
+    public int SelectedItemDocumentationWidth =>
+        BoxDrawing.GetHorizontalBordersWidth(BoxType.TextLines, configuration) +
+        (SelectedItemDocumentation.Count > 0 ? SelectedItemDocumentation.Max(l => l.GetUnicodeWidth()) : 0);
+
     public CompletionPane(
         CodePane codePane,
+        OverloadPane overloadPane,
         IPromptCallbacks promptCallbacks,
         PromptConfiguration configuration)
     {
         this.codePane = codePane;
         this.promptCallbacks = promptCallbacks;
         this.configuration = configuration;
+        this.overloadPane = overloadPane;
+
+        FilteredView.SelectedItemChanged += SelectedItemChanged;
     }
 
     private void Open()
@@ -73,10 +75,10 @@ internal class CompletionPane : IKeyPressHandler
         this.allCompletions = Array.Empty<CompletionItem>();
     }
 
-    private void Close()
+    private async Task Close(CancellationToken cancellationToken)
     {
-        this.IsOpen = false;
-        this.FilteredView.Clear();
+        IsOpen = false;
+        await FilteredView.Clear(cancellationToken).ConfigureAwait(false);
     }
 
     async Task IKeyPressHandler.OnKeyDown(KeyPress key, CancellationToken cancellationToken)
@@ -101,18 +103,18 @@ internal class CompletionPane : IKeyPressHandler
                 case (Shift, LeftArrow or RightArrow or UpArrow or DownArrow or Home or End) or
                      (Control | Shift, LeftArrow or RightArrow or UpArrow or DownArrow or Home or End) or
                      (Control, A):
-                    Close();
+                    await Close(cancellationToken).ConfigureAwait(false);
                     return;
                 case LeftArrow or RightArrow:
                     int caretNew = documentCaret + (key.ConsoleKeyInfo.Key == LeftArrow ? -1 : 1);
                     if (caretNew < spanToReplace.Start || caretNew > spanToReplace.Start + spanToReplace.Length)
                     {
-                        Close();
+                        await Close(cancellationToken).ConfigureAwait(false);
                         return;
                     }
                     break;
                 case Escape:
-                    Close();
+                    await Close(cancellationToken).ConfigureAwait(false);
                     key.Handled = true;
                     return;
                 default:
@@ -137,7 +139,7 @@ internal class CompletionPane : IKeyPressHandler
         {
             if (completionListTriggered)
             {
-                Close();
+                await Close(cancellationToken).ConfigureAwait(false);
                 Open();
                 key.Handled = true;
             }
@@ -148,11 +150,11 @@ internal class CompletionPane : IKeyPressHandler
         switch (key.ObjectPattern)
         {
             case DownArrow:
-                this.FilteredView.IncrementSelectedIndex();
+                await FilteredView.IncrementSelectedIndex(cancellationToken).ConfigureAwait(false);
                 key.Handled = true;
                 break;
             case UpArrow:
-                this.FilteredView.DecrementSelectedIndex();
+                await FilteredView.DecrementSelectedIndex(cancellationToken).ConfigureAwait(false);
                 key.Handled = true;
                 break;
             case var _ when configuration.KeyBindings.TriggerCompletionList.Matches(key.ConsoleKeyInfo):
@@ -163,7 +165,7 @@ internal class CompletionPane : IKeyPressHandler
                 {
                     if (configuration.KeyBindings.CommitCompletion.Matches(key.ConsoleKeyInfo))
                     {
-                        Close();
+                        await Close(cancellationToken).ConfigureAwait(false);
                     }
                 }
                 else if (configuration.KeyBindings.CommitCompletion.Matches(key.ConsoleKeyInfo, FilteredView.SelectedItem.CommitCharacterRules))
@@ -175,8 +177,8 @@ internal class CompletionPane : IKeyPressHandler
         }
     }
 
-    private bool EnoughRoomToDisplay(CodePane codePane) =>
-        codePane.CodeAreaHeight - codePane.Cursor.Row >= VerticalPaddingHeight + configuration.MinCompletionItemsCount; // offset + top border + MinCompletionItemsCount + bottom border
+    private bool EnoughRoomToDisplay(CodePane codePane)
+        => codePane.CodeAreaHeight - codePane.Cursor.Row >= VerticalPaddingHeight + configuration.MinCompletionItemsCount;
 
     async Task IKeyPressHandler.OnKeyUp(KeyPress key, CancellationToken cancellationToken)
     {
@@ -205,7 +207,7 @@ internal class CompletionPane : IKeyPressHandler
             {
                 if (spanToReplace.Start != spanToReplaceOld.Start && spanToReplace.End != spanToReplaceOld.End)
                 {
-                    Close();
+                    await Close(cancellationToken).ConfigureAwait(false);
                     return;
                 }
             }
@@ -218,18 +220,18 @@ internal class CompletionPane : IKeyPressHandler
                     allCompletions = completions;
                     if (completions.Any())
                     {
-                        int height = Math.Min(codePane.CodeAreaHeight - VerticalPaddingHeight, configuration.MaxCompletionItemsCount);
-                        FilteredView.UpdateItems(completions, documentText, documentCaret, spanToReplace, height);
+                        int height = Math.Min(codePane.CodeAreaHeight - VerticalPaddingHeight - overloadPane.GetCurrentHeight(), configuration.MaxCompletionItemsCount);
+                        await FilteredView.UpdateItems(completions, documentText, documentCaret, spanToReplace, height, cancellationToken).ConfigureAwait(false);
                     }
                 }
                 else
                 {
-                    Close();
+                    await Close(cancellationToken).ConfigureAwait(false);
                 }
             }
             else if (!key.Handled)
             {
-                FilteredView.Match(documentText, documentCaret, spanToReplace);
+                await FilteredView.Match(documentText, documentCaret, spanToReplace, cancellationToken).ConfigureAwait(false);
             }
         }
     }
@@ -241,11 +243,78 @@ internal class CompletionPane : IKeyPressHandler
         document.Remove(codepane, spanToReplace);
         document.InsertAtCaret(codepane, completion.ReplacementText);
         document.Caret = spanToReplace.Start + completion.ReplacementText.Length;
-        Close();
+        await Close(cancellationToken).ConfigureAwait(false);
     }
 
     public bool WouldKeyPressCommitCompletionItem(KeyPress key) =>
         IsOpen &&
         FilteredView.SelectedItem != null &&
         configuration.KeyBindings.CommitCompletion.Matches(key.ConsoleKeyInfo, FilteredView.SelectedItem.CommitCharacterRules);
+
+    private async Task SelectedItemChanged(CompletionItem? item, CancellationToken cancellationToken)
+    {
+        if (item is null)
+        {
+            SelectedItemDocumentation = Array.Empty<FormattedString>();
+            return;
+        }
+
+        var documentation = await item.GetExtendedDescriptionAsync(cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrEmpty(documentation.Text))
+        {
+            SelectedItemDocumentation = Array.Empty<FormattedString>();
+            return;
+        }
+
+        var completionPaneWidth = BoxDrawing.GetHorizontalBordersWidth(BoxType.CompletionItems, configuration) + FilteredView.VisibleItems.Max(i => i.DisplayTextFormatted.GetUnicodeWidth());
+        var maxWidth = codePane.CodeAreaWidth - completionPaneWidth;
+        if (maxWidth < 12)
+        {
+            SelectedItemDocumentation = Array.Empty<FormattedString>();
+            return;
+        }
+
+        documentation = documentation.Replace("\r\n", "\n");
+        var completionRowsCount = FilteredView.VisibleItemsCount + BoxDrawing.VerticalBordersHeight;
+
+        // Request word wrapping. Actual line lengths won't be exactly the requested width due to wrapping.
+        // We will try wrappings with different available horizontal sizes. We don't want
+        // 'too long and too thin' boxes but also we don't want 'too narrow and too high' ones.
+        // So we use two heuristics to select the 'right' proportions of the documentation box.
+        List<FormattedString>? documentationLines = null;
+        for (double proportion = 0.7; proportion <= 0.96; proportion += 0.05) //70%, 75%, ..., 95%
+        {
+            var requestedBoxWidth = (int)(proportion * maxWidth);
+            documentationLines = GetDocumentationLines(requestedBoxWidth);
+
+            var documentationBoxHeight = documentationLines.Count + BoxDrawing.VerticalBordersHeight;
+
+            //Heuristic 1) primarily we want to use space preallocated by the completion items box.
+            if (documentationBoxHeight <= completionRowsCount)
+            {
+                var documentationBoxWidth = GetActualTextWidth(documentationLines) + BoxDrawing.GetHorizontalBordersWidth(BoxType.TextLines, configuration);
+
+                //Heuristic 2) we prefer boxes with an aspect ratio > 4 (which assumes we are trying different proportions in ascending order).
+                const double MonospaceFontWidthHeightRatioApprox = 0.5;
+                if (MonospaceFontWidthHeightRatioApprox * documentationBoxWidth / documentationBoxHeight > 4)
+                {
+                    break;
+                }
+            }
+        }
+
+        Debug.Assert(documentationLines != null);
+
+        SelectedItemDocumentation = documentationLines;
+
+        List<FormattedString> GetDocumentationLines(int requestedBoxWidth)
+        {
+            var requestedTextWidth = requestedBoxWidth - BoxDrawing.GetHorizontalBordersWidth(BoxType.TextLines, configuration);
+            var documentationLines = WordWrapping.WrapWords(documentation, requestedTextWidth);
+            return documentationLines;
+        }
+
+        static int GetActualTextWidth(List<FormattedString> documentationLines)
+            => documentationLines.Max(line => line.GetUnicodeWidth());
+    }
 }

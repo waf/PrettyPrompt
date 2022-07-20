@@ -6,12 +6,8 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using PrettyPrompt.Consoles;
-using PrettyPrompt.Documents;
 using PrettyPrompt.Highlighting;
 using PrettyPrompt.Panes;
 using PrettyPrompt.Rendering;
@@ -42,35 +38,33 @@ internal class Renderer : IDisposable
         this.configuration = configuration;
     }
 
-    public void RenderPrompt()
+    public void RenderPrompt(CodePane codePane)
     {
         // write some newlines to ensure we have enough room to render the completion pane.
-        var min = CompletionPane.VerticalBordersHeight + configuration.MinCompletionItemsCount;
-        var max = CompletionPane.VerticalBordersHeight + configuration.MaxCompletionItemsCount;
-        var newLinesCount = ((int)(configuration.ProportionOfWindowHeightForCompletionPane * console.WindowHeight)).Clamp(min, max);
+        var newLinesCount = codePane.EmptySpaceAtBottomOfWindowHeight;
         console.Write(new string('\n', newLinesCount) + GetMoveCursorUp(newLinesCount) + GetMoveCursorToColumn(1) + Reset);
         console.Write(configuration.Prompt);
     }
 
-    public async Task RenderOutput(
+    public void RenderOutput(
         PromptResult? result,
         CodePane codePane,
+        OverloadPane overloadPane,
         CompletionPane completionPane,
         IReadOnlyCollection<FormatSpan> highlights,
-        KeyPress key,
-        CancellationToken cancellationToken)
+        KeyPress key)
     {
         if (result is not null)
         {
             if (wasTextSelectedDuringPreviousRender && codePane.Selection is null)
             {
-                await Redraw(cancellationToken).ConfigureAwait(false);
+                Redraw();
             }
 
             if (completionPane.IsOpen)
             {
                 completionPane.IsOpen = false;
-                await Redraw(cancellationToken).ConfigureAwait(false);
+                Redraw();
             }
 
             console.Write(
@@ -88,26 +82,24 @@ internal class Renderer : IDisposable
                 previouslyRenderedScreen = new Screen(0, 0, ConsoleCoordinate.Zero);
                 console.Clear(); // for some reason, using escape codes (ClearEntireScreen and MoveCursorToPosition) leaves
                                  // CursorTop in an old (cached?) state. Using Console.Clear() works around this.
-                RenderPrompt();
+                RenderPrompt(codePane);
                 codePane.MeasureConsole(); // our code pane will have more room to render, it now renders at the top of the screen.
             }
 
-            await Redraw(cancellationToken).ConfigureAwait(false);
+            Redraw();
         }
 
         wasTextSelectedDuringPreviousRender = codePane.Selection.HasValue;
 
-        async Task Redraw(CancellationToken cancellationToken)
+        void Redraw()
         {
             // convert our "view models" into characters, contained in screen areas
-            ScreenArea codeWidget = BuildCodeScreenArea(codePane, highlights);
-            ScreenArea[] completionWidgets = await BuildCompletionScreenAreas(
+            var codeWidget = BuildCodeScreenArea(codePane, highlights);
+            var completionWidgets = BuildCompletionScreenAreas(
+                codePane,
+                overloadPane,
                 completionPane,
-                cursor: codePane.Cursor,
-                codeAreaStartColumn: configuration.Prompt.Length,
-                codeAreaWidth: codePane.CodeAreaWidth,
-                cancellationToken
-            ).ConfigureAwait(false);
+                codeAreaWidth: codePane.CodeAreaWidth);
 
             // ansi escape sequence row/column values are 1-indexed.
             var ansiCoordinate = new ConsoleCoordinate
@@ -155,12 +147,11 @@ internal class Renderer : IDisposable
         return codeWidget;
     }
 
-    private async Task<ScreenArea[]> BuildCompletionScreenAreas(
+    private ScreenArea[] BuildCompletionScreenAreas(
+        CodePane codePane,
+        OverloadPane overloadPane,
         CompletionPane completionPane,
-        ConsoleCoordinate cursor,
-        int codeAreaStartColumn,
-        int codeAreaWidth,
-        CancellationToken cancellationToken)
+        int codeAreaWidth)
     {
         //  _  <-- cursor location
         //  ┌──────────────┬─────────────────────────────┐
@@ -170,93 +161,66 @@ internal class Renderer : IDisposable
         //  └──────────────┘
 
         var filteredView = completionPane.FilteredView;
-        if (!completionPane.IsOpen || filteredView.IsEmpty)
-            return Array.Empty<ScreenArea>();
-
-        int maxCompletionItemWidth = filteredView.VisibleItems.Max(w => UnicodeWidth.GetWidth(w.DisplayText));
-        int boxWidth = maxCompletionItemWidth + 3 + configuration.SelectedCompletionItemMarker.Length; // 3 = left border + right border + space before right border
-
-        var completionStart = new ConsoleCoordinate(
-            row: cursor.Row + 1,
-            column: boxWidth > codeAreaWidth ? codeAreaStartColumn // not enough room to show to completion box. We'll position all the way to the left, and truncate the box.
-                : cursor.Column + boxWidth >= codeAreaWidth ? codeAreaWidth - boxWidth // not enough room to show to completion box offset to the current cursor. We'll position it stuck to the right.
-                : cursor.Column // enough room, we'll show the completion box offset at the cursor location.
-        );
-        var completionRows = BuildCompletionRows(completionPane, codeAreaWidth, completionStart);
-
-        var documentationStart = new ConsoleCoordinate(cursor.Row + 1, completionStart.Column + boxWidth - 1);
-        var selectedItemDescription = filteredView.SelectedItem != null ? await filteredView.SelectedItem.GetExtendedDescriptionAsync(cancellationToken).ConfigureAwait(false) : default;
-        var documentationRows = BuildDocumentationRows(
-            documentation: selectedItemDescription,
-            maxWidth: codeAreaWidth - completionStart.Column - boxWidth,
-            completionRowsCount: completionRows.Length
-        );
-
-        boxDrawing.Connect(completionRows, documentationRows);
-
-        var completionArea = new ScreenArea(completionStart, completionRows);
-        var documentationArea = new ScreenArea(documentationStart, documentationRows);
-        return new[] { completionArea, documentationArea };
-    }
-
-    private Row[] BuildCompletionRows(CompletionPane completionPane, int codeAreaWidth, ConsoleCoordinate completionBoxStart)
-    {
-        return boxDrawing.BuildFromItemList(
-            items: completionPane.FilteredView.VisibleItems.Select(c => c.DisplayTextFormatted),
-            configuration: configuration,
-            maxWidth: codeAreaWidth - completionBoxStart.Column,
-            selectedLineIndex: completionPane.FilteredView.SelectedIndexInVisibleItems);
-    }
-
-    private Row[] BuildDocumentationRows(FormattedString documentation, int maxWidth, int completionRowsCount)
-    {
-        if (string.IsNullOrEmpty(documentation.Text) || maxWidth < 12)
-            return Array.Empty<Row>();
-
-        documentation = documentation.Replace("\r\n", "\n");
-
-        // Request word wrapping. Actual line lengths won't be exactly the requested width due to wrapping.
-        // We will try wrappings with different available horizontal sizes. We don't want
-        // 'too long and too thin' boxes but also we don't want 'too narrow and too high' ones.
-        // So we use two heuristics to select the 'right' proportions of the documentation box.
-        List<FormattedString>? documentationLines = null;
-        for (double proportion = 0.7; proportion <= 0.96; proportion += 0.05) //70%, 75%, ..., 95%
+        var completionStart = codePane.GetHelperPanesStartPosition();
+        ScreenArea overloadArea;
+        if (overloadPane.IsOpen)
         {
-            var requestedBoxWidth = (int)(proportion * maxWidth);
-            documentationLines = GetDocumentationLines(requestedBoxWidth);
+            overloadArea = BuildOverloadArea(overloadPane, completionStart);
+            completionStart = completionStart.Offset(overloadArea.Rows.Length - 1, 0);
+        }
+        else
+        {
+            overloadArea = ScreenArea.Empty;
+        }
 
-            var documentationBoxHeight = documentationLines.Count + CompletionPane.VerticalBordersHeight;
-
-            //Heuristic 1) primarily we want to use space preallocated by the completion items box.
-            if (documentationBoxHeight <= completionRowsCount)
+        if (!completionPane.IsOpen || filteredView.IsEmpty)
+        {
+            if (overloadPane.IsOpen)
             {
-                var documentationBoxWidth = GetActualTextWidth(documentationLines) + CompletionPane.HorizontalBordersWidth;
-
-                //Heuristic 2) we prefer boxes with an aspect ratio > 4 (which assumes we are trying different proportions in ascending order).
-                const double MonospaceFontWidthHeightRatioApprox = 0.5;
-                if (MonospaceFontWidthHeightRatioApprox * documentationBoxWidth / documentationBoxHeight > 4)
-                {
-                    break;
-                }
+                return new[] { overloadArea };
+            }
+            else
+            {
+                return Array.Empty<ScreenArea>();
             }
         }
 
-        Debug.Assert(documentationLines != null);
+        var completionArea = BuildCompletionArea(completionPane, codeAreaWidth, completionStart);
 
-        return boxDrawing.BuildFromLines(
-            lines: documentationLines,
+        var documentationStart = new ConsoleCoordinate(completionStart.Row, completionStart.Column + completionArea.Width - 1);
+        var documentationArea = BuildDocumentationArea(completionPane, documentationStart);
+
+        boxDrawing.Connect(overloadArea.Rows, completionArea.Rows, documentationArea.Rows);
+
+        return new[] { overloadArea, completionArea, documentationArea };
+    }
+
+    private ScreenArea BuildOverloadArea(OverloadPane overloadPane, ConsoleCoordinate position)
+    {
+        var rows = boxDrawing.BuildFromLines(
+                overloadPane.SelectedItem,
+                configuration: configuration,
+                background: configuration.CompletionItemDescriptionPaneBackground);
+        return new ScreenArea(position, rows);
+    }
+
+    private ScreenArea BuildCompletionArea(CompletionPane completionPane, int codeAreaWidth, ConsoleCoordinate position)
+    {
+        var rows = boxDrawing.BuildFromItemList(
+            items: completionPane.FilteredView.VisibleItems.Select(c => c.DisplayTextFormatted),
             configuration: configuration,
-            background: configuration.CompletionItemDescriptionPaneBackground);
+            maxWidth: codeAreaWidth - position.Column,
+            selectedLineIndex: completionPane.FilteredView.SelectedIndexInVisibleItems);
+        return new ScreenArea(position, rows);
+    }
 
-        List<FormattedString> GetDocumentationLines(int requestedBoxWidth)
-        {
-            var requestedTextWidth = requestedBoxWidth - CompletionPane.HorizontalBordersWidth;
-            var documentationLines = WordWrapping.WrapWords(documentation, requestedTextWidth);
-            return documentationLines;
-        }
-
-        static int GetActualTextWidth(List<FormattedString> documentationLines)
-            => documentationLines.Max(line => line.GetUnicodeWidth());
+    private ScreenArea BuildDocumentationArea(CompletionPane completionPane, ConsoleCoordinate position)
+    {
+        var rows = boxDrawing.BuildFromLines(
+             completionPane.SelectedItemDocumentation,
+             configuration: configuration,
+             background: configuration.CompletionItemDescriptionPaneBackground);
+        return new ScreenArea(position, rows);
     }
 
     public void Dispose()

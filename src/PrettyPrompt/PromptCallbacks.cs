@@ -100,6 +100,15 @@ public interface IPromptCallbacks
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns><see langword="true"/> if the prompt should be submitted or <see langword="false"/> newline should be inserted ("soft-enter").</returns>
     Task<KeyPress> TransformKeyPressAsync(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Provides overload items for specified position in the input text if available otherwise empty collection is returned.
+    /// </summary>
+    /// <param name="text">The user's input text</param>
+    /// <param name="caret">The index of the text caret in the input text</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>A list of possible completions that will be displayed in the autocomplete menu.</returns>
+    Task<(IReadOnlyList<OverloadItem>, int ArgumentIndex)> GetOverloadsAsync(string text, int caret, CancellationToken cancellationToken);
 }
 
 public class PromptCallbacks : IPromptCallbacks
@@ -161,6 +170,12 @@ public class PromptCallbacks : IPromptCallbacks
         return TransformKeyPressAsync(text, caret, keyPress, cancellationToken);
     }
 
+    Task<(IReadOnlyList<OverloadItem>, int ArgumentIndex)> IPromptCallbacks.GetOverloadsAsync(string text, int caret, CancellationToken cancellationToken)
+    {
+        Debug.Assert(caret >= 0 && caret <= text.Length);
+
+        return GetOverloadsAsync(text, caret, cancellationToken);
+    }
 
     /// <summary>
     /// This method is called only once and provides list of key press patterns with "Callback Functions".
@@ -237,4 +252,8 @@ public class PromptCallbacks : IPromptCallbacks
     /// <inheritdoc cref="IPromptCallbacks.TransformKeyPressAsync(string, int, KeyPress, CancellationToken)"/>
     protected virtual Task<KeyPress> TransformKeyPressAsync(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken)
         => Task.FromResult(keyPress);
+
+    /// <inheritdoc cref="GetOverloadsAsync(string, int, CancellationToken)"/>
+    protected virtual Task<(IReadOnlyList<OverloadItem>, int ArgumentIndex)> GetOverloadsAsync(string text, int caret, CancellationToken cancellationToken)
+        => Task.FromResult<(IReadOnlyList<OverloadItem>, int ArgumentIndex)>((Array.Empty<OverloadItem>(), 0));
 }
