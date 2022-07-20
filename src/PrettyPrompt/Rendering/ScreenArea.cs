@@ -15,6 +15,10 @@ namespace PrettyPrompt;
 /// </summary>
 internal sealed record ScreenArea(ConsoleCoordinate Start, Row[] Rows, bool TruncateToScreenHeight = true) : IDisposable
 {
+    public static readonly ScreenArea Empty = new(ConsoleCoordinate.Zero, Array.Empty<Row>());
+
+    public int Width => Rows.Length > 0 ? Rows[0].Length : 0;
+
     public void Dispose()
     {
         foreach (var row in Rows)

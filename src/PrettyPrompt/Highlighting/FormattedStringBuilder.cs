@@ -4,7 +4,9 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using PrettyPrompt.Documents;
 
@@ -18,6 +20,7 @@ public readonly struct FormattedStringBuilder
     public FormattedStringBuilder() { } //this line is needed in GitHub CI build, but not needed in VS 17.0.4
 
     public int Length => stringBuilder.Length;
+    public bool IsDefault => stringBuilder is null;
 
     public FormattedStringBuilder Append(FormattedString text)
     {
@@ -29,7 +32,19 @@ public readonly struct FormattedStringBuilder
         return this;
     }
 
-    public FormattedStringBuilder Append(string text)
+    public FormattedStringBuilder Append(char character)
+    {
+        stringBuilder.Append(character);
+        return this;
+    }
+
+    public FormattedStringBuilder Append(string? text)
+    {
+        stringBuilder.Append(text);
+        return this;
+    }
+
+    public FormattedStringBuilder Append(ReadOnlySpan<char> text)
     {
         stringBuilder.Append(text);
         return this;
@@ -52,4 +67,16 @@ public readonly struct FormattedStringBuilder
 
     public override string ToString()
         => stringBuilder.ToString();
+
+    public static bool operator ==(in FormattedStringBuilder left, in FormattedStringBuilder right)
+        => left.stringBuilder == right.stringBuilder;
+
+    public static bool operator !=(in FormattedStringBuilder left, in FormattedStringBuilder right)
+        => !(left == right);
+
+    public override bool Equals([NotNullWhen(true)] object? obj)
+        => obj is FormattedStringBuilder builder && builder == this;
+
+    public override int GetHashCode() 
+        => stringBuilder.GetHashCode();
 }

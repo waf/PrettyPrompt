@@ -7,6 +7,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using PrettyPrompt.Documents;
 
 namespace PrettyPrompt.Completion;
@@ -24,7 +26,17 @@ internal sealed class SlidingArrayWindow
     private List<(CompletionItem Item, bool IsMatching)> itemsSorted = new();
     private int windowLength;
     private int windowStart;
+
     private int? selectedIndex;
+    private async Task SetSelectedIndex(int? value, CancellationToken cancellationToken)
+    {
+        selectedIndex = value;
+        var selectedItemChanged = SelectedItemChanged;
+        if (selectedItemChanged != null)
+        {
+            await selectedItemChanged(SelectedItem, cancellationToken).ConfigureAwait(false);
+        }
+    }
 
     public SlidingArrayWindow(int windowBuffer = 3)
     {
@@ -34,19 +46,25 @@ internal sealed class SlidingArrayWindow
     public int? SelectedIndexInAllItems => selectedIndex;
     public int? SelectedIndexInVisibleItems => selectedIndex - windowStart;
     public CompletionItem? SelectedItem => !IsEmpty && selectedIndex.HasValue ? itemsSorted[selectedIndex.Value].Item : null;
+    public int AllItemsCount => itemsSorted.Count;
+    public int VisibleItemsCount => visibleItems.Count;
+    public bool IsEmpty => AllItemsCount == 0;
+    public IReadOnlyList<CompletionItem> VisibleItems => visibleItems;
 
-    public void UpdateItems(IEnumerable<CompletionItem> items, string documentText, int documentCaret, TextSpan spanToReplace, int windowLength)
+    public event Func<CompletionItem?, CancellationToken, Task>? SelectedItemChanged;
+
+    public async Task UpdateItems(IEnumerable<CompletionItem> items, string documentText, int documentCaret, TextSpan spanToReplace, int windowLength, CancellationToken cancellationToken)
     {
         this.windowLength = windowLength;
         this.itemsOriginal.Clear();
         this.itemsOriginal.AddRange(items);
 
-        Match(documentText, documentCaret, spanToReplace);
-        ResetSelectedIndex();
+        await Match(documentText, documentCaret, spanToReplace, cancellationToken).ConfigureAwait(false);
+        await ResetSelectedIndex(cancellationToken).ConfigureAwait(false);
         UpdateVisibleItems();
     }
 
-    public void Match(string documentText, int caret, TextSpan spanToBeReplaced)
+    public async Task Match(string documentText, int caret, TextSpan spanToBeReplaced, CancellationToken cancellationToken)
     {
         //this could be done more efficiently if we would have in-place stable List<T> sort implementation
         itemsSorted = itemsOriginal
@@ -56,21 +74,21 @@ internal sealed class SlidingArrayWindow
             .ToList();
 
         UpdateVisibleItems();
-        ResetSelectedIndex();
+        await ResetSelectedIndex(cancellationToken).ConfigureAwait(false);
     }
 
-    public void IncrementSelectedIndex()
+    public async Task IncrementSelectedIndex(CancellationToken cancellationToken)
     {
         if (!selectedIndex.HasValue)
         {
-            selectedIndex = 0;
+            await SetSelectedIndex(0, cancellationToken).ConfigureAwait(false);
             return;
         }
 
         if (selectedIndex == AllItemsCount - 1)
             return;
 
-        selectedIndex++;
+        await SetSelectedIndex(selectedIndex + 1, cancellationToken).ConfigureAwait(false);
 
         if (selectedIndex + windowBuffer >= windowStart + windowLength && windowStart + windowLength < AllItemsCount)
         {
@@ -79,18 +97,18 @@ internal sealed class SlidingArrayWindow
         }
     }
 
-    public void DecrementSelectedIndex()
+    public async Task DecrementSelectedIndex(CancellationToken cancellationToken)
     {
         if (!selectedIndex.HasValue)
         {
-            selectedIndex = 0;
+            await SetSelectedIndex(0, cancellationToken).ConfigureAwait(false);
             return;
         }
 
         if (selectedIndex == 0)
             return;
 
-        selectedIndex--;
+        await SetSelectedIndex(selectedIndex - 1, cancellationToken).ConfigureAwait(false);
 
         if (selectedIndex - windowBuffer < windowStart && windowStart > 0)
         {
@@ -99,18 +117,18 @@ internal sealed class SlidingArrayWindow
         }
     }
 
-    public void Clear()
+    public async Task Clear(CancellationToken cancellationToken)
     {
         itemsOriginal.Clear();
         itemsSorted.Clear();
         windowLength = 0;
-        ResetSelectedIndex();
+        await ResetSelectedIndex(cancellationToken).ConfigureAwait(false);
         UpdateVisibleItems();
     }
 
-    private void ResetSelectedIndex()
+    private async Task ResetSelectedIndex(CancellationToken cancellationToken)
     {
-        selectedIndex = IsEmpty ? null : (itemsSorted[0].IsMatching ? 0 : null);
+        await SetSelectedIndex(IsEmpty ? null : (itemsSorted[0].IsMatching ? 0 : null), cancellationToken).ConfigureAwait(false);
         windowStart = 0;
     }
 
@@ -123,11 +141,4 @@ internal sealed class SlidingArrayWindow
             visibleItems.Add(itemsSorted[i].Item);
         }
     }
-
-    public int AllItemsCount => itemsSorted.Count;
-    public int VisibleItemsCount => visibleItems.Count;
-
-    public bool IsEmpty => AllItemsCount == 0;
-
-    public IReadOnlyList<CompletionItem> VisibleItems => visibleItems;
 }

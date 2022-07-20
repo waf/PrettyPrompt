@@ -19,6 +19,7 @@ public class KeyBindings
     public KeyPressPatterns SubmitPrompt { get; }
     public KeyPressPatterns HistoryPrevious { get; }
     public KeyPressPatterns HistoryNext { get; }
+    public KeyPressPatterns TriggerOverloadList { get; }
 
     public KeyBindings(
         KeyPressPatterns commitCompletion = default,
@@ -26,7 +27,8 @@ public class KeyBindings
         KeyPressPatterns newLine = default,
         KeyPressPatterns submitPrompt = default,
         KeyPressPatterns historyPrevious = default,
-        KeyPressPatterns historyNext = default)
+        KeyPressPatterns historyNext = default,
+        KeyPressPatterns triggerOverloadList = default)
     {
         CommitCompletion = Get(commitCompletion, new(Enter), new(Tab));
         TriggerCompletionList = Get(triggerCompletionList, new KeyPressPattern(Control, Spacebar));
@@ -34,6 +36,7 @@ public class KeyBindings
         SubmitPrompt = Get(submitPrompt, new(Enter), new(Control, Enter), new(Control | Alt, Enter));
         HistoryPrevious = Get(historyPrevious, new KeyPressPattern(UpArrow));
         HistoryNext = Get(historyNext, new KeyPressPattern(DownArrow));
+        TriggerOverloadList = triggerOverloadList;
 
         static KeyPressPatterns Get(KeyPressPatterns patterns, params KeyPressPattern[] defaultPatterns)
             => patterns.HasAny ? patterns : new(defaultPatterns);

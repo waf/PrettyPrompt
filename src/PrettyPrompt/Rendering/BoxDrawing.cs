@@ -6,6 +6,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using PrettyPrompt.Highlighting;
 
@@ -13,16 +14,57 @@ namespace PrettyPrompt.Rendering;
 
 internal class BoxDrawing
 {
+    private readonly PromptConfiguration configuration;
+
+    /// <summary>
+    /// CompletionItems: Left border + marker + right padding + right border.
+    /// TextLines: Left border + left padding + right padding + right border.
+    /// </summary>
+    public static int GetHorizontalBordersWidth(BoxType boxType, PromptConfiguration configuration) => 
+        boxType == BoxType.CompletionItems ?
+        3 + configuration.UnselectedCompletionItemMarker.Length :
+        4;
+
+    /// <inheritdoc cref="GetHorizontalBordersWidth(BoxType, PromptConfiguration)"/>
+    public int GetHorizontalBordersWidth(BoxType boxType) => GetHorizontalBordersWidth(boxType, configuration);
+
+    /// <summary>
+    /// Top border + bottom border.
+    /// </summary>
+    public const int VerticalBordersHeight = 2;
+
+    /// <summary>Character: ┐</summary>
     private readonly Cell CornerUpperRightCell;
+
+    /// <summary>Character: ┘</summary>
     private readonly Cell CornerLowerRightCell;
+
+    /// <summary>Character: ┌</summary>
     private readonly Cell CornerUpperLeftCell;
+
+    /// <summary>Character: └</summary>
     private readonly Cell CornerLowerLeftCell;
+
+    /// <summary>Character: ─</summary>
     private readonly Cell EdgeHorizontalCell;
+
+    /// <summary>Character: │</summary>
     private readonly Cell EdgeVerticalCell;
+
+    /// <summary>Character: ┤</summary>
     private readonly Cell EdgeVerticalAndLeftHorizontalCell;
+
+    /// <summary>Character: ├</summary>
     private readonly Cell EdgeVerticalAndRightHorizontalCell;
+
+    /// <summary>Character: ┬</summary>
     private readonly Cell EdgeHorizontalAndLowerVerticalCell;
+
+    /// <summary>Character: ┴</summary>
     private readonly Cell EdgeHorizontalAndUpperVerticalCell;
+
+    /// <summary>Character: ┼</summary>
+    private readonly Cell CrossCell;
 
     public BoxDrawing(PromptConfiguration configuration)
     {
@@ -37,7 +79,8 @@ internal class BoxDrawing
         EdgeVerticalAndRightHorizontalCell = Cell.CreateSingleNonpoolableCell('├', format);
         EdgeHorizontalAndLowerVerticalCell = Cell.CreateSingleNonpoolableCell('┬', format);
         EdgeHorizontalAndUpperVerticalCell = Cell.CreateSingleNonpoolableCell('┴', format);
-
+        CrossCell = Cell.CreateSingleNonpoolableCell('┼', format);
+        this.configuration = configuration;
     }
 
     public Row[] BuildFromItemList(
@@ -189,41 +232,162 @@ internal class BoxDrawing
         }
     }
 
-    public void Connect(Row[] completionBox, Row[] documentationBox)
+    public void Connect(Row[] overloadBox, Row[] completionBox, Row[] documentationBox)
     {
-        if (completionBox.Length == 0 || documentationBox.Length == 0) return;
+        if (completionBox.Length == 0) return;
 
-        documentationBox[0].Replace(0, EdgeHorizontalAndLowerVerticalCell); // ┬
-        if (completionBox.Length == documentationBox.Length)
+        if (documentationBox.Length > 0)
         {
-            //  ┌──────────────┬─────────────────────────────┐
-            //  │ completion 1 │ documentation box with some |
-            //  │ completion 2 │ docs that may wrap.         |
-            //  │ completion 3 │ ............                │
-            //  └──────────────┴─────────────────────────────┘
+            documentationBox[0].Replace(0, EdgeHorizontalAndLowerVerticalCell); // ┬
+            if (completionBox.Length == documentationBox.Length)
+            {
+                //  ┌──────────────┬─────────────────────────────┐
+                //  │ completion 1 │ documentation box with some |
+                //  │ completion 2 │ docs that may wrap.         |
+                //  │ completion 3 │ ............                │
+                //  └──────────────┴─────────────────────────────┘
 
-            documentationBox[^1].Replace(0, EdgeHorizontalAndUpperVerticalCell); // ┴
+                documentationBox[^1].Replace(0, EdgeHorizontalAndUpperVerticalCell); // ┴
+            }
+            else if (completionBox.Length > documentationBox.Length)
+            {
+                //  ┌──────────────┬─────────────────────────────┐
+                //  │ completion 1 │ documentation box with some |
+                //  │ completion 2 │ docs that may wrap.         |
+                //  │ completion 3 ├─────────────────────────────┘
+                //  └──────────────┘
+
+                documentationBox[^1].Replace(0, EdgeVerticalAndRightHorizontalCell); // ├
+            }
+            else
+            {
+                //  ┌──────────────┬─────────────────────────────┐
+                //  │ completion 1 │ documentation box with some │
+                //  │ completion 2 │ docs that may wrap.         │
+                //  │ completion 3 │ .............               │
+                //  └──────────────┤ .............               │
+                //                 └─────────────────────────────┘
+
+                documentationBox[completionBox.Length - 1].Replace(0, EdgeVerticalAndLeftHorizontalCell); // ┤
+            }
         }
-        else if (completionBox.Length > documentationBox.Length)
-        {
-            //  ┌──────────────┬─────────────────────────────┐
-            //  │ completion 1 │ documentation box with some |
-            //  │ completion 2 │ docs that may wrap.         |
-            //  │ completion 3 ├─────────────────────────────┘
-            //  └──────────────┘
 
-            documentationBox[^1].Replace(0, EdgeVerticalAndRightHorizontalCell); // ├
-        }
-        else
-        {
-            //  ┌──────────────┬─────────────────────────────┐
-            //  │ completion 1 │ documentation box with some │
-            //  │ completion 2 │ docs that may wrap.         │
-            //  │ completion 3 │ .............               │
-            //  └──────────────┤ .............               │
-            //                 └─────────────────────────────┘
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-            documentationBox[completionBox.Length - 1].Replace(0, EdgeVerticalAndLeftHorizontalCell); // ┤
+        if (overloadBox.Length > 0)
+        {
+            var overloadBoxWidth = overloadBox[0].Length;
+            var completionBoxWidth = completionBox[0].Length;
+            var documentationBoxWidth = documentationBox.Length == 0 ? 0 : documentationBox[0].Length;
+
+            completionBox[0].Replace(0, EdgeVerticalAndRightHorizontalCell); // ├
+            if (overloadBoxWidth == completionBoxWidth + documentationBoxWidth)
+            {
+                if (documentationBox.Length > 0)
+                {
+                    //  ┌────────────────────────────────────────────┐
+                    //  │ overload help                              |
+                    //  │ ............                               │
+                    //  ├──────────────┬─────────────────────────────┤
+                    //  │ completion 1 │ documentation box with some |
+                    //  ......................
+
+                    documentationBox[0].Replace(documentationBoxWidth - 1, EdgeVerticalAndLeftHorizontalCell); // ┤
+                }
+                else
+                {
+                    //  ┌──────────────┐
+                    //  │ overloadHelp |
+                    //  │ ............ │
+                    //  ├──────────────┤
+                    //  │ completion 1 │
+                    //  ................
+
+                    completionBox[0].Replace(documentationBoxWidth - 1, EdgeVerticalAndLeftHorizontalCell); // ┤
+                }
+            }
+            else if (overloadBoxWidth < completionBoxWidth + documentationBoxWidth)
+            {
+                if (overloadBoxWidth > completionBoxWidth)
+                {
+                    if (documentationBox.Length > 0)
+                    {
+                        //  ┌────────────────────────────┐
+                        //  │ overload help              |
+                        //  │ ............               │
+                        //  ├──────────────┬─────────────┴───────────────┐
+                        //  │ completion 1 │ documentation box with some |
+                        //  ......................
+
+                        documentationBox[0].Replace(overloadBoxWidth - completionBoxWidth, EdgeHorizontalAndUpperVerticalCell); // ┴
+                    }
+                    else
+                    {
+                        Debug.Fail("should not happen");
+                    }
+                }
+                else if (overloadBoxWidth == completionBoxWidth)
+                {
+                    if (documentationBox.Length > 0)
+                    {
+                        //  ┌──────────────┐
+                        //  │ overloadHelp |
+                        //  │ ............ │
+                        //  ├──────────────┼─────────────────────────────┐
+                        //  │ completion 1 │ documentation box with some |
+                        //  ......................
+
+                        documentationBox[0].Replace(0, CrossCell); // ┼
+                    }
+                    else
+                    {
+                        Debug.Fail("This case should already be handled.");
+                    }
+                }
+                else
+                {
+                    //  ┌──────────┐
+                    //  │ overHelp |
+                    //  │ .........│
+                    //  ├──────────┴───┬─────────────────────────────┐
+                    //  │ completion 1 │ documentation box with some |
+                    //  ......................
+
+                    completionBox[0].Replace(overloadBoxWidth - 1, EdgeHorizontalAndUpperVerticalCell); // ┴
+                }
+            }
+            else
+            {
+                if (documentationBox.Length > 0)
+                {
+                    //  ┌───────────────────────────────────────────────────┐
+                    //  │ overload help                                     |
+                    //  │ ............                                      │
+                    //  ├──────────────┬─────────────────────────────┬──────┘
+                    //  │ completion 1 │ documentation box with some |
+                    //  ......................
+
+                    documentationBox[0].Replace(0, EdgeHorizontalAndLowerVerticalCell); // ┬
+                    documentationBox[0].Replace(documentationBoxWidth - 1, EdgeHorizontalAndLowerVerticalCell); // ┬
+                }
+                else
+                {
+                    //  ┌────────────────────────────┐
+                    //  │ overload help              |
+                    //  │ ............               │
+                    //  ├──────────────┬─────────────┘
+                    //  │ completion 1 │
+                    //  ......................
+
+                    completionBox[0].Replace(completionBoxWidth - 1, EdgeHorizontalAndLowerVerticalCell); // ┬
+                }
+            }
         }
     }
+}
+
+internal enum BoxType
+{
+    CompletionItems,
+    TextLines
 }

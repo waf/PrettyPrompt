@@ -99,11 +99,12 @@ internal static class WordWrapping
     /// where possible, otherwise split by character if a single word is
     /// greater than maxLength.
     /// </summary>
-    public static List<FormattedString> WrapWords(FormattedString input, int maxLength)
+    public static List<FormattedString> WrapWords(FormattedString input, int maxLength, int? maxLines = null)
     {
         Debug.Assert(maxLength >= 0);
+        Debug.Assert(maxLines.GetValueOrDefault() >= 0);
 
-        if (input.Length == 0 || maxLength == 0)
+        if (input.Length == 0 || maxLength == 0 || maxLines == 0)
         {
             return new List<FormattedString>();
         }
@@ -119,26 +120,33 @@ internal static class WordWrapping
             {
                 if (word.Length <= maxLength)
                 {
-                    ProcessWord(word);
+                    if (!ProcessWord(word))
+                    {
+                        return lines;
+                    }
                 }
                 else
                 {
                     //slow path
                     foreach (var currentWord in word.SplitIntoChunks(maxLength))
                     {
-                        ProcessWord(currentWord);
+                        if (!ProcessWord(currentWord))
+                        {
+                            return lines;
+                        }
                     }
                 }
 
-                void ProcessWord(FormattedString currentWord)
+                bool ProcessWord(FormattedString currentWord)
                 {
                     var wordLength = currentWord.GetUnicodeWidth();
                     var wordWithSpaceLength = currentLineWidth == 0 ? wordLength : wordLength + 1;
 
+                    bool result = true;
                     if (currentLineWidth > maxLength ||
                         currentLineWidth + wordWithSpaceLength > maxLength)
                     {
-                        lines.Add(currentLine.ToFormattedString());
+                        result = AddLine(currentLine.ToFormattedString());
                         currentLine.Clear();
                         currentLineWidth = 0;
                     }
@@ -154,10 +162,39 @@ internal static class WordWrapping
                         currentLine.Append(currentWord);
                         currentLineWidth += wordLength + 1;
                     }
+                    return result;
                 }
             }
 
-            lines.Add(currentLine.ToFormattedString());
+            if (!AddLine(currentLine.ToFormattedString()))
+            {
+                return lines;
+            }
+        }
+
+        bool AddLine(FormattedString line)
+        {
+            if (lines.Count == maxLines)
+            {
+                var lastLine = lines[^1];
+                FormattedString lastLineModified;
+                lines.RemoveAt(lines.Count - 1);
+                if (maxLength > 3)
+                {
+                    Debug.Assert(lastLine.Length <= maxLength);
+                    lastLine = lastLine.Substring(0, Math.Min(maxLength - 3, lastLine.Length));
+                    lastLineModified = lastLine + new string('.', Math.Min(3, maxLength - lastLine.Length));
+                }
+                else
+                {
+                    lastLineModified = new string('.', maxLength);
+                }
+                lines.Add(lastLineModified);
+                return false;
+            }
+
+            lines.Add(line);
+            return true;
         }
 
         return lines;

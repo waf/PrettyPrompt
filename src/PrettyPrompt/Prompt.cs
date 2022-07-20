@@ -60,18 +60,24 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
     public async Task<PromptResult> ReadLineAsync()
     {
         using var renderer = new Renderer(console, configuration);
-        renderer.RenderPrompt();
-
+        
         // code pane contains the code the user is typing. It does not include the prompt (i.e. "> ")
         var codePane = new CodePane(console, configuration, clipboard);
+        
+        renderer.RenderPrompt(codePane);
 
-        // completion pane is the pop-up window that shows potential autocompletions.
-        var completionPane = new CompletionPane(
+        var overloadPane = new OverloadPane(
             codePane,
             promptCallbacks,
             configuration);
 
-        codePane.Bind(completionPane);
+        var completionPane = new CompletionPane(
+            codePane,
+            overloadPane,
+            promptCallbacks,
+            configuration);
+
+        codePane.Bind(completionPane, overloadPane);
 
         history.Track(codePane);
         cancellationManager.CaptureControlC();
@@ -81,7 +87,7 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
             // grab the code area width every key press, so we rerender appropriately when the console is resized.
             codePane.MeasureConsole();
 
-            await InterpretKeyPress(key, codePane, completionPane, cancellationToken: default).ConfigureAwait(false);
+            await InterpretKeyPress(key, cancellationToken: default).ConfigureAwait(false);
 
             // typing / word-wrapping may have scrolled the console, giving us more room.
             codePane.MeasureConsole();
@@ -93,7 +99,7 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
             // the key press may have caused the prompt to return its input, e.g. <Enter> or a callback.
             var result = await GetResult(codePane, key, inputText, cancellationToken: default).ConfigureAwait(false);
 
-            await renderer.RenderOutput(result, codePane, completionPane, highlights, key, cancellationToken: default).ConfigureAwait(false);
+            renderer.RenderOutput(result, codePane, overloadPane, completionPane, highlights, key);
 
             if (result is not null)
             {
@@ -108,25 +114,25 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
 
         Debug.Assert(false, "Should never reach here due to infinite " + nameof(KeyPress.ReadForever));
         return null;
-    }
-
-    private async Task InterpretKeyPress(KeyPress key, CodePane codePane, CompletionPane completionPane, CancellationToken cancellationToken)
-    {
-        if (!completionPane.WouldKeyPressCommitCompletionItem(key))
+        
+        async Task InterpretKeyPress(KeyPress key, CancellationToken cancellationToken)
         {
-            key = await promptCallbacks.TransformKeyPressAsync(codePane.Document.GetText(), codePane.Document.Caret, key, cancellationToken).ConfigureAwait(false);
+            if (!completionPane.WouldKeyPressCommitCompletionItem(key))
+            {
+                key = await promptCallbacks.TransformKeyPressAsync(codePane.Document.GetText(), codePane.Document.Caret, key, cancellationToken).ConfigureAwait(false);
+            }
+
+            foreach (var panes in new IKeyPressHandler[] { completionPane, overloadPane, history, codePane })
+                await panes.OnKeyDown(key, cancellationToken).ConfigureAwait(false);
+
+            foreach (var panes in new IKeyPressHandler[] { completionPane, overloadPane, history, codePane })
+                await panes.OnKeyUp(key, cancellationToken).ConfigureAwait(false);
+
+            //we don't support text selection while completion list is open
+            //text selection can put completion list into broken state, where filtering does not work
+            //so we want this assert to be true
+            Debug.Assert(!completionPane.IsOpen || (codePane.Selection is null));
         }
-
-        foreach (var panes in new IKeyPressHandler[] { completionPane, history, codePane })
-            await panes.OnKeyDown(key, cancellationToken).ConfigureAwait(false);
-
-        foreach (var panes in new IKeyPressHandler[] { completionPane, history, codePane })
-            await panes.OnKeyUp(key, cancellationToken).ConfigureAwait(false);
-
-        //we don't support text selection while completion list is open
-        //text selection can put completion list into broken state, where filtering does not work
-        //so we want this assert to be true
-        Debug.Assert(!completionPane.IsOpen || (codePane.Selection is null));
     }
 
     private async Task<PromptResult?> GetResult(CodePane codePane, KeyPress key, string inputText, CancellationToken cancellationToken)

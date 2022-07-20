@@ -90,8 +90,8 @@ public class WordWrappingTests
     public void WrapWords_WithNewLines_SplitsAtNewLines()
     {
         var text = "Here is some\ntext that should be wrapped word by\nword. supercalifragilisticexpialidocious";
+        
         var wrapped = WordWrapping.WrapWords(text, 20).Select(l => l.Text);
-
         Assert.Equal(
             new[]
             {
@@ -101,6 +101,19 @@ public class WordWrappingTests
                 "word.",
                 "supercalifragilistic",
                 "expialidocious",
+            },
+            wrapped
+        );
+
+        wrapped = WordWrapping.WrapWords(text, 20, maxLines: 5).Select(l => l.Text);
+        Assert.Equal(
+            new[]
+            {
+                "Here is some",
+                "text that should be",
+                "wrapped word by",
+                "word.",
+                "supercalifragilis...",
             },
             wrapped
         );
@@ -127,8 +140,8 @@ public class WordWrappingTests
     public void WrapWords_MultipleNewlines()
     {
         var text = "Here is some text that should be wrapped word by word.\n\nHERE IS SOME TEXT THAT SHOULD BE WRAPPED WORD BY WORD.";
-        var wrapped = WordWrapping.WrapWords(text, 20).Select(l => l.Text);
 
+        var wrapped = WordWrapping.WrapWords(text, 20).Select(l => l.Text);
         Assert.Equal(
             new[]
             {
@@ -144,6 +157,36 @@ public class WordWrappingTests
             },
             wrapped
         );
+
+        wrapped = WordWrapping.WrapWords(text, 20, maxLines: 1).Select(l => l.Text);
+        Assert.Equal(
+            new[]
+            {
+                "Here is some text...",
+            },
+            wrapped
+        );
+
+        wrapped = WordWrapping.WrapWords(text, 20, maxLines: 2).Select(l => l.Text);
+        Assert.Equal(
+        new[]
+            {
+                "Here is some text",
+                "that should be...",
+            },
+            wrapped
+        );
+
+        wrapped = WordWrapping.WrapWords(text, 20, maxLines: 3).Select(l => l.Text);
+        Assert.Equal(
+        new[]
+            {
+                "Here is some text",
+                "that should be",
+                "wrapped word by...",
+            },
+            wrapped
+        );
     }
 
     [Fact]
@@ -152,6 +195,9 @@ public class WordWrappingTests
         var text = "Here is some teeeext"; //Length = 20
         var wrapped = WordWrapping.WrapWords(text, 20).Select(l => l.Text);
         Assert.Equal(new[] { "Here is some teeeext" }, wrapped);
+
+        wrapped = WordWrapping.WrapWords(text, 20, maxLines: 1).Select(l => l.Text);
+        Assert.Equal(new[] { "Here is some teeeext" }, wrapped);
     }
 
     [Fact]
@@ -159,12 +205,21 @@ public class WordWrappingTests
     {
         var wrapped = WordWrapping.WrapWords("", 20).Select(l => l.Text);
         Assert.Equal(new string[] { }, wrapped);
+        
+        wrapped = WordWrapping.WrapWords("", 20, maxLines: 1).Select(l => l.Text);
+        Assert.Equal(new string[] { }, wrapped);
     }
 
     [Fact]
     public void WrapWords_NewLineAtStart()
     {
         var wrapped = WordWrapping.WrapWords("\nhello", 20).Select(l => l.Text);
+        Assert.Equal(new string[] { "", "hello" }, wrapped);
+
+        wrapped = WordWrapping.WrapWords("\nhello", 20, maxLines: 1).Select(l => l.Text);
+        Assert.Equal(new string[] { "..." }, wrapped);
+
+        wrapped = WordWrapping.WrapWords("\nhello", 20, maxLines: 2).Select(l => l.Text);
         Assert.Equal(new string[] { "", "hello" }, wrapped);
     }
 }
