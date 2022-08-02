@@ -32,11 +32,11 @@ internal class TestPromptCallbacks : PromptCallbacks
 
     protected override IEnumerable<(KeyPressPattern Pattern, KeyPressCallbackAsync Callback)> GetKeyPressCallbacks() => keyPressCallbacks;
 
-    protected override Task<TextSpan> GetSpanToReplaceByCompletionkAsync(string text, int caret, CancellationToken cancellationToken)
+    protected override Task<TextSpan> GetSpanToReplaceByCompletionAsync(string text, int caret, CancellationToken cancellationToken)
     {
         return
             SpanToReplaceByCompletionCallback is null ?
-            base.GetSpanToReplaceByCompletionkAsync(text, caret, cancellationToken) :
+            base.GetSpanToReplaceByCompletionAsync(text, caret, cancellationToken) :
             SpanToReplaceByCompletionCallback(text, caret);
     }
 

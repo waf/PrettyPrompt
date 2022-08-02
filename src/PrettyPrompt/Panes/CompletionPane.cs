@@ -93,7 +93,7 @@ internal class CompletionPane : IKeyPressHandler
         {
             var documentText = codePane.Document.GetText();
             int documentCaret = codePane.Document.Caret;
-            var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(documentText, documentCaret, cancellationToken).ConfigureAwait(false);
+            var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionAsync(documentText, documentCaret, cancellationToken).ConfigureAwait(false);
             lastSpanToReplaceOnKeyDown = spanToReplace;
 
             switch (key.ObjectPattern)
@@ -200,7 +200,7 @@ internal class CompletionPane : IKeyPressHandler
         {
             var documentText = codePane.Document.GetText();
             int documentCaret = codePane.Document.Caret;
-            var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(documentText, documentCaret, cancellationToken).ConfigureAwait(false);
+            var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionAsync(documentText, documentCaret, cancellationToken).ConfigureAwait(false);
 
             if (wasAlreadyOpen &&
                 lastSpanToReplaceOnKeyDown.TryGet(out var spanToReplaceOld))
@@ -239,7 +239,7 @@ internal class CompletionPane : IKeyPressHandler
     private async Task InsertCompletion(CodePane codepane, CompletionItem completion, CancellationToken cancellationToken)
     {
         var document = codepane.Document;
-        var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionkAsync(document.GetText(), document.Caret, cancellationToken).ConfigureAwait(false);
+        var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionAsync(document.GetText(), document.Caret, cancellationToken).ConfigureAwait(false);
         document.Remove(codepane, spanToReplace);
         document.InsertAtCaret(codepane, completion.ReplacementText);
         document.Caret = spanToReplace.Start + completion.ReplacementText.Length;

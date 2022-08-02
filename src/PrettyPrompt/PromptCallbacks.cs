@@ -68,7 +68,7 @@ public interface IPromptCallbacks
     /// <param name="caret">The index of the text caret in the input text</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Span of text that will be replaced by inserted completion item.</returns>
-    Task<TextSpan> GetSpanToReplaceByCompletionkAsync(string text, int caret, CancellationToken cancellationToken);
+    Task<TextSpan> GetSpanToReplaceByCompletionAsync(string text, int caret, CancellationToken cancellationToken);
 
     /// <summary>
     /// Provides to auto-completion items for specified position in the input text.
@@ -133,11 +133,11 @@ public class PromptCallbacks : IPromptCallbacks
     Task<IReadOnlyCollection<FormatSpan>> IPromptCallbacks.HighlightCallbackAsync(string text, CancellationToken cancellationToken)
         => HighlightCallbackAsync(text, cancellationToken);
 
-    async Task<TextSpan> IPromptCallbacks.GetSpanToReplaceByCompletionkAsync(string text, int caret, CancellationToken cancellationToken)
+    async Task<TextSpan> IPromptCallbacks.GetSpanToReplaceByCompletionAsync(string text, int caret, CancellationToken cancellationToken)
     {
         Debug.Assert(caret >= 0 && caret <= text.Length);
 
-        var span = await GetSpanToReplaceByCompletionkAsync(text, caret, cancellationToken).ConfigureAwait(false);
+        var span = await GetSpanToReplaceByCompletionAsync(text, caret, cancellationToken).ConfigureAwait(false);
         if (!new TextSpan(0, text.Length).Contains(span))
         {
             throw new InvalidOperationException("Resulting TextSpan has to be inside the document.");
@@ -192,8 +192,8 @@ public class PromptCallbacks : IPromptCallbacks
     protected virtual Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text, CancellationToken cancellationToken)
         => Task.FromResult<IReadOnlyCollection<FormatSpan>>(Array.Empty<FormatSpan>());
 
-    /// <inheritdoc cref="IPromptCallbacks.GetSpanToReplaceByCompletionkAsync"/>
-    protected virtual Task<TextSpan> GetSpanToReplaceByCompletionkAsync(string text, int caret, CancellationToken cancellationToken)
+    /// <inheritdoc cref="IPromptCallbacks.GetSpanToReplaceByCompletionAsync"/>
+    protected virtual Task<TextSpan> GetSpanToReplaceByCompletionAsync(string text, int caret, CancellationToken cancellationToken)
     {
         int wordStart = caret;
         for (int i = wordStart - 1; i >= 0; i--)
