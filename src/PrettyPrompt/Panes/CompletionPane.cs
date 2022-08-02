@@ -168,7 +168,9 @@ internal class CompletionPane : IKeyPressHandler
                         await Close(cancellationToken).ConfigureAwait(false);
                     }
                 }
-                else if (configuration.KeyBindings.CommitCompletion.Matches(key.ConsoleKeyInfo, FilteredView.SelectedItem.CommitCharacterRules))
+                else if (
+                    configuration.KeyBindings.CommitCompletion.Matches(key.ConsoleKeyInfo, FilteredView.SelectedItem.CommitCharacterRules) &&
+                    await promptCallbacks.ConfirmCompletionCommit(codePane.Document.GetText(), codePane.Document.Caret, key, cancellationToken).ConfigureAwait(false))
                 {
                     await InsertCompletion(codePane, FilteredView.SelectedItem, cancellationToken).ConfigureAwait(false);
                     key.Handled = char.IsControl(key.ConsoleKeyInfo.KeyChar);
