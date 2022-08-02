@@ -98,7 +98,7 @@ public interface IPromptCallbacks
     /// <param name="caret">The index of the text caret in the input text</param>
     /// <param name="keyPress">Key press pattern in question</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns><see langword="true"/> if the prompt should be submitted or <see langword="false"/> newline should be inserted ("soft-enter").</returns>
+    /// <returns>Potentialy transformed key press.</returns>
     Task<KeyPress> TransformKeyPressAsync(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken);
 
     /// <summary>
