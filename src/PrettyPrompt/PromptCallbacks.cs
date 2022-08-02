@@ -68,7 +68,7 @@ public interface IPromptCallbacks
     /// <param name="caret">The index of the text caret in the input text</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Span of text that will be replaced by inserted completion item.</returns>
-    Task<TextSpan> GetSpanToReplaceByCompletionkAsync(string text, int caret, CancellationToken cancellationToken);
+    Task<TextSpan> GetSpanToReplaceByCompletionAsync(string text, int caret, CancellationToken cancellationToken);
 
     /// <summary>
     /// Provides to auto-completion items for specified position in the input text.
@@ -98,7 +98,7 @@ public interface IPromptCallbacks
     /// <param name="caret">The index of the text caret in the input text</param>
     /// <param name="keyPress">Key press pattern in question</param>
     /// <param name="cancellationToken">Cancellation token</param>
-    /// <returns><see langword="true"/> if the prompt should be submitted or <see langword="false"/> newline should be inserted ("soft-enter").</returns>
+    /// <returns>Potentialy transformed key press.</returns>
     Task<KeyPress> TransformKeyPressAsync(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken);
 
     /// <summary>
@@ -109,6 +109,17 @@ public interface IPromptCallbacks
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>A list of possible completions that will be displayed in the autocomplete menu.</returns>
     Task<(IReadOnlyList<OverloadItem>, int ArgumentIndex)> GetOverloadsAsync(string text, int caret, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Completion item commit can still be discarded based on current position of caret in document. This method is called only
+    /// when completion item is going to be submited.
+    /// </summary>
+    /// <param name="text">The user's input text</param>
+    /// <param name="caret">The index of the text caret in the input text</param>
+    /// <param name="keyPress">Key press pattern in question</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns><see langword="true"/> if the completion item should be submitted or <see langword="false"/> otherwise.</returns>
+    Task<bool> ConfirmCompletionCommit(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken);
 }
 
 public class PromptCallbacks : IPromptCallbacks
@@ -133,11 +144,11 @@ public class PromptCallbacks : IPromptCallbacks
     Task<IReadOnlyCollection<FormatSpan>> IPromptCallbacks.HighlightCallbackAsync(string text, CancellationToken cancellationToken)
         => HighlightCallbackAsync(text, cancellationToken);
 
-    async Task<TextSpan> IPromptCallbacks.GetSpanToReplaceByCompletionkAsync(string text, int caret, CancellationToken cancellationToken)
+    async Task<TextSpan> IPromptCallbacks.GetSpanToReplaceByCompletionAsync(string text, int caret, CancellationToken cancellationToken)
     {
         Debug.Assert(caret >= 0 && caret <= text.Length);
 
-        var span = await GetSpanToReplaceByCompletionkAsync(text, caret, cancellationToken).ConfigureAwait(false);
+        var span = await GetSpanToReplaceByCompletionAsync(text, caret, cancellationToken).ConfigureAwait(false);
         if (!new TextSpan(0, text.Length).Contains(span))
         {
             throw new InvalidOperationException("Resulting TextSpan has to be inside the document.");
@@ -170,6 +181,13 @@ public class PromptCallbacks : IPromptCallbacks
         return TransformKeyPressAsync(text, caret, keyPress, cancellationToken);
     }
 
+    Task<bool> IPromptCallbacks.ConfirmCompletionCommit(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken)
+    {
+        Debug.Assert(caret >= 0 && caret <= text.Length);
+
+        return ConfirmCompletionCommit(text, caret, keyPress, cancellationToken);
+    }
+
     Task<(IReadOnlyList<OverloadItem>, int ArgumentIndex)> IPromptCallbacks.GetOverloadsAsync(string text, int caret, CancellationToken cancellationToken)
     {
         Debug.Assert(caret >= 0 && caret <= text.Length);
@@ -192,8 +210,8 @@ public class PromptCallbacks : IPromptCallbacks
     protected virtual Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text, CancellationToken cancellationToken)
         => Task.FromResult<IReadOnlyCollection<FormatSpan>>(Array.Empty<FormatSpan>());
 
-    /// <inheritdoc cref="IPromptCallbacks.GetSpanToReplaceByCompletionkAsync"/>
-    protected virtual Task<TextSpan> GetSpanToReplaceByCompletionkAsync(string text, int caret, CancellationToken cancellationToken)
+    /// <inheritdoc cref="IPromptCallbacks.GetSpanToReplaceByCompletionAsync"/>
+    protected virtual Task<TextSpan> GetSpanToReplaceByCompletionAsync(string text, int caret, CancellationToken cancellationToken)
     {
         int wordStart = caret;
         for (int i = wordStart - 1; i >= 0; i--)
@@ -252,6 +270,10 @@ public class PromptCallbacks : IPromptCallbacks
     /// <inheritdoc cref="IPromptCallbacks.TransformKeyPressAsync(string, int, KeyPress, CancellationToken)"/>
     protected virtual Task<KeyPress> TransformKeyPressAsync(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken)
         => Task.FromResult(keyPress);
+
+    /// <inheritdoc cref="IPromptCallbacks.ConfirmCompletionCommit(string, int, KeyPress, CancellationToken)"/>
+    protected virtual Task<bool> ConfirmCompletionCommit(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken)
+        => Task.FromResult(true);
 
     /// <inheritdoc cref="GetOverloadsAsync(string, int, CancellationToken)"/>
     protected virtual Task<(IReadOnlyList<OverloadItem>, int ArgumentIndex)> GetOverloadsAsync(string text, int caret, CancellationToken cancellationToken)
