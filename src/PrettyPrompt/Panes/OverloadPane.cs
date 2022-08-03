@@ -128,9 +128,9 @@ internal class OverloadPane : IKeyPressHandler
             signatureLines = WordWrapping.WrapWords(selectedOverload.Signature, maxLength: availableWidth, maxLines: dedicatedLines[0]);
             summaryLines = WordWrapping.WrapWords(selectedOverload.Summary, maxLength: availableWidth, maxLines: dedicatedLines[1]);
 
-            var paramIndex = selectedArgumentIndex.Clamp(0, selectedOverload.Parameters.Count - 1);
             if (selectedOverload.Parameters.Count > 0)
             {
+                var paramIndex = selectedArgumentIndex.Clamp(0, selectedOverload.Parameters.Count - 1);
                 var param = selectedOverload.Parameters[paramIndex];
                 var name = new FormattedString(param.Name, new ConsoleFormat(Bold: true));
                 paramDescriptionLines = WordWrapping.WrapWords(spacesUnderCounter + name + ": " + param.Description, maxLength: availableWidth, maxLines: dedicatedLines[2]);
