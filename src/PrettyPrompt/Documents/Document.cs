@@ -102,11 +102,11 @@ internal class Document : IEquatable<Document>
         }
     }
 
-    public void SetContents(CodePane codePane, string contents)
+    public void SetContents(CodePane codePane, string contents, int caret)
     {
         using (BeginChanges(codePane))
         {
-            stringBuilder.SetContents(contents);
+            stringBuilder.SetContents(contents, caret);
         }
     }
 
