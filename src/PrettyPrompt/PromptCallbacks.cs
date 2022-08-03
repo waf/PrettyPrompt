@@ -120,6 +120,16 @@ public interface IPromptCallbacks
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns><see langword="true"/> if the completion item should be submitted or <see langword="false"/> otherwise.</returns>
     Task<bool> ConfirmCompletionCommit(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken);
+
+    /// <summary>
+    /// Provides way to automatically format input text.
+    /// </summary>
+    /// <param name="text">The user's input text</param>
+    /// <param name="caret">The index of the text caret in the input text</param>
+    /// <param name="keyPress">Key press pattern in question</param>
+    /// <param name="cancellationToken">Cancellation token</param>
+    /// <returns>Formatted input and new caret position.</returns>
+    Task<(string Text, int Caret)> FormatInput(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken);
 }
 
 public class PromptCallbacks : IPromptCallbacks
@@ -186,6 +196,13 @@ public class PromptCallbacks : IPromptCallbacks
         Debug.Assert(caret >= 0 && caret <= text.Length);
 
         return ConfirmCompletionCommit(text, caret, keyPress, cancellationToken);
+    }
+
+    Task<(string Text, int Caret)> IPromptCallbacks.FormatInput(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken)
+    {
+        Debug.Assert(caret >= 0 && caret <= text.Length);
+
+        return FormatInput(text, caret, keyPress, cancellationToken);
     }
 
     Task<(IReadOnlyList<OverloadItem>, int ArgumentIndex)> IPromptCallbacks.GetOverloadsAsync(string text, int caret, CancellationToken cancellationToken)
@@ -274,6 +291,10 @@ public class PromptCallbacks : IPromptCallbacks
     /// <inheritdoc cref="IPromptCallbacks.ConfirmCompletionCommit(string, int, KeyPress, CancellationToken)"/>
     protected virtual Task<bool> ConfirmCompletionCommit(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken)
         => Task.FromResult(true);
+
+    /// <inheritdoc cref="IPromptCallbacks.FormatInput(string, int, KeyPress, CancellationToken)"/>
+    protected virtual Task<(string Text, int Caret)> FormatInput(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken)
+        => Task.FromResult((text, caret));
 
     /// <inheritdoc cref="GetOverloadsAsync(string, int, CancellationToken)"/>
     protected virtual Task<(IReadOnlyList<OverloadItem>, int ArgumentIndex)> GetOverloadsAsync(string text, int caret, CancellationToken cancellationToken)

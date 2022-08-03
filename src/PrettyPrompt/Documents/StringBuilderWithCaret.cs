@@ -64,10 +64,10 @@ internal class StringBuilderWithCaret
         }
     }
 
-    public void SetContents(string contents)
+    public void SetContents(string contents, int? caret = null)
     {
         sb.SetContents(contents);
-        Caret = sb.Length;
+        Caret = caret ?? sb.Length;
         InvokeChangedEvent();
     }
 

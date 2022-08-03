@@ -60,10 +60,10 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
     public async Task<PromptResult> ReadLineAsync()
     {
         using var renderer = new Renderer(console, configuration);
-        
+
         // code pane contains the code the user is typing. It does not include the prompt (i.e. "> ")
         var codePane = new CodePane(console, configuration, clipboard);
-        
+
         renderer.RenderPrompt(codePane);
 
         var overloadPane = new OverloadPane(
@@ -114,7 +114,7 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
 
         Debug.Assert(false, "Should never reach here due to infinite " + nameof(KeyPress.ReadForever));
         return null;
-        
+
         async Task InterpretKeyPress(KeyPress key, CancellationToken cancellationToken)
         {
             if (!completionPane.WouldKeyPressCommitCompletionItem(key))
@@ -127,6 +127,23 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
 
             foreach (var panes in new IKeyPressHandler[] { completionPane, overloadPane, history, codePane })
                 await panes.OnKeyUp(key, cancellationToken).ConfigureAwait(false);
+
+            //Possible automatic formatting of the document;
+            var text = codePane.Document.GetText();
+            var (formattedText, newCaret) = await promptCallbacks.FormatInput(text, codePane.Document.Caret, key, cancellationToken).ConfigureAwait(false);
+            if (text != formattedText)
+            {
+                int removedChars = 0;
+                for (int i = 0; i < newCaret; i++)
+                {
+                    if (formattedText[i] == '\r') ++removedChars;
+                }
+                codePane.Document.SetContents(codePane, formattedText.Replace("\r\n", "\n"), newCaret - removedChars);
+            }
+            else
+            {
+                Debug.Assert(codePane.Document.Caret == newCaret);
+            }
 
             //we don't support text selection while completion list is open
             //text selection can put completion list into broken state, where filtering does not work
