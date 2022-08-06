@@ -37,7 +37,6 @@ internal class SelectionKeyPressHandler : IKeyPressHandler
 
     public Task OnKeyUp(KeyPress key, CancellationToken cancellationToken)
     {
-
         switch (key.ObjectPattern)
         {
             case (Control, C):
@@ -94,6 +93,23 @@ internal class SelectionKeyPressHandler : IKeyPressHandler
                 }
             case LeftWindows or RightWindows or F1 or F2 or F3 or F4 or F5 or F6 or F7 or F8 or F9 or F10 or F11 or F12:
                 return Task.CompletedTask;
+            case Tab or (Shift, Tab):
+                {
+                    //see CodePane Tab / (Shift, Tab) handling - we need to preserve selection sometimes
+                    if (codePane.GetSelectionSpan().TryGet(out var selectionValue))
+                    {
+                        var isMultilineSelection = codePane.Document.GetText(selectionValue).Contains('\n');
+                        if (isMultilineSelection)
+                        {
+                            return Task.CompletedTask;
+                        }
+                        else
+                        {
+                            codePane.Selection = null;
+                        }
+                    }
+                    break;
+                }
             default:
                 // keypress is not related to selection
                 codePane.Selection = null;

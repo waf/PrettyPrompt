@@ -78,7 +78,7 @@ internal class StringBuilderWithCaret
         InvokeChangedEvent();
     }
 
-    public void Insert(int index, string text)
+    public void Insert(int index, ReadOnlySpan<char> text)
     {
         sb.Insert(index, text);
         Caret += text.Length;

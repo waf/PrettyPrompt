@@ -204,8 +204,21 @@ internal class CodePane : IKeyPressHandler
                     Document.DeleteSelectedText(this);
                 }
                 break;
-            case Tab:
-                Document.InsertAtCaret(this, TabSpaces);
+            case Tab or (Shift, Tab):
+                {
+                    var shift = key.ConsoleKeyInfo.Modifiers.HasFlag(Shift);
+                    if (selection.TryGet(out var selectionValue))
+                    {
+                        var isMultilineSelection = Document.GetText(selectionValue).Contains('\n');
+                        if (isMultilineSelection)
+                        {
+                            Document.Indent(this, selectionValue, direction: shift ? -1 : 1);
+                            CheckConsistency();
+                            break;
+                        }
+                    }
+                    if (!shift) Document.InsertAtCaret(this, TabSpaces);
+                }
                 break;
             case (Control, X) when selection.TryGet(out var selectionValue):
                 {
