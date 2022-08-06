@@ -505,7 +505,7 @@ public class SelectionTests
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task ReadLine_MultilineSelectionIndentation_SelectionFromLeftToRight(bool selectionFromLeftToRight)
+    public async Task ReadLine_MultilineSelectionIndentation(bool selectionFromLeftToRight)
     {
         var text = "abc\ncd\nefgh";
         for (int selectionStart = 0; selectionStart <= 5; selectionStart++)
@@ -565,33 +565,12 @@ public class SelectionTests
                     $"abc\n{PromptTests.DefaultTabSpaces}cd\n{PromptTests.DefaultTabSpaces}efgh";
                 Assert.Equal(expectedResult, result.Text.Replace("\r", ""));
             }
-
-        //all lines
-        {
-            var console = ConsoleStub.NewConsole();
-            var prompt = new Prompt(console: console);
-
-            var input = new List<FormattableString>();
-            foreach (var item in text.Split('\n'))
-            {
-                input.Add($"{item}");
-                input.Add($"{Shift}{Enter}");
-            }
-            input.RemoveAt(input.Count - 1);
-            MultilineSelection_GenerateSelectAll(input, selectionFromLeftToRight);
-            input.Add($"{Tab}{Enter}");
-            console.StubInput(input.ToArray());
-
-            var result = await prompt.ReadLineAsync();
-            Assert.True(result.IsSuccess);
-            Assert.Equal($"{PromptTests.DefaultTabSpaces}abc\n{PromptTests.DefaultTabSpaces}cd\n{PromptTests.DefaultTabSpaces}efgh", result.Text.Replace("\r", ""));
-        }
     }
 
     [Theory]
     [InlineData(true)]
     [InlineData(false)]
-    public async Task ReadLine_MultilineSelectionDedentation_SelectionFromLeftToRight(bool selectionFromLeftToRight)
+    public async Task ReadLine_MultilineSelectionDedentation(bool selectionFromLeftToRight)
     {
         var T = PromptTests.DefaultTabSpaces;
         var TL = PromptTests.DefaultTabSpaces.Length;
@@ -653,25 +632,78 @@ public class SelectionTests
                     $"{T}abc\ncd\nefgh";
                 Assert.Equal(expectedResult, result.Text.Replace("\r", ""));
             }
+    }
 
-        //all lines
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    public async Task ReadLine_AllLinesSelectionIndentation(bool selectionFromLeftToRight, bool writeOverFinalSelection)
+    {
+        var T = PromptTests.DefaultTabSpaces;
+        var text = "abc\ncd\nefgh";
+        var console = ConsoleStub.NewConsole();
+        var prompt = new Prompt(console: console);
+
+        var input = new List<FormattableString>();
+        foreach (var item in text.Split('\n'))
         {
-            var console = ConsoleStub.NewConsole();
-            var prompt = new Prompt(console: console);
+            input.Add($"{item}");
+            input.Add($"{Shift}{Enter}");
+        }
+        input.RemoveAt(input.Count - 1);
+        MultilineSelection_GenerateSelectAll(input, selectionFromLeftToRight);
+        input.Add($"{Tab}");
+        if (writeOverFinalSelection) input.Add($"X");
+        input.Add($"{Enter}");
+        console.StubInput(input.ToArray());
 
-            var input = new List<FormattableString>();
-            foreach (var item in text.Split('\n'))
-            {
-                input.Add($"{item}");
-                input.Add($"{Shift}{Enter}");
-            }
-            input.RemoveAt(input.Count - 1);
-            MultilineSelection_GenerateSelectAll(input, selectionFromLeftToRight);
-            input.Add($"{Shift}{Tab}{Enter}");
-            console.StubInput(input.ToArray());
+        var result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        if (writeOverFinalSelection)
+        {
+            Assert.Equal($"X", result.Text.Replace("\r", ""));
+        }
+        else
+        {
+            Assert.Equal($"{T}abc\n{T}cd\n{T}efgh", result.Text.Replace("\r", ""));
+        }
+    }
 
-            var result = await prompt.ReadLineAsync();
-            Assert.True(result.IsSuccess);
+    [Theory]
+    [InlineData(true, false)]
+    [InlineData(false, false)]
+    [InlineData(true, true)]
+    [InlineData(false, true)]
+    public async Task ReadLine_AllLinesSelectionDedentation(bool selectionFromLeftToRight, bool writeOverFinalSelection)
+    {
+        var T = PromptTests.DefaultTabSpaces;
+        var text = $"{T}abc\n{T}cd\n{T}efgh";
+        var console = ConsoleStub.NewConsole();
+        var prompt = new Prompt(console: console);
+
+        var input = new List<FormattableString>();
+        foreach (var item in text.Split('\n'))
+        {
+            input.Add($"{item}");
+            input.Add($"{Shift}{Enter}");
+        }
+        input.RemoveAt(input.Count - 1);
+        MultilineSelection_GenerateSelectAll(input, selectionFromLeftToRight);
+        input.Add($"{Shift}{Tab}");
+        if (writeOverFinalSelection) input.Add($"X");
+        input.Add($"{Enter}");
+        console.StubInput(input.ToArray());
+
+        var result = await prompt.ReadLineAsync();
+        Assert.True(result.IsSuccess);
+        if (writeOverFinalSelection)
+        {
+            Assert.Equal($"X", result.Text.Replace("\r", ""));
+        }
+        else
+        {
             Assert.Equal($"abc\ncd\nefgh", result.Text.Replace("\r", ""));
         }
     }
