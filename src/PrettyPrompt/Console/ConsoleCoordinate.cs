@@ -5,7 +5,9 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 
 namespace PrettyPrompt.Consoles;
 
@@ -52,4 +54,29 @@ internal readonly struct ConsoleCoordinate : IEquatable<ConsoleCoordinate>
     public bool Equals(int row, int column) => Row == row && Column == column;
     public override int GetHashCode() => HashCode.Combine(Row, Column);
     public override string ToString() => $"Row: {Row}, Column: {Column}";
+
+    public int ToCaret(IReadOnlyList<string> lines)
+    {
+        Debug.Assert(lines.All(l => l.All(c => c != '\r')));
+
+        if (Row >= lines.Count)
+        {
+            Debug.Fail("inconsitent position and lines");
+            return lines.Select(l => l.Length).Sum();
+        }
+
+        int caret = 0;
+        for (int i = 0; i < Row; i++) caret += lines[i].Length + 1; // +1 for '\n'
+
+        if (Column <= lines[Row].Length)
+        {
+            caret += Column;
+            return caret;
+        }
+        else
+        {
+            Debug.Fail("inconsitent position and lines");
+            return lines[Row].Length;
+        }
+    }
 }

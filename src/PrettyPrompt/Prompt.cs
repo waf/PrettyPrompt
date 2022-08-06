@@ -190,7 +190,7 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
         return output;
     }
 
-    async ValueTask IAsyncDisposable.DisposeAsync()
+    public async ValueTask DisposeAsync()
     {
         await (savePersistentHistoryTask ?? Task.CompletedTask).ConfigureAwait(false);
     }

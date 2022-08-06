@@ -82,6 +82,101 @@ internal class Document : IEquatable<Document>
         }
     }
 
+    public void Indent(CodePane codePane, TextSpan span, int direction)
+    {
+        using (BeginChanges(codePane))
+        {
+            var lines = currentText.Split('\n');
+            int startLine = -1;
+            int endLine = -1;
+            int charCount = 0;
+            for (int i = 0; i < lines.Length; i++)
+            {
+                charCount += lines[i].Length + 1;
+                if (startLine == -1 && span.Start < charCount) startLine = i;
+                if (span.End <= charCount)
+                {
+                    endLine = i;
+                    break;
+                }
+            }
+
+            stringBuilder.Clear();
+            if (direction > 0)
+            {
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    if (i >= startLine && i <= endLine)
+                    {
+                        stringBuilder.Insert(stringBuilder.Caret, codePane.TabSpaces);
+                        stringBuilder.Insert(stringBuilder.Caret, lines[i]);
+                    }
+                    else
+                    {
+                        stringBuilder.Insert(stringBuilder.Caret, lines[i]);
+                    }
+                    if (i < lines.Length - 1) stringBuilder.Insert(stringBuilder.Caret, '\n');
+                }
+
+                var s = codePane.Selection!.Value;
+                lines = stringBuilder.ToString().Split('\n');
+                if (s.Direction == SelectionDirection.FromLeftToRight)
+                {
+                    if (s.End.Column > 0)
+                    {
+                        Debug.Assert(s.End.Row == endLine);
+                        codePane.Selection = s.WithEnd(s.End.WithColumn(Math.Min(lines[endLine].Length, s.End.Column + codePane.TabSpaces.Length)));
+                        s = codePane.Selection!.Value;
+                    }
+                    Caret = s.End.ToCaret(lines);
+                }
+                else
+                {
+                    codePane.Selection = s.WithStart(s.Start.WithColumn(Math.Min(lines[startLine].Length, s.Start.Column + codePane.TabSpaces.Length)));
+                    s = codePane.Selection!.Value;
+                    Caret = s.Start.ToCaret(lines);
+                }
+            }
+            else
+            {
+                int removedCharsOnStartLine = 0;
+                int removedCharsOnEndLine = 0;
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    var line = lines[i];
+                    if (i >= startLine && i <= endLine)
+                    {
+                        int whitespaces = 0;
+                        for (int k = 0; k < line.Length; k++)
+                        {
+                            if (char.IsWhiteSpace(line[k])) ++whitespaces;
+                            else break;
+                        }
+
+                        int charsToRemove = Math.Min(codePane.TabSpaces.Length, whitespaces);
+                        stringBuilder.Insert(stringBuilder.Caret, line.AsSpan(charsToRemove));
+
+                        if (i == startLine) removedCharsOnStartLine = charsToRemove;
+                        if (i == endLine) removedCharsOnEndLine = charsToRemove;
+                    }
+                    else
+                    {
+                        stringBuilder.Insert(stringBuilder.Caret, line);
+                    }
+                    if (i < lines.Length - 1) stringBuilder.Insert(stringBuilder.Caret, '\n');
+                }
+
+                var s = codePane.Selection!.Value;
+                lines = stringBuilder.ToString().Split('\n');
+                codePane.Selection = s
+                    .WithStart(s.Start.WithColumn(Math.Max(0, s.Start.Column - removedCharsOnStartLine)))
+                    .WithEnd(s.End.WithColumn(Math.Max(0, s.End.Column - removedCharsOnEndLine)));
+                s = codePane.Selection!.Value;
+                Caret = s.End.ToCaret(lines);
+            }
+        }
+    }
+
     public void Remove(CodePane codePane, TextSpan span) => Remove(codePane, span.Start, span.Length);
 
     public void Remove(CodePane codePane, int startIndex, int length)
@@ -164,12 +259,15 @@ internal class Document : IEquatable<Document>
     }
 
     public int CalculateLineBoundaryIndexNearCaret(int direction, bool smartHome)
+        => CalculateLineBoundaryIndexNearCaret(Caret, direction, smartHome);
+
+    private int CalculateLineBoundaryIndexNearCaret(int caret, int direction, bool smartHome)
     {
-        if (stringBuilder.Length == 0) return Caret;
+        if (stringBuilder.Length == 0) return caret;
 
         if (direction > 0)
         {
-            for (var i = Caret; i < stringBuilder.Length; i++)
+            for (var i = caret; i < stringBuilder.Length; i++)
             {
                 if (stringBuilder[i] == '\n') return i;
             }
@@ -180,7 +278,7 @@ internal class Document : IEquatable<Document>
             //smart Home implementation (repeating Home presses switch between 'non-white-space start of line' and 'start of line')
 
             int lineStart = 0;
-            var beforeCaretIndex = (Caret - 1).Clamp(0, Length - 1);
+            var beforeCaretIndex = (caret - 1).Clamp(0, Length - 1);
             for (int i = beforeCaretIndex; i >= 0; i--)
             {
                 if (stringBuilder[i] == '\n')

@@ -228,6 +228,7 @@ internal struct WordWrappedText
     }
 }
 
+[DebuggerDisplay("{Content}")]
 internal readonly struct WrappedLine
 {
     public readonly int StartIndex;

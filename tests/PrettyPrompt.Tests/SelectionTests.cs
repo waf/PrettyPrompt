@@ -5,9 +5,9 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using PrettyPrompt.Panes;
 using Xunit;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
@@ -484,7 +484,7 @@ public class SelectionTests
             console.StubInput($"abcdefg{Control}{A}{Control}{V}{Enter}");
             result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
-            Assert.Equal("ab", result.Text); 
+            Assert.Equal("ab", result.Text);
         }
 
         //replace by Paste (longer text)
@@ -499,4 +499,208 @@ public class SelectionTests
             Assert.Equal("1234567890", result.Text);
         }
     }
+
+
+    #region Multiline tab indentation/dedentation (https://github.com/waf/PrettyPrompt/issues/174)
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ReadLine_MultilineSelectionIndentation_SelectionFromLeftToRight(bool selectionFromLeftToRight)
+    {
+        var text = "abc\ncd\nefgh";
+        for (int selectionStart = 0; selectionStart <= 5; selectionStart++)
+            for (int selectionLength = 1; selectionLength <= 6 - selectionStart; selectionLength++)
+            {
+                if (!text.AsSpan(selectionStart, selectionLength).Contains('\n')) continue;
+
+                var console = ConsoleStub.NewConsole();
+                var prompt = new Prompt(console: console);
+
+                var input = new List<FormattableString>();
+                foreach (var item in text.Split('\n'))
+                {
+                    input.Add($"{item}");
+                    input.Add($"{Shift}{Enter}");
+                }
+                input.RemoveAt(input.Count - 1);
+                MultilineSelection_GenerateSelection(selectionStart, selectionLength, input, selectionFromLeftToRight);
+                input.Add($"{Tab}{Enter}");
+                console.StubInput(input.ToArray());
+
+                var result = await prompt.ReadLineAsync();
+                Assert.True(result.IsSuccess);
+
+                var expectedResult =
+                    text[selectionStart + selectionLength - 1] == '\n' ?
+                    $"{PromptTests.DefaultTabSpaces}abc\ncd\nefgh" :
+                    $"{PromptTests.DefaultTabSpaces}abc\n{PromptTests.DefaultTabSpaces}cd\nefgh";
+                Assert.Equal(expectedResult, result.Text.Replace("\r", ""));
+            }
+
+        for (int selectionStart = 4; selectionStart < text.Length - 1; selectionStart++)
+            for (int selectionLength = 1; selectionLength <= text.Length - selectionStart; selectionLength++)
+            {
+                if (!text.AsSpan(selectionStart, selectionLength).Contains('\n')) continue;
+
+                var console = ConsoleStub.NewConsole();
+                var prompt = new Prompt(console: console);
+
+                var input = new List<FormattableString>();
+                foreach (var item in text.Split('\n'))
+                {
+                    input.Add($"{item}");
+                    input.Add($"{Shift}{Enter}");
+                }
+                input.RemoveAt(input.Count - 1);
+                MultilineSelection_GenerateSelection(selectionStart, selectionLength, input, selectionFromLeftToRight);
+                input.Add($"{Tab}{Enter}");
+                console.StubInput(input.ToArray());
+
+                var result = await prompt.ReadLineAsync();
+                Assert.True(result.IsSuccess);
+
+                var expectedResult =
+                    text[selectionStart + selectionLength - 1] == '\n' ?
+                    $"abc\n{PromptTests.DefaultTabSpaces}cd\nefgh" :
+                    $"abc\n{PromptTests.DefaultTabSpaces}cd\n{PromptTests.DefaultTabSpaces}efgh";
+                Assert.Equal(expectedResult, result.Text.Replace("\r", ""));
+            }
+
+        //all lines
+        {
+            var console = ConsoleStub.NewConsole();
+            var prompt = new Prompt(console: console);
+
+            var input = new List<FormattableString>();
+            foreach (var item in text.Split('\n'))
+            {
+                input.Add($"{item}");
+                input.Add($"{Shift}{Enter}");
+            }
+            input.RemoveAt(input.Count - 1);
+            MultilineSelection_GenerateSelectAll(input, selectionFromLeftToRight);
+            input.Add($"{Tab}{Enter}");
+            console.StubInput(input.ToArray());
+
+            var result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal($"{PromptTests.DefaultTabSpaces}abc\n{PromptTests.DefaultTabSpaces}cd\n{PromptTests.DefaultTabSpaces}efgh", result.Text.Replace("\r", ""));
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ReadLine_MultilineSelectionDedentation_SelectionFromLeftToRight(bool selectionFromLeftToRight)
+    {
+        var T = PromptTests.DefaultTabSpaces;
+        var TL = PromptTests.DefaultTabSpaces.Length;
+        var text = $"{T}abc\n{T}cd\n{T}efgh";
+        for (int selectionStart = 0; selectionStart <= TL + 5; selectionStart++)
+            for (int selectionLength = 1; selectionLength <= 2 * TL + 6 - selectionStart; selectionLength++)
+            {
+                if (!text.AsSpan(selectionStart, selectionLength).Contains('\n')) continue;
+
+                var console = ConsoleStub.NewConsole();
+                var prompt = new Prompt(console: console);
+
+                var input = new List<FormattableString>();
+                foreach (var item in text.Split('\n'))
+                {
+                    input.Add($"{item}");
+                    input.Add($"{Shift}{Enter}");
+                }
+                input.RemoveAt(input.Count - 1);
+                MultilineSelection_GenerateSelection(selectionStart, selectionLength, input, selectionFromLeftToRight);
+                input.Add($"{Shift}{Tab}{Enter}");
+                console.StubInput(input.ToArray());
+
+                var result = await prompt.ReadLineAsync();
+                Assert.True(result.IsSuccess);
+
+                var expectedResult =
+                    text[selectionStart + selectionLength - 1] == '\n' ?
+                    $"abc\n{T}cd\n{T}efgh" :
+                    $"abc\ncd\n{T}efgh";
+                Assert.Equal(expectedResult, result.Text.Replace("\r", ""));
+            }
+
+        for (int selectionStart = TL + 4; selectionStart < text.Length - 1; selectionStart++)
+            for (int selectionLength = 1; selectionLength <= text.Length - selectionStart; selectionLength++)
+            {
+                if (!text.AsSpan(selectionStart, selectionLength).Contains('\n')) continue;
+
+                var console = ConsoleStub.NewConsole();
+                var prompt = new Prompt(console: console);
+
+                var input = new List<FormattableString>();
+                foreach (var item in text.Split('\n'))
+                {
+                    input.Add($"{item}");
+                    input.Add($"{Shift}{Enter}");
+                }
+                input.RemoveAt(input.Count - 1);
+                MultilineSelection_GenerateSelection(selectionStart, selectionLength, input, selectionFromLeftToRight);
+                input.Add($"{Shift}{Tab}{Enter}");
+                console.StubInput(input.ToArray());
+
+                var result = await prompt.ReadLineAsync();
+                Assert.True(result.IsSuccess);
+
+                var expectedResult =
+                    text[selectionStart + selectionLength - 1] == '\n' ?
+                    $"{T}abc\ncd\n{T}efgh" :
+                    $"{T}abc\ncd\nefgh";
+                Assert.Equal(expectedResult, result.Text.Replace("\r", ""));
+            }
+
+        //all lines
+        {
+            var console = ConsoleStub.NewConsole();
+            var prompt = new Prompt(console: console);
+
+            var input = new List<FormattableString>();
+            foreach (var item in text.Split('\n'))
+            {
+                input.Add($"{item}");
+                input.Add($"{Shift}{Enter}");
+            }
+            input.RemoveAt(input.Count - 1);
+            MultilineSelection_GenerateSelectAll(input, selectionFromLeftToRight);
+            input.Add($"{Shift}{Tab}{Enter}");
+            console.StubInput(input.ToArray());
+
+            var result = await prompt.ReadLineAsync();
+            Assert.True(result.IsSuccess);
+            Assert.Equal($"abc\ncd\nefgh", result.Text.Replace("\r", ""));
+        }
+    }
+
+    private static void MultilineSelection_GenerateSelection(int selectionStart, int selectionLength, List<FormattableString> input, bool selectionFromLeftToRight)
+    {
+        input.Add($"{Control}{Home}");
+        if (selectionFromLeftToRight)
+        {
+            for (int k = 0; k < selectionStart; k++) input.Add($"{RightArrow}");
+            for (int k = 0; k < selectionLength; k++) input.Add($"{Shift}{RightArrow}");
+        }
+        else
+        {
+            for (int k = 0; k < selectionStart + selectionLength; k++) input.Add($"{RightArrow}");
+            for (int k = 0; k < selectionLength; k++) input.Add($"{Shift}{LeftArrow}");
+        }
+    }
+
+    private static void MultilineSelection_GenerateSelectAll(List<FormattableString> input, bool selectionFromLeftToRight)
+    {
+        if (selectionFromLeftToRight)
+        {
+            input.Add($"{Control}{A}");
+        }
+        else
+        {
+            input.Add($"{Control}{End}{Control}{Shift}{Home}");
+        }
+    }
+    #endregion
 }
