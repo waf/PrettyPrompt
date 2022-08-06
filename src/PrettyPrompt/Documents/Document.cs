@@ -101,6 +101,7 @@ internal class Document : IEquatable<Document>
                 }
             }
 
+            SelectionSpan s;
             stringBuilder.Clear();
             if (direction > 0)
             {
@@ -118,23 +119,12 @@ internal class Document : IEquatable<Document>
                     if (i < lines.Length - 1) stringBuilder.Insert(stringBuilder.Caret, '\n');
                 }
 
-                var s = codePane.Selection!.Value;
+                s = codePane.Selection!.Value;
                 lines = stringBuilder.ToString().Split('\n');
-                if (s.Direction == SelectionDirection.FromLeftToRight)
+                if (s.End.Column > 0)
                 {
-                    if (s.End.Column > 0)
-                    {
-                        Debug.Assert(s.End.Row == endLine);
-                        codePane.Selection = s.WithEnd(s.End.WithColumn(Math.Min(lines[endLine].Length, s.End.Column + codePane.TabSpaces.Length)));
-                        s = codePane.Selection!.Value;
-                    }
-                    Caret = s.End.ToCaret(lines);
-                }
-                else
-                {
-                    codePane.Selection = s.WithStart(s.Start.WithColumn(Math.Min(lines[startLine].Length, s.Start.Column + codePane.TabSpaces.Length)));
-                    s = codePane.Selection!.Value;
-                    Caret = s.Start.ToCaret(lines);
+                    Debug.Assert(s.End.Row == endLine);
+                    codePane.Selection = s.WithEnd(s.End.WithColumn(Math.Min(lines[endLine].Length, s.End.Column + codePane.TabSpaces.Length)));
                 }
             }
             else
@@ -166,14 +156,18 @@ internal class Document : IEquatable<Document>
                     if (i < lines.Length - 1) stringBuilder.Insert(stringBuilder.Caret, '\n');
                 }
 
-                var s = codePane.Selection!.Value;
+                s = codePane.Selection!.Value;
                 lines = stringBuilder.ToString().Split('\n');
                 codePane.Selection = s
                     .WithStart(s.Start.WithColumn(Math.Max(0, s.Start.Column - removedCharsOnStartLine)))
                     .WithEnd(s.End.WithColumn(Math.Max(0, s.End.Column - removedCharsOnEndLine)));
-                s = codePane.Selection!.Value;
-                Caret = s.End.ToCaret(lines);
             }
+
+            s = codePane.Selection!.Value;
+            Caret =
+                s.Direction == SelectionDirection.FromLeftToRight ?
+                s.End.ToCaret(lines) :
+                s.Start.ToCaret(lines);
         }
     }
 
