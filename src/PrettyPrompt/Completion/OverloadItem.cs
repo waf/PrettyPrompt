@@ -4,6 +4,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using PrettyPrompt.Highlighting;
@@ -23,12 +24,15 @@ public class OverloadItem
 
     public OverloadItem(FormattedString signature, FormattedString summary, FormattedString returnDescription, IReadOnlyList<Parameter> parameters)
     {
+        ArgumentNullException.ThrowIfNull(parameters);
+
         Signature = signature;
         Summary = summary;
         Return = returnDescription;
         Parameters = parameters;
     }
 
+    [DebuggerDisplay("{Name}: {Description}")]
     public readonly struct Parameter
     {
         public readonly string Name;
@@ -36,6 +40,8 @@ public class OverloadItem
 
         public Parameter(string name, FormattedString description)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             Name = name;
             Description = description;
         }
