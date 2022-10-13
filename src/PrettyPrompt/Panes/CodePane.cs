@@ -312,7 +312,7 @@ internal class CodePane : IKeyPressHandler
 
         //If we have text with consistent, leading indentation, trim that indentation ("dedent" it).
         //This handles the scenario where users are pasting from an IDE.
-        //Also replaces tabs as spaces and filtrs out special characters.
+        //Also replaces tabs as spaces and filters out special characters.
         string DedentMultipleLinesAndFilter(string text)
         {
             var sb = new StringBuilder();
@@ -326,7 +326,7 @@ internal class CodePane : IKeyPressHandler
                 //we remove indentation only when there are multiple non-whitespace lines
                 if (nonEmptyLines.Count <= 1)
                 {
-                    AppendFiltered(sb, text);
+                    AppendFiltered(sb, text); // don't trim on purpose due to https://github.com/waf/PrettyPrompt/issues/168
                 }
                 else
                 {
@@ -336,7 +336,11 @@ internal class CodePane : IKeyPressHandler
 
                     if (leadingIndent == 0)
                     {
-                        AppendFiltered(sb, text);
+                        for (var i = 0; i < lines.Length; i++)
+                        {
+                            AppendFiltered(sb, lines[i]);
+                            if (i != lines.Length - 1) sb.Append('\n');
+                        }
                     }
                     else
                     {
