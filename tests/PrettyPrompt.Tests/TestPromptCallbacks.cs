@@ -14,6 +14,7 @@ internal delegate Task<IReadOnlyList<CompletionItem>> CompletionCallbackAsync(st
 internal delegate Task<bool> OpenCompletionWindowCallbackAsync(string text, int caret);
 internal delegate Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text);
 internal delegate Task<KeyPress> TransformKeyPressAsyncCallbackAsync(string text, int caret, KeyPress keyPress);
+internal delegate Task<(IReadOnlyList<OverloadItem>, int ArgumentIndex)> GetOverloadsCallbackAsync(string text, int caret);
 
 internal class TestPromptCallbacks : PromptCallbacks
 {
@@ -24,6 +25,7 @@ internal class TestPromptCallbacks : PromptCallbacks
     public OpenCompletionWindowCallbackAsync? OpenCompletionWindowCallback { get; set; }
     public HighlightCallbackAsync? HighlightCallback { get; set; }
     public TransformKeyPressAsyncCallbackAsync? TransformKeyPressCallback { get; set; }
+    public GetOverloadsCallbackAsync? GetOverloadsCallback { get; set; }
 
     public TestPromptCallbacks(params (KeyPressPattern Pattern, KeyPressCallbackAsync Callback)[]? keyPressCallbacks)
     {
@@ -70,5 +72,13 @@ internal class TestPromptCallbacks : PromptCallbacks
             TransformKeyPressCallback is null ?
             base.TransformKeyPressAsync(text, caret, keyPress, cancellationToken) :
             TransformKeyPressCallback(text, caret, keyPress);
+    }
+
+    protected override Task<(IReadOnlyList<OverloadItem>, int ArgumentIndex)> GetOverloadsAsync(string text, int caret, CancellationToken cancellationToken)
+    {
+        return
+            GetOverloadsCallback is null ?
+            base.GetOverloadsAsync(text, caret, cancellationToken) :
+            GetOverloadsCallback(text, caret);
     }
 }
