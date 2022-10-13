@@ -702,7 +702,8 @@ public class CompletionTests
         new(
             callbacks: new TestPromptCallbacks
             {
-                CompletionCallback = new CompletionTestData(completions).CompletionHandlerAsync
+                CompletionCallback = new CompletionTestData(completions).CompletionHandlerAsync,
+                GetOverloadsCallback = new CompletionTestData(completions).OverloadHandlerAsync
             },
             console: console,
             configuration: configuration
