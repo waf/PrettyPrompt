@@ -40,4 +40,32 @@ public class CompletionTestData
                 .ToArray()
         );
     }
+
+    public Task<(IReadOnlyList<OverloadItem>, int ArgumentIndex)> OverloadHandlerAsync(string text, int caret)
+    {
+        if(text == "ant(")
+        {
+            return Task.FromResult<(IReadOnlyList<OverloadItem>, int)>((
+                new List<OverloadItem>
+                {
+                    new OverloadItem("red", "a red ant", "ant", new[]
+                    {
+                        new OverloadItem.Parameter("head", ""),
+                        new OverloadItem.Parameter("thorax", "the middle part of the ant"),
+                    }),
+                    new OverloadItem("black", "a black ant", "ant", new[]
+                    {
+                        new OverloadItem.Parameter("head", ""),
+                        new OverloadItem.Parameter("thorax", "the middle part of the ant"),
+                    }),
+                },
+                0
+            ));
+        }
+
+        return Task.FromResult<(IReadOnlyList<OverloadItem>, int)>((
+            new List<OverloadItem>(),
+            0
+        ));
+    }
 }
