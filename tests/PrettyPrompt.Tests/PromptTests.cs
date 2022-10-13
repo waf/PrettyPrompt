@@ -262,6 +262,22 @@ public class PromptTests
         Assert.Equal($"indent{NewLine}    more indent{NewLine}{NewLine}indent", result.Text);
     }
 
+    [Fact]
+    public async Task ReadLine_Paste_TextWithNoLeadingIndentationPreservesNewlines()
+    {
+        var console = ConsoleStub.NewConsole();
+
+        console.KeyAvailable
+            .Returns(true, $"indent\r    more indent\r\rinden".Select(_ => true).Append(false).ToArray());
+        console.StubInput($"indent\r    more indent\r\rindent{Enter}");
+
+        var prompt = new Prompt(console: console);
+
+        var result = await prompt.ReadLineAsync();
+
+        Assert.Equal($"indent{NewLine}    more indent{NewLine}{NewLine}indent", result.Text);
+    }
+
     /// <summary>
     /// https://github.com/waf/PrettyPrompt/issues/168
     /// </summary>
