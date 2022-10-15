@@ -1,3 +1,17 @@
+# Release 4.0.0
+
+This release contains many new features, performance improvements, and bugfixes developed by contributor @kindermannhubert.
+
+- Breaking change: Target .NET 6 instead of .NET 5 (#202).
+- Breaking change: Correct awaiting of history saving (#201).
+    - Before, saving of history was fire-and-forget, which could mean that in certain race condition scenarios history would not be properly saved.
+    - To fix this, the prompt now implements `IAsyncDisposable` and should be disposed after use to guarantee that history is always saved.
+- Overload help support! In addition to the existing intellisense-style autocompletions, PrettyPrompt now supports displaying "overload menus" that can be navigated with the arrow keys, similar to Visual Studio (#209).
+- Fix of WordWrapping removing empty lines. (#204).
+- Add a new configuration method: `IPromptCallbacks.ConfirmCompletionCommit`. This allows completions to be accepted / rejected when they are about to be inserted, based on the position of the caret in the text. It's useful if a completion would be automatically inserted while the user is typing (#212).
+- Support for automatic formatting of the input text as it's being typed. See `IPromptCallbacks.FormatInput` (#213).
+- Support for indentation changing of multiple selected lines via Tab and Shift+Tab (#214).
+
 # Release 3.0.6
 
 - Configurable Keybindings for history scrolling (#197)
