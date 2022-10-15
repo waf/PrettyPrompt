@@ -66,4 +66,4 @@ dotnet example FruitPrompt
 
 ## Building from source
 
-This application target .NET 5, and can be built with either Visual Studio or the normal `dotnet build` command line tool.
+This application targets modern .NET (i.e. not .NET Framework), and can be built with either Visual Studio or the normal `dotnet build` command line tool.
