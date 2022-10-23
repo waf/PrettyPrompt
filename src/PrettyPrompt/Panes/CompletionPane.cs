@@ -83,8 +83,6 @@ internal class CompletionPane : IKeyPressHandler
 
     async Task IKeyPressHandler.OnKeyDown(KeyPress key, CancellationToken cancellationToken)
     {
-        if (!EnoughRoomToDisplay(this.codePane)) return;
-
         var completionListTriggered = configuration.KeyBindings.TriggerCompletionList.Matches(key.ConsoleKeyInfo);
         completionListTriggeredOnKeyDown = completionListTriggered;
         lastSpanToReplaceOnKeyDown = null;
@@ -179,13 +177,8 @@ internal class CompletionPane : IKeyPressHandler
         }
     }
 
-    private bool EnoughRoomToDisplay(CodePane codePane)
-        => codePane.CodeAreaHeight - codePane.Cursor.Row >= VerticalPaddingHeight + configuration.MinCompletionItemsCount;
-
     async Task IKeyPressHandler.OnKeyUp(KeyPress key, CancellationToken cancellationToken)
     {
-        if (!EnoughRoomToDisplay(codePane)) return;
-
         bool wasAlreadyOpen = IsOpen;
 
         if (!IsOpen)
@@ -255,7 +248,7 @@ internal class CompletionPane : IKeyPressHandler
 
     private async Task SelectedItemChanged(CompletionItem? item, CancellationToken cancellationToken)
     {
-        if (item is null)
+        if (item is null || FilteredView.VisibleItemsCount == 0)
         {
             SelectedItemDocumentation = Array.Empty<FormattedString>();
             return;
