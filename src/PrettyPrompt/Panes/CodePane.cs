@@ -443,7 +443,7 @@ internal class CodePane : IKeyPressHandler
         var codeAreaStartColumn = configuration.Prompt.Length;
         var cursor = Cursor;
         return new ConsoleCoordinate(
-            row: cursor.Row + 1,
+            row: Math.Min(cursor.Row, Math.Max(CodeAreaHeight - EmptySpaceAtBottomOfWindowHeight - 1, 0)) + 1,
             column: requiredWidth > codeAreaWidth ? codeAreaStartColumn // not enough room to show to completion box. We'll position all the way to the left, and truncate the box.
                 : cursor.Column + requiredWidth >= codeAreaWidth ? codeAreaWidth - requiredWidth // not enough room to show to completion box offset to the current cursor. We'll position it stuck to the right.
                 : cursor.Column // enough room, we'll show the completion box offset at the cursor location.
