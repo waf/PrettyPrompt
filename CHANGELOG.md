@@ -1,3 +1,8 @@
+# Release 4.0.1
+
+- Fix of not enough space for completion panes in multiline statements (#223).
+- Support for writing of FormattedString to error stream. `IConsole.WriteError(FormattedString)` and `IConsole.WriteErrorLine(FormattedString)`.
+
 # Release 4.0.0
 
 This release contains many new features, performance improvements, and bugfixes developed by contributor @kindermannhubert.
