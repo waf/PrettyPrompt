@@ -123,34 +123,46 @@ public static class IConsoleX
         if (hideCursor) console.ShowCursor();
     }
 
-    public static void Write(this IConsole console, FormattedString value)
+    public static void Write(this IConsole console, FormattedString value) 
+        => Write(value, text => console.Write(text));
+
+    public static void WriteError(this IConsole console, FormattedString value) 
+        => Write(value, text => console.WriteError(text));
+
+    private static void Write(FormattedString value, Action<string?> write)
     {
         if (!PromptConfiguration.HasUserOptedOutFromColor &&
             value.FormatSpans.Length > 0)
         {
             var lastFormatting = ConsoleFormat.None;
-            console.Write(AnsiEscapeCodes.Reset);
+            write(AnsiEscapeCodes.Reset);
             foreach (var (element, formatting) in value.EnumerateTextElements())
             {
                 if (!lastFormatting.Equals(in formatting))
                 {
-                    console.Write(AnsiEscapeCodes.Reset);
-                    console.Write(AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(formatting).ToString());
+                    write(AnsiEscapeCodes.Reset);
+                    write(AnsiEscapeCodes.ToAnsiEscapeSequenceSlow(formatting).ToString());
                     lastFormatting = formatting;
                 }
-                console.Write(element.ToString());
+                write(element.ToString());
             }
-            console.Write(AnsiEscapeCodes.Reset);
+            write(AnsiEscapeCodes.Reset);
         }
         else
         {
-            console.Write(value.Text);
+            write(value.Text);
         }
     }
 
     public static void WriteLine(this IConsole console, FormattedString value)
     {
         console.Write(value);
+        console.WriteLine("");
+    }
+
+    public static void WriteErrorLine(this IConsole console, FormattedString value)
+    {
+        console.WriteError(value);
         console.WriteLine("");
     }
 }
