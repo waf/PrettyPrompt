@@ -23,9 +23,7 @@ public static class AnsiEscapeCodes
     public const string ClearEntireScreen = $"{Escape}[2J";
     public static readonly string Reset = $"{Escape}[{ResetChar}m";
 
-    /// <summary>
-    /// Index starts at 1!
-    /// </summary>
+    /// <param name="index">Index starts at 1.</param>
     public static string GetMoveCursorToColumn(int index) => $"{Escape}[{index}G";
 
     public static string GetMoveCursorUp(int count) => count == 0 ? "" : $"{Escape}[{count}A";
@@ -33,11 +31,15 @@ public static class AnsiEscapeCodes
     public static string GetMoveCursorRight(int count) => count == 0 ? "" : $"{Escape}[{count}C";
     public static string GetMoveCursorLeft(int count) => count == 0 ? "" : $"{Escape}[{count}D";
 
+    /// <param name="sb">Target StringBUilder.</param>
+    /// <param name="index">Index starts at 1.</param>
     public static void AppendMoveCursorToColumn(StringBuilder sb, int index) => MoveCursor(sb, index, 'G');
+
     public static void AppendMoveCursorUp(StringBuilder sb, int count) => MoveCursor(sb, count, 'A');
     public static void AppendMoveCursorDown(StringBuilder sb, int count) => MoveCursor(sb, count, 'B');
     public static void AppendMoveCursorRight(StringBuilder sb, int count) => MoveCursor(sb, count, 'C');
     public static void AppendMoveCursorLeft(StringBuilder sb, int count) => MoveCursor(sb, count, 'D');
+
     private static void MoveCursor(StringBuilder sb, int count, char direction)
     {
         if (count > 0)
