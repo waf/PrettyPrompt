@@ -13,4 +13,8 @@
     <ProjectReference Include="..\..\examples\PrettyPrompt.Examples.FruitPrompt\PrettyPrompt.Examples.FruitPrompt.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Data\" />
+  </ItemGroup>
+
 </Project>

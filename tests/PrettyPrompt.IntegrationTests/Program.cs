@@ -31,9 +31,21 @@ public static class Program
 
             case "run":
                 {
+                    var tests = new[]
+                    {
+                        async () => await Tests.Test_228_229(false),
+                        async () => await Tests.Test_228_229(true)
+                    };
+
+                    foreach (var test in tests)
+                    {
+                        Console.Clear();
+                        Console.WriteLine("Start typing:");
+                        await test();
+                    }
+
                     Console.Clear();
-                    Console.WriteLine("Start typing:");
-                    await Tests.Test1();
+                    Console.WriteLine("All integration tests ran successfully");
                 }
                 break;
 
