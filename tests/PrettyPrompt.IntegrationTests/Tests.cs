@@ -6,17 +6,31 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace PrettyPrompt.IntegrationTests;
 
 internal class Tests
 {
-    public static async Task Test1()
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/228
+    /// https://github.com/waf/PrettyPrompt/issues/229
+    /// </summary>
+    public static async Task Test_228_229(bool biggerBufferThanWindow)
     {
-        //TODO
-        CheckOutputLogs(Array.Empty<string>(), Array.Empty<string>());
-        await Task.Delay(0);
+        if (OperatingSystem.IsWindows())
+        {
+            Console.WindowWidth = 120;
+            Console.WindowHeight = 30;
+            Console.BufferWidth = 120;
+            Console.BufferHeight = biggerBufferThanWindow ? 3000 : 30;
+        }
+
+        var console = new ReplayingConsole(GetDataPath("record#228#229" + (biggerBufferThanWindow ? "a" : "b")));
+        await Program.Run(console);
+        console.Save("record#actual"); //for debuging
+        CheckOutputLogs(console.ReplayOutputLog, console.RecordedOutputLog);
     }
 
     private static void CheckOutputLogs(IReadOnlyList<string> replayOutputLog, IReadOnlyList<string> recordedOutputLog)
@@ -29,4 +43,6 @@ internal class Tests
 
         static void Throw() => throw new InvalidOperationException("Recorded (=expected) output log and output log of recorded input replay (=actual) differs.");
     }
+
+    private static string GetDataPath(string name) => Path.Combine("..", "..", "..", "Data", name);
 }

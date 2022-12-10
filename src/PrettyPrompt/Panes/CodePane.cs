@@ -30,7 +30,6 @@ internal class CodePane : IKeyPressHandler
     private int topCoordinate;
     private int codeAreaWidth;
     private int codeAreaHeight;
-    private int windowTop;
     private WordWrappedText wordWrappedText;
     private CompletionPane completionPane = null!;
     private OverloadPane overloadPane = null!;
@@ -52,6 +51,7 @@ internal class CodePane : IKeyPressHandler
         private set
         {
             Debug.Assert(value >= 0);
+            Debug.Assert(value <= console.WindowHeight);
             topCoordinate = value;
         }
     }
@@ -62,6 +62,7 @@ internal class CodePane : IKeyPressHandler
         private set
         {
             Debug.Assert(value >= 0);
+            Debug.Assert(value <= console.BufferWidth);
             codeAreaWidth = value;
         }
     }
@@ -72,6 +73,7 @@ internal class CodePane : IKeyPressHandler
         private set
         {
             Debug.Assert(value >= 0);
+            Debug.Assert(value <= console.WindowHeight);
             codeAreaHeight = value;
         }
     }
@@ -117,7 +119,6 @@ internal class CodePane : IKeyPressHandler
         this.configuration = configuration;
         this.clipboard = clipboard;
 
-        TopCoordinate = console.CursorTop;
         MeasureConsole();
 
         Document = new Document();
@@ -386,12 +387,11 @@ internal class CodePane : IKeyPressHandler
 
     internal void MeasureConsole()
     {
-        var windowTopChange = console.WindowTop - this.windowTop;
-        this.TopCoordinate = Math.Max(0, this.TopCoordinate - windowTopChange);
-        this.windowTop = console.WindowTop;
+        TopCoordinate = Math.Max(0, console.CursorTop - console.WindowTop - Cursor.Row);
+        CodeAreaWidth = Math.Max(0, console.BufferWidth - configuration.Prompt.Length);
+        CodeAreaHeight = Math.Max(0, console.WindowHeight - TopCoordinate);
 
-        this.CodeAreaWidth = Math.Max(0, console.BufferWidth - configuration.Prompt.Length);
-        this.CodeAreaHeight = Math.Max(0, console.WindowHeight - this.TopCoordinate);
+        Debug.WriteLine($"CodeAreaHeight: {CodeAreaHeight} TopCoordinate: {TopCoordinate}");
     }
 
     public async Task OnKeyUp(KeyPress key, CancellationToken cancellationToken)
