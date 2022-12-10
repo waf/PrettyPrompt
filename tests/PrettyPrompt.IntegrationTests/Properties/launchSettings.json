@@ -1,0 +1,12 @@
+{
+  "profiles": {
+    "RunTests": {
+      "commandName": "Project",
+      "commandLineArgs": "run"
+    },
+    "Record": {
+      "commandName": "Project",
+      "commandLineArgs": "record"
+    }
+  }
+}

@@ -19,21 +19,21 @@ public class SystemConsole : IConsole
     public int WindowHeight => Console.WindowHeight;
     public int WindowTop => Console.WindowTop;
 
-    public void Write(string? value) => Console.Write(value);
-    public void WriteLine(string? value) => Console.WriteLine(value);
-    public void WriteError(string? value) => Console.Error.Write(value);
-    public void WriteErrorLine(string? value) => Console.Error.WriteLine(value);
+    public void Write(string? value) => Write(value.AsSpan());
+    public void WriteLine(string? value) => WriteLine(value.AsSpan());
+    public void WriteError(string? value) => WriteError(value.AsSpan());
+    public void WriteErrorLine(string? value) => WriteErrorLine(value.AsSpan());
 
-    public void Write(ReadOnlySpan<char> value) => Console.Out.Write(value);
-    public void WriteLine(ReadOnlySpan<char> value) => Console.Out.WriteLine(value);
-    public void WriteError(ReadOnlySpan<char> value) => Console.Error.Write(value);
-    public void WriteErrorLine(ReadOnlySpan<char> value) => Console.Error.WriteLine(value);
+    public virtual void Write(ReadOnlySpan<char> value) => Console.Out.Write(value);
+    public virtual void WriteLine(ReadOnlySpan<char> value) => Console.Out.WriteLine(value);
+    public virtual void WriteError(ReadOnlySpan<char> value) => Console.Error.Write(value);
+    public virtual void WriteErrorLine(ReadOnlySpan<char> value) => Console.Error.WriteLine(value);
 
-    public void Clear() => Console.Clear();
+    public virtual void Clear() => Console.Clear();
     public void ShowCursor() => Console.CursorVisible = true;
     public void HideCursor() => Console.CursorVisible = false;
     public bool KeyAvailable => Console.KeyAvailable;
-    public ConsoleKeyInfo ReadKey(bool intercept) => Console.ReadKey(intercept);
+    public virtual ConsoleKeyInfo ReadKey(bool intercept) => Console.ReadKey(intercept);
 
     public bool CaptureControlC
     {
