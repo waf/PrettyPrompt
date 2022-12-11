@@ -216,8 +216,11 @@ internal class Renderer : IDisposable
 
     private ScreenArea BuildDocumentationArea(CompletionPane completionPane, ConsoleCoordinate position)
     {
+        var documentation = completionPane.SelectedItemDocumentation;
+        if (documentation.Count == 0) return ScreenArea.Empty;
+
         var rows = boxDrawing.BuildFromLines(
-             completionPane.SelectedItemDocumentation,
+             documentation,
              configuration: configuration,
              background: configuration.CompletionItemDescriptionPaneBackground);
         return new ScreenArea(position, rows);
