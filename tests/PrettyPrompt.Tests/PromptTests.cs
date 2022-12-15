@@ -294,7 +294,7 @@ public class PromptTests
             Assert.Equal($"    abcd", result.Text);
 
             ///////////////////
-            
+
             console.Clipboard.SetText("    abcd\n");
             console.StubInput($"{Control}{V}{Enter}");
             prompt = new Prompt(console: console);
@@ -308,7 +308,6 @@ public class PromptTests
             prompt = new Prompt(console: console);
             result = await prompt.ReadLineAsync();
             Assert.Equal($"{NewLine}    abcd{NewLine}", result.Text);
-
 
             ///////////////////
 
@@ -332,7 +331,7 @@ public class PromptTests
             (
                 new KeyPressPattern(F1),
                 (inputArg, caretArg, _) => { input = inputArg; caret = caretArg; return Task.FromResult<KeyPressCallbackResult?>(null); }
-            )),
+        )),
             console: console);
 
         _ = await prompt.ReadLineAsync();
@@ -547,5 +546,30 @@ public class PromptTests
 
         var result = await prompt.ReadLineAsync();
         Assert.Equal(callbackOutput, result);
+    }
+
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/235
+    /// </summary>
+    [Fact]
+    public async Task ReadLineAsync_PromptModification()
+    {
+        var console = ConsoleStub.NewConsole();
+        var cfg = new PromptConfiguration();
+
+        console.StubInput(
+            ConsoleStub.Input($"A{Enter}", () => cfg.Prompt = "***"),
+            ConsoleStub.Input($"B{Enter}"));
+
+        var prompt = new Prompt(console: console, configuration: cfg);
+
+        var result = await prompt.ReadLineAsync();
+        Assert.Equal("A", result.Text);
+        result = await prompt.ReadLineAsync();
+        Assert.Equal("B", result.Text);
+
+        var output = console.GetAllOutput();
+        Assert.Equal("> ", output[1]);
+        Assert.Equal("***", output[5]);
     }
 }
