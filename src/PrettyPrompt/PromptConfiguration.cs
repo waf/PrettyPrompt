@@ -22,7 +22,7 @@ public class PromptConfiguration
     /// <summary>
     /// Formatted prompt string to draw (e.g. "> ")
     /// </summary>
-    public FormattedString Prompt { get; }
+    public FormattedString Prompt { get; set; }
 
     private readonly ConsoleFormat completionBoxBorderFormat;
     public ref readonly ConsoleFormat CompletionBoxBorderFormat => ref completionBoxBorderFormat;
