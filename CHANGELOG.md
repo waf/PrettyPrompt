@@ -1,53 +1,53 @@
 # Release 4.0.2
 
-- Fix of invalid behaviour when user used more lines than `Console.BufferHeight` (#228).
-- Fix of invalid positioning of completion pane for "scrolling inputs" (#229).
-- Not drawing empty documentation box when no completion item is selected (#232).
-- `PromptConfiguration.Prompt` is now editable (#235).
+- Fix of invalid behaviour when user used more lines than `Console.BufferHeight` [(#228)](https://github.com/waf/PrettyPrompt/issues/228).
+- Fix of invalid positioning of completion pane for "scrolling inputs" [(#229)](https://github.com/waf/PrettyPrompt/issues/229).
+- Not drawing empty documentation box when no completion item is selected [(#232)](https://github.com/waf/PrettyPrompt/issues/232).
+- `PromptConfiguration.Prompt` is now editable [(#235)](https://github.com/waf/PrettyPrompt/issues/235).
 
 # Release 4.0.1
 
-- Fix of not enough space for completion panes in multiline statements (#223).
+- Fix of not enough space for completion panes in multiline statements [(#223)](https://github.com/waf/PrettyPrompt/issues/223).
 - Support for writing of FormattedString to error stream. `IConsole.WriteError(FormattedString)` and `IConsole.WriteErrorLine(FormattedString)`.
 
 # Release 4.0.0
 
 This release contains many new features, performance improvements, and bugfixes developed by contributor @kindermannhubert.
 
-- Breaking change: Target .NET 6 instead of .NET 5 (#202).
-- Breaking change: Correct awaiting of history saving (#201).
+- Breaking change: Target .NET 6 instead of .NET 5 [(#202)](https://github.com/waf/PrettyPrompt/pull/202).
+- Breaking change: Correct awaiting of history saving [(#201)](https://github.com/waf/PrettyPrompt/pull/201).
     - Before, saving of history was fire-and-forget, which could mean that in certain race condition scenarios history would not be properly saved.
     - To fix this, the prompt now implements `IAsyncDisposable` and should be disposed after use to guarantee that history is always saved.
-- Overload help support! In addition to the existing intellisense-style autocompletions, PrettyPrompt now supports displaying "overload menus" that can be navigated with the arrow keys, similar to Visual Studio (#209).
-- Fix of WordWrapping removing empty lines. (#204).
-- Add a new configuration method: `IPromptCallbacks.ConfirmCompletionCommit`. This allows completions to be accepted / rejected when they are about to be inserted, based on the position of the caret in the text. It's useful if a completion would be automatically inserted while the user is typing (#212).
-- Support for automatic formatting of the input text as it's being typed. See `IPromptCallbacks.FormatInput` (#213).
-- Support for indentation changing of multiple selected lines via Tab and Shift+Tab (#214).
+- Overload help support! In addition to the existing intellisense-style autocompletions, PrettyPrompt now supports displaying "overload menus" that can be navigated with the arrow keys, similar to Visual Studio [(#209)](https://github.com/waf/PrettyPrompt/pull/209).
+- Fix of WordWrapping removing empty lines. [(#204)](https://github.com/waf/PrettyPrompt/pull/204).
+- Add a new configuration method: `IPromptCallbacks.ConfirmCompletionCommit`. This allows completions to be accepted / rejected when they are about to be inserted, based on the position of the caret in the text. It's useful if a completion would be automatically inserted while the user is typing [(#212)](https://github.com/waf/PrettyPrompt/pull/212).
+- Support for automatic formatting of the input text as it's being typed. See `IPromptCallbacks.FormatInput` [(#213)](https://github.com/waf/PrettyPrompt/pull/213).
+- Support for indentation changing of multiple selected lines via Tab and Shift+Tab [(#214)](https://github.com/waf/PrettyPrompt/pull/214).
 
 # Release 3.0.6
 
-- Configurable Keybindings for history scrolling (#197)
-- Persistent history deduplication (#189)
-- Better history scrolling in multiline statements (#181, #193)
-- Ensure scrolling forward/backwards through filtered history provides consistent results (#192)
-- Smarter history filtering (#195, #196)
-- When a ConsoleKey KeyPressPattern is provided in a keybinding, map the ConsoleKey to a char (#199)
+- Configurable Keybindings for history scrolling [(#197)](https://github.com/waf/PrettyPrompt/pull/197)
+- Persistent history deduplication [(#189)](https://github.com/waf/PrettyPrompt/pull/189)
+- Better history scrolling in multiline statements ([#181](https://github.com/waf/PrettyPrompt/issues/181), [#193](https://github.com/waf/PrettyPrompt/pull/193))
+- Ensure scrolling forward/backwards through filtered history provides consistent results [(#192)](https://github.com/waf/PrettyPrompt/pull/192)
+- Smarter history filtering ([#195](https://github.com/waf/PrettyPrompt/pull/195), [#196](https://github.com/waf/PrettyPrompt/pull/196))
+- When a ConsoleKey KeyPressPattern is provided in a keybinding, map the ConsoleKey to a char [(#199)](https://github.com/waf/PrettyPrompt/pull/199)
 
 # Release 3.0.5
 
 - Performance improvement of IConsole.Write(FormattedString).
 - `IPromptCallbacksShouldOpenCompletionWindowAsync` now accepts also `KeyPress` argument.
 - `CompletionItem` has new property `CommitCharacterRules` which modifies configured global commit characters.
-- Fix of incorrect rendering of description box in multiline statements (#149).
-- Win/F1/F2/... keys do not deselect currently selected text (#156).
-- Fix of Home press on empty line (#161).
-- Fix of down arrow not working properly when last character is '\n' (#160).
-- Improved selection formatting + it's configurable (#155).
-- Ctrl+X when nothing is selected cuts the current line (#151).
-- Current line can be deleted with Shift+Delete (#152).
-- Fix of indentation removal inside of pasted text. It's removed only when there are multiple non-whitespace lines (#168).
-- Fix of key-binding matching (#147).
-- Fix of multiple '\r\n' pasting (#166).
+- Fix of incorrect rendering of description box in multiline statements [(#149)](https://github.com/waf/PrettyPrompt/issues/149).
+- Win/F1/F2/... keys do not deselect currently selected text [(#156)](https://github.com/waf/PrettyPrompt/issues/156).
+- Fix of Home press on empty line [(#161)](https://github.com/waf/PrettyPrompt/issues/161).
+- Fix of down arrow not working properly when last character is '\n' [(#160)](https://github.com/waf/PrettyPrompt/issues/160).
+- Improved selection formatting + it's configurable [(#155)](https://github.com/waf/PrettyPrompt/issues/155).
+- Ctrl+X when nothing is selected cuts the current line [(#151)](https://github.com/waf/PrettyPrompt/issues/151).
+- Current line can be deleted with Shift+Delete [(#152)](https://github.com/waf/PrettyPrompt/issues/152).
+- Fix of indentation removal inside of pasted text. It's removed only when there are multiple non-whitespace lines [(#168)](https://github.com/waf/PrettyPrompt/issues/168).
+- Fix of key-binding matching [(#147)](https://github.com/waf/PrettyPrompt/issues/147).
+- Fix of multiple '\r\n' pasting [(#166)](https://github.com/waf/PrettyPrompt/issues/166).
 - Fixes other minor bugs.
 
 # Release 3.0.4
@@ -56,14 +56,14 @@ This release contains many new features, performance improvements, and bugfixes 
 
 # Release 3.0.3
 
-- Fix of incorrect positioning of cursor while using 2-character symbols (#134).
-- Fix of crash when repeating deleting selected text and Ctrl+Z (#139).
+- Fix of incorrect positioning of cursor while using 2-character symbols [(#134)](https://github.com/waf/PrettyPrompt/issues/134).
+- Fix of crash when repeating deleting selected text and Ctrl+Z [(#139)](https://github.com/waf/PrettyPrompt/pull/139).
 - Width fix of some emoji characters.
 - Fixes of around text selection and undo/redo.
 
 # Release 3.0.2
 
-- Fix of completion pane that should not open when selection is active (#126).
+- Fix of completion pane that should not open when selection is active [(#126)](https://github.com/waf/PrettyPrompt/issues/126).
 - Upgrade of referenced NuGets.
 - Minor enhancements.
 
