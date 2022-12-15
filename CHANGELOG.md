@@ -1,3 +1,10 @@
+# Release 4.0.2
+
+- Fix of invalid behaviour when user used more lines than `Console.BufferHeight` (#228).
+- Fix of invalid positioning of completion pane for "scrolling inputs" (#229).
+- Not drawing empty documentation box when no completion item is selected (#232).
+- `PromptConfiguration.Prompt` is now editable (#235).
+
 # Release 4.0.1
 
 - Fix of not enough space for completion panes in multiline statements (#223).
