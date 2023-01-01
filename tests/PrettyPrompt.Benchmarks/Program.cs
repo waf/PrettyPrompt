@@ -118,6 +118,7 @@ public class PromptBenchmark
         int IConsole.WindowTop => 0;
         bool IConsole.KeyAvailable => false;
         bool IConsole.CaptureControlC { get => false; set { } }
+        bool IConsole.IsErrorRedirected => false;
 
         event ConsoleCancelEventHandler IConsole.CancelKeyPress { add { } remove { } }
 
