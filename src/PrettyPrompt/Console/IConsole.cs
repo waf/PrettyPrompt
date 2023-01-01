@@ -17,10 +17,25 @@ namespace PrettyPrompt.Consoles;
 /// </summary>
 public interface IConsole
 {
+    /// <inheritdoc cref="Console.CursorTop"/>
     int CursorTop { get; }
+
+    /// <inheritdoc cref="Console.BufferWidth"/>
     int BufferWidth { get; }
+
+    /// <inheritdoc cref="Console.WindowHeight"/>
     int WindowHeight { get; }
+
+    /// <inheritdoc cref="Console.WindowTop"/>
     int WindowTop { get; }
+
+    /// <inheritdoc cref="Console.KeyAvailable"/>
+    bool KeyAvailable { get; }
+
+    /// <inheritdoc cref="Console.IsErrorRedirected"/>
+    bool IsErrorRedirected { get; }
+
+    bool CaptureControlC { get; set; }
 
     void Write(string? value);
     void WriteLine(string? value);
@@ -32,10 +47,13 @@ public interface IConsole
     void WriteError(ReadOnlySpan<char> value);
     void WriteErrorLine(ReadOnlySpan<char> value);
 
+    /// <inheritdoc cref="Console.Clear"/>
     void Clear();
+
     void ShowCursor();
     void HideCursor();
-    bool KeyAvailable { get; }
+
+    /// <inheritdoc cref="Console.ReadKey(bool)"/>
     ConsoleKeyInfo ReadKey(bool intercept);
 
     /// <summary>
@@ -45,7 +63,6 @@ public interface IConsole
     void InitVirtualTerminalProcessing();
 
     event ConsoleCancelEventHandler CancelKeyPress;
-    bool CaptureControlC { get; set; }
 
     #region Write StringBuilder default implementations
     //This could be extension methods, but we need to override them in unit tests because
@@ -123,11 +140,21 @@ public static class IConsoleX
         if (hideCursor) console.ShowCursor();
     }
 
-    public static void Write(this IConsole console, FormattedString value) 
-        => Write(value, text => console.Write(text));
+    public static void Write(this IConsole console, FormattedString value)
+        => Write(value, console.Write);
 
-    public static void WriteError(this IConsole console, FormattedString value) 
-        => Write(value, text => console.WriteError(text));
+    public static void WriteError(this IConsole console, FormattedString value)
+    {
+        if (console.IsErrorRedirected)
+        {
+            //when error stream is redirected we can ignore value formatting
+            console.WriteError(value.Text);
+        }
+        else
+        {
+            Write(value, console.WriteError);
+        }
+    }
 
     private static void Write(FormattedString value, Action<string?> write)
     {

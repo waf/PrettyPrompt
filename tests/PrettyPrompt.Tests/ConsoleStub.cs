@@ -286,6 +286,7 @@ public abstract class ConsoleWithClipboard : IConsoleWithClipboard
     public abstract int WindowHeight { get; }
     public abstract int WindowTop { get; }
     public abstract bool KeyAvailable { get; }
+    public abstract bool IsErrorRedirected { get; }
     public abstract bool CaptureControlC { get; set; }
     public abstract void Clear();
     public abstract void HideCursor();

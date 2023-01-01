@@ -18,6 +18,8 @@ public class SystemConsole : IConsole
     public int BufferWidth => Console.BufferWidth;
     public int WindowHeight => Console.WindowHeight;
     public int WindowTop => Console.WindowTop;
+    public bool KeyAvailable => Console.KeyAvailable;
+    public bool IsErrorRedirected => Console.IsErrorRedirected;
 
     public void Write(string? value) => Write(value.AsSpan());
     public void WriteLine(string? value) => WriteLine(value.AsSpan());
@@ -32,7 +34,6 @@ public class SystemConsole : IConsole
     public virtual void Clear() => Console.Clear();
     public void ShowCursor() => Console.CursorVisible = true;
     public void HideCursor() => Console.CursorVisible = false;
-    public bool KeyAvailable => Console.KeyAvailable;
     public virtual ConsoleKeyInfo ReadKey(bool intercept) => Console.ReadKey(intercept);
 
     public bool CaptureControlC
