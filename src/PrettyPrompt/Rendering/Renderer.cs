@@ -56,14 +56,27 @@ internal class Renderer : IDisposable
     {
         if (result is not null)
         {
+            bool redraw = false;
             if (wasTextSelectedDuringPreviousRender && codePane.Selection is null)
             {
-                Redraw();
+                redraw = true;
             }
 
             if (completionPane.IsOpen)
             {
                 completionPane.IsOpen = false;
+                redraw = true;
+            }
+
+            //https://github.com/waf/PrettyPrompt/issues/239
+            if (overloadPane.IsOpen)
+            {
+                overloadPane.IsOpen = false;
+                redraw = true;
+            }
+
+            if (redraw)
+            {
                 Redraw();
             }
 
