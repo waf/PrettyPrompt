@@ -1,3 +1,13 @@
+# Release 4.0.4
+
+- Improved completion item ordering + case sensitive filtering ([#244](https://github.com/waf/PrettyPrompt/pull/244)).
+- Fix of the problem where oveload pane could stay on screen after input submission ([#239](https://github.com/waf/PrettyPrompt/issues/239)).
+- Change of unexpected character `\r` to `\n` in `ConsoleKeyInfo` when pressing `Enter` ([#242](https://github.com/waf/PrettyPrompt/issues/242)).
+
+# Release 4.0.3
+
+- Ignore errors formatting when error stream is redirected ([#238](https://github.com/waf/PrettyPrompt/pull/238)).
+
 # Release 4.0.2
 
 - Fix of invalid behaviour when user used more lines than `Console.BufferHeight` ([#228](https://github.com/waf/PrettyPrompt/issues/228)).
