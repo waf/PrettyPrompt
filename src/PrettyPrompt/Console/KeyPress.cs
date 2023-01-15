@@ -35,14 +35,26 @@ public class KeyPress
 
     public KeyPress(ConsoleKeyInfo consoleKeyInfo, string? pastedText = null)
     {
-        this.ConsoleKeyInfo = consoleKeyInfo;
-        
-        this.ObjectPattern = 
+        if (consoleKeyInfo is { Key: ConsoleKey.Enter, KeyChar: '\r' })
+        {
+            ConsoleKeyInfo = new ConsoleKeyInfo(
+                '\n', //'\r' is unexpected and makes problems (e.g. https://github.com/waf/CSharpRepl/issues/213)
+                ConsoleKey.Enter,
+                consoleKeyInfo.Modifiers.HasFlag(ConsoleModifiers.Shift),
+                consoleKeyInfo.Modifiers.HasFlag(ConsoleModifiers.Alt),
+                consoleKeyInfo.Modifiers.HasFlag(ConsoleModifiers.Control));
+        }
+        else
+        {
+            ConsoleKeyInfo = consoleKeyInfo;
+        }
+
+        ObjectPattern =
             consoleKeyInfo.Modifiers == 0 ?
-            consoleKeyInfo.Key:
+            consoleKeyInfo.Key :
             (consoleKeyInfo.Modifiers, consoleKeyInfo.Key);
 
-        this.PastedText = pastedText;
+        PastedText = pastedText;
     }
 
     internal static IEnumerable<KeyPress> ReadForever(IConsole console)
