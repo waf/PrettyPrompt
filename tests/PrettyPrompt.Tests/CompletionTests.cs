@@ -44,7 +44,7 @@ public class CompletionTests
         var result = await prompt.ReadLineAsync();
 
         Assert.True(result.IsSuccess);
-        Assert.Equal("Aardvark Zebra Albatross", result.Text);
+        Assert.Equal("Aardvark Zebra Alligator", result.Text);
     }
 
     [Fact]
@@ -72,7 +72,7 @@ public class CompletionTests
         var result = await prompt.ReadLineAsync();
 
         Assert.True(result.IsSuccess);
-        Assert.Equal($"Ant{NewLine}Zebra", result.Text);
+        Assert.Equal($"Aardvark{NewLine}Zebra", result.Text);
     }
 
     [Fact]
@@ -163,7 +163,7 @@ public class CompletionTests
         var result = await prompt.ReadLineAsync();
 
         Assert.True(result.IsSuccess);
-        Assert.Equal($"Ant a", result.Text);
+        Assert.Equal($"Aardvark a", result.Text);
     }
 
     [Fact]
@@ -177,7 +177,7 @@ public class CompletionTests
         var result = await prompt.ReadLineAsync();
 
         Assert.True(result.IsSuccess);
-        Assert.Equal($"Ant Q", result.Text);
+        Assert.Equal($"Aardvark Q", result.Text);
     }
 
     /// <summary>
