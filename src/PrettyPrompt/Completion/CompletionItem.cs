@@ -94,7 +94,6 @@ public class CompletionItem
             return 0;
         }
 
-        const int PriorityChunk = 1000;
         var pattern = text.AsSpan(spanToBeReplaced);
 
         ReadOnlySpan<char> valueLonger;
@@ -110,14 +109,22 @@ public class CompletionItem
             valueShorter = FilterText;
         }
 
-        int distance;
-        if (valueLonger.StartsWith(valueShorter, StringComparison.CurrentCultureIgnoreCase))
+        int priority;
+        if (valueLonger.StartsWith(valueShorter, StringComparison.CurrentCulture))
         {
-            distance = Math.Abs(valueShorter.Length - valueLonger.Length);
+            priority = 4;
+        }
+        else if (valueLonger.StartsWith(valueShorter, StringComparison.CurrentCultureIgnoreCase))
+        {
+            priority = 3;
+        }
+        else if (valueLonger.Contains(valueShorter, StringComparison.CurrentCulture))
+        {
+            priority = 2;
         }
         else if (valueLonger.Contains(valueShorter, StringComparison.CurrentCultureIgnoreCase))
         {
-            distance = PriorityChunk + Math.Abs(valueShorter.Length - valueLonger.Length);
+            priority = 1;
         }
         else
         {
@@ -127,12 +134,12 @@ public class CompletionItem
         if (pattern.Length <= FilterText.Length)
         {
             //matching item
-            return int.MaxValue - distance;
+            return priority;
         }
         else
         {
             //non-matching item, but it's contained in pattern (which is better than completely unmatching)
-            return -distance;
+            return int.MinValue + priority;
         }
     }
 }
