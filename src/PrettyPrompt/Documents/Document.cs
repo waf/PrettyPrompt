@@ -5,7 +5,9 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Threading.Tasks;
 using PrettyPrompt.Panes;
 using PrettyPrompt.TextSelection;
 
@@ -79,6 +81,27 @@ internal class Document : IEquatable<Document>
                 stringBuilder.Remove(selectionValue);
             }
             this.stringBuilder.Insert(Caret, text);
+        }
+    }
+
+    /// <summary>
+    /// Consume an async enumerable while live updating the Document at each iteration.
+    /// The streaming input is entered as a single "block" of undo/redo history.
+    /// </summary>
+    public async IAsyncEnumerable<string> InsertAtCaretAsync(CodePane codePane, IAsyncEnumerable<string> streamingText)
+    {
+        using (BeginChanges(codePane, ChangeContextType.UndoRedoHistory))
+        {
+            if (codePane.GetSelectionSpan().TryGet(out var selectionValue))
+            {
+                codePane.Selection = null;
+                stringBuilder.Remove(selectionValue);
+            }
+            await foreach (var token in streamingText.ConfigureAwait(false))
+            {
+                this.stringBuilder.Insert(Caret, token);
+                yield return token;
+            }
         }
     }
 
@@ -343,29 +366,53 @@ internal class Document : IEquatable<Document>
     /// Accumulates changed events and invokes only one on dispose.
     /// Also takes care of history tracking (before/after).
     /// </summary>
-    private ChangeContext BeginChanges(CodePane codePane) => new(codePane, this);
+    private ChangeContext BeginChanges(CodePane codePane, ChangeContextType changeContextType = ChangeContextType.All) =>
+        new(codePane, this, changeContextType);
 
     private readonly struct ChangeContext : IDisposable
     {
+        private readonly ChangeContextType changeContextType;
         private readonly CodePane codePane;
         private readonly Document document;
 
-        public ChangeContext(CodePane codePane, Document document)
+        public ChangeContext(CodePane codePane, Document document, ChangeContextType changeContextType)
         {
             Debug.Assert(document.stringBuilder.ToString() == document.currentText);
 
+            this.changeContextType = changeContextType;
             this.codePane = codePane;
             this.document = document;
-            document.stringBuilder.SuspendChangedEvents();
-            document.undoRedoHistory.Track(document.stringBuilder, document.Caret, codePane.Selection);
+
+            if(changeContextType.HasFlag(ChangeContextType.TextUpdate))
+            {
+                document.stringBuilder.SuspendChangedEvents();
+            }
+            if (changeContextType.HasFlag(ChangeContextType.UndoRedoHistory))
+            {
+                document.undoRedoHistory.Track(document.stringBuilder, document.Caret, codePane.Selection);
+            }
         }
 
         public void Dispose()
         {
-            document.stringBuilder.ResumeChangedEvents();
-            document.undoRedoHistory.Track(document.stringBuilder, document.Caret, codePane.Selection);
+            if (changeContextType.HasFlag(ChangeContextType.TextUpdate))
+            {
+                document.stringBuilder.ResumeChangedEvents();
+            }
+            if (changeContextType.HasFlag(ChangeContextType.UndoRedoHistory))
+            {
+                document.undoRedoHistory.Track(document.stringBuilder, document.Caret, codePane.Selection);
+            }
 
             Debug.Assert(document.stringBuilder.ToString() == document.currentText);
         }
+    }
+
+    [Flags]
+    public enum ChangeContextType
+    {
+        TextUpdate = 1,
+        UndoRedoHistory = 2,
+        All = TextUpdate | UndoRedoHistory
     }
 }
