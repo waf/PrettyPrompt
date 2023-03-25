@@ -1,3 +1,7 @@
+# Release 4.0.5
+
+- Add a new type that be returned by keybinding callbacks: `StreamingInputCallbackResult`. This allows `IAsyncEnumerable<string>` to be rendered into the prompt ([#249](https://github.com/waf/PrettyPrompt/pull/249)).
+
 # Release 4.0.4
 
 - Improved completion item ordering + case sensitive filtering ([#244](https://github.com/waf/PrettyPrompt/pull/244)).
