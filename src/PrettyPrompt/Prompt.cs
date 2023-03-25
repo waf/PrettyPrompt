@@ -94,21 +94,35 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
 
             // render the typed input, with syntax highlighting
             var inputText = codePane.Document.GetText();
-            var highlights = await highlighter.HighlightAsync(inputText, cancellationToken: default).ConfigureAwait(false);
 
-            // the key press may have caused the prompt to return its input, e.g. <Enter> or a callback.
-            var result = await GetResult(codePane, key, inputText, cancellationToken: default).ConfigureAwait(false);
+            // the key press may have caused the prompt to return its input (e.g. <Enter>) or fired a configured callback.
+            var result = await HandleKeyPressAction(codePane, key, inputText, cancellationToken: default).ConfigureAwait(false);
 
-            renderer.RenderOutput(result, codePane, overloadPane, completionPane, highlights, key);
-
-            if (result is not null)
+            switch(result)
             {
-                //wait for potential previous saving
-                await (savePersistentHistoryTask ?? Task.CompletedTask).ConfigureAwait(false);
-
-                savePersistentHistoryTask = history.SavePersistentHistoryAsync(inputText);
-                cancellationManager.AllowControlCToCancelResult(result);
-                return result;
+                // no binding or result found (e.g. user is just typing text) -- display the text the user typed.
+                case null:
+                    await RenderSyntaxHighlightedOutput(renderer, codePane, overloadPane, completionPane, key, inputText, result).ConfigureAwait(false);
+                    break;
+                // if a configured callback results in streaming input -- consume the completion to asynchronously update the screen.
+                case StreamingInputCallbackResult customCompletion:
+                    completionPane.IsOpen = false;
+                    overloadPane.IsOpen = false;
+                    var updates = codePane.Document.InsertAtCaretAsync(codePane, customCompletion.StreamingInput).GetAsyncEnumerator();
+                    while(await updates.MoveNextAsync().ConfigureAwait(false))
+                    {
+                        await RenderSyntaxHighlightedOutput(renderer, codePane, overloadPane, completionPane, key, codePane.Document.GetText(), null).ConfigureAwait(false);
+                    }
+                    break;
+                // user submitted the prompt, or a keybinding submitted the prompt
+                case PromptResult or KeyPressCallbackResult:
+                    await RenderSyntaxHighlightedOutput(renderer, codePane, overloadPane, completionPane, key, inputText, result).ConfigureAwait(false);
+                    //wait for potential previous saving
+                    await (savePersistentHistoryTask ?? Task.CompletedTask).ConfigureAwait(false);
+                    savePersistentHistoryTask = history.SavePersistentHistoryAsync(inputText);
+                    cancellationManager.AllowControlCToCancelResult(result);
+                    // return the result to caller. The current prompt has ended.
+                    return result;
             }
         }
 
@@ -128,22 +142,7 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
             foreach (var panes in new IKeyPressHandler[] { completionPane, overloadPane, history, codePane })
                 await panes.OnKeyUp(key, cancellationToken).ConfigureAwait(false);
 
-            //Possible automatic formatting of the document;
-            var text = codePane.Document.GetText();
-            var (formattedText, newCaret) = await promptCallbacks.FormatInput(text, codePane.Document.Caret, key, cancellationToken).ConfigureAwait(false);
-            if (text != formattedText)
-            {
-                int removedChars = 0;
-                for (int i = 0; i < newCaret; i++)
-                {
-                    if (formattedText[i] == '\r') ++removedChars;
-                }
-                codePane.Document.SetContents(codePane, formattedText.Replace("\r\n", "\n"), newCaret - removedChars);
-            }
-            else
-            {
-                Debug.Assert(codePane.Document.Caret == newCaret);
-            }
+            await AutoFormatDocument(key, codePane, cancellationToken).ConfigureAwait(false);
 
             //we don't support text selection while completion list is open
             //text selection can put completion list into broken state, where filtering does not work
@@ -152,7 +151,32 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
         }
     }
 
-    private async Task<PromptResult?> GetResult(CodePane codePane, KeyPress key, string inputText, CancellationToken cancellationToken)
+    private async Task AutoFormatDocument(KeyPress key, CodePane codePane, CancellationToken cancellationToken)
+    {
+        var text = codePane.Document.GetText();
+        var (formattedText, newCaret) = await promptCallbacks.FormatInput(text, codePane.Document.Caret, key, cancellationToken).ConfigureAwait(false);
+        if (text != formattedText)
+        {
+            int removedChars = 0;
+            for (int i = 0; i < newCaret; i++)
+            {
+                if (formattedText[i] == '\r') ++removedChars;
+            }
+            codePane.Document.SetContents(codePane, formattedText.Replace("\r\n", "\n"), newCaret - removedChars);
+        }
+        else
+        {
+            Debug.Assert(codePane.Document.Caret == newCaret);
+        }
+    }
+
+    private async Task RenderSyntaxHighlightedOutput(Renderer renderer, CodePane codePane, OverloadPane overloadPane, CompletionPane completionPane, KeyPress key, string inputText, PromptResult? result)
+    {
+        var highlights = await highlighter.HighlightAsync(inputText, cancellationToken: default).ConfigureAwait(false);
+        renderer.RenderOutput(result, codePane, overloadPane, completionPane, highlights, key);
+    }
+
+    private async Task<PromptResult?> HandleKeyPressAction(CodePane codePane, KeyPress key, string inputText, CancellationToken cancellationToken)
     {
         // process any user-defined keyboard shortcuts
         if (promptCallbacks.TryGetKeyPressCallbacks(key.ConsoleKeyInfo, out var callback))
@@ -260,5 +284,19 @@ public class KeyPressCallbackResult : PromptResult
         : base(isSuccess: true, input, submitKeyInfo: default)
     {
         Output = output;
+    }
+}
+
+/// <summary>
+/// Represents input to be streamed into the prompt. Should be used in scenarios where input
+/// to be streamed is available asynchronously.
+/// </summary>
+public class StreamingInputCallbackResult : KeyPressCallbackResult
+{
+    public IAsyncEnumerable<string> StreamingInput { get; set; }
+    public StreamingInputCallbackResult(IAsyncEnumerable<string> streamingInput)
+        : base(input: string.Empty, output: string.Empty)
+    {
+        StreamingInput = streamingInput;
     }
 }

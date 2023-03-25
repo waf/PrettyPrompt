@@ -548,6 +548,36 @@ public class PromptTests
         Assert.Equal(callbackOutput, result);
     }
 
+    [Fact]
+    public async Task ReadLine_StreamingInputCallbackReturnsOutput_IsReturned()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput($"Hello World{Control}{LeftArrow}{F5}{Enter}");
+
+        var callbackOutput = new StreamingInputCallbackResult(ResultAsync());
+        var prompt = new Prompt(
+            callbacks: new TestPromptCallbacks(
+            (
+                new KeyPressPattern(F5),
+                (inputArg, caretArg, _) =>
+                {
+                    return Task.FromResult<KeyPressCallbackResult?>(callbackOutput);
+                }
+            )),
+            console: console
+        );
+
+        var result = await prompt.ReadLineAsync();
+        Assert.Equal("Hello Asynchronous Streaming World", result.Text);
+
+        static async IAsyncEnumerable<string> ResultAsync()
+        {
+            await Task.Yield();
+            yield return "Asynchronous ";
+            yield return "Streaming ";
+        }
+    }
+
     /// <summary>
     /// https://github.com/waf/PrettyPrompt/issues/235
     /// </summary>
