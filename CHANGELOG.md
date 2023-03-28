@@ -1,3 +1,7 @@
+# Release 4.0.6
+
+- Bugfix: if the control modifier is pressed, don't insert the character ([#252](https://github.com/waf/PrettyPrompt/pull/252)).
+
 # Release 4.0.5
 
 - Add a new type that be returned by keybinding callbacks: `StreamingInputCallbackResult`. This allows `IAsyncEnumerable<string>` to be rendered into the prompt ([#249](https://github.com/waf/PrettyPrompt/pull/249)).
