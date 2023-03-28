@@ -285,7 +285,7 @@ internal class CodePane : IKeyPressHandler
                 }
                 break;
             default:
-                if (!char.IsControl(key.ConsoleKeyInfo.KeyChar))
+                if (!(char.IsControl(key.ConsoleKeyInfo.KeyChar) || key.ConsoleKeyInfo.Modifiers.HasFlag(Control)))
                 {
                     Document.InsertAtCaret(this, key.ConsoleKeyInfo.KeyChar);
                 }

@@ -552,13 +552,13 @@ public class PromptTests
     public async Task ReadLine_StreamingInputCallbackReturnsOutput_IsReturned()
     {
         var console = ConsoleStub.NewConsole();
-        console.StubInput($"Hello World{Control}{LeftArrow}{F5}{Enter}");
+        console.StubInput($"Hello World{Control}{LeftArrow}{Control}{Alt}{Spacebar}{Enter}");
 
         var callbackOutput = new StreamingInputCallbackResult(ResultAsync());
         var prompt = new Prompt(
             callbacks: new TestPromptCallbacks(
             (
-                new KeyPressPattern(F5),
+                new KeyPressPattern(Control | Alt, Spacebar),
                 (inputArg, caretArg, _) =>
                 {
                     return Task.FromResult<KeyPressCallbackResult?>(callbackOutput);
