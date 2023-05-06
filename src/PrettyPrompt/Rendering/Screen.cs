@@ -24,10 +24,12 @@ internal sealed class Screen : IDisposable
     public ConsoleCoordinate Cursor { get; }
     public Cell?[] CellBuffer { get; }
     public int MaxIndex { get; }
+    public int ViewPortOffset { get; }
 
     public Screen(int width, int height, ConsoleCoordinate cursor, params ScreenArea[] screenAreas)
     {
         this.screenAreas = screenAreas;
+        this.ViewPortOffset = screenAreas.Sum(a => a.ViewPortStart);
         this.Width = width;
         this.Height = screenAreas
             .Select(area => area.TruncateToScreenHeight
@@ -69,10 +71,16 @@ internal sealed class Screen : IDisposable
 
     /// <summary>
     /// We have our cursor coordinate, but its position represents the position in the input string.
-    /// Normally, this is the same as the coordinate on screen, unless we've rendered CJK characters
-    /// which are "full width" and take up two characters on screen.
+    /// We need to reposition both the row/column of the cursor based on how they'll be rendered to
+    /// the console:
+    ///
+    /// - For the row: we may only display a subset of the rows based on the current console size,
+    ///   so we need to adjust the row position based on the viewport start.
+    /// - For the column: repositioning is needed in the case where we've rendered CJK characters.
+    ///   These are are "full width" characters and take up two characters on screen.
+    ///
     /// </summary>
-    private static ConsoleCoordinate PositionCursor(Screen screen, ConsoleCoordinate cursor)
+    private ConsoleCoordinate PositionCursor(Screen screen, ConsoleCoordinate cursor)
     {
         if (screen.CellBuffer.Length == 0) return cursor;
 
@@ -97,10 +105,11 @@ internal sealed class Screen : IDisposable
             }
         }
         int newColumn = column + extraColumnOffset;
+        int newRow = cursor.Row - ViewPortOffset;
 
         return newColumn > screen.Width
-            ? new ConsoleCoordinate(row + 1, newColumn - screen.Width)
-            : new ConsoleCoordinate(row, newColumn);
+            ? new ConsoleCoordinate(newRow + 1, newColumn - screen.Width)
+            : new ConsoleCoordinate(newRow, newColumn);
     }
 
     public Screen Resize(int width, int height) => new(width, height, Cursor, screenAreas);

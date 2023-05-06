@@ -13,7 +13,7 @@ namespace PrettyPrompt;
 /// An area of the screen that's being rendered at a coordinate.
 /// This is conceptually a UI pane, rasterized into characters.
 /// </summary>
-internal sealed record ScreenArea(ConsoleCoordinate Start, Row[] Rows, bool TruncateToScreenHeight = true) : IDisposable
+internal sealed record ScreenArea(ConsoleCoordinate Start, Row[] Rows, bool TruncateToScreenHeight = true, int ViewPortStart = 0) : IDisposable
 {
     public static readonly ScreenArea Empty = new(ConsoleCoordinate.Zero, Array.Empty<Row>());
 

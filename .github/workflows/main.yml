@@ -18,23 +18,20 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: | 
-          5.0.x
           6.0.x
+          7.0.x
       
     - name: Dotnet Installation Info
       run: dotnet --info
-      
-    - name: Install Codecov
-      run: dotnet tool install --global Codecov.Tool
       
     - name: Build
       run: dotnet build
       
     - name: Test
-      run: dotnet test --collect:"XPlat Code Coverage" --settings tests\PrettyPrompt.Tests\TestCoverageRunSettings.xml
+      run: dotnet test --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover
 
-    - name: Code Coverage
-      shell: pwsh
-      run: |
-        $testCoverage = Get-ChildItem tests\PrettyPrompt.Tests\TestResults\*\*.xml
-        codecov -t ${{ secrets.CODECOV_TOKEN }} -f $testCoverage[0].ToString()
+    - name: Report Code Coverage
+      uses: codecov/codecov-action@260aa3b4b2f265b8578bc0e721e33ebf8ff53313
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: tests/PrettyPrompt.Tests/coverage.opencover.xml

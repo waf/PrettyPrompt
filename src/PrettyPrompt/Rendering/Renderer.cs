@@ -156,8 +156,41 @@ internal class Renderer : IDisposable
             highlightedLines[^1] = new Row(0);
         }
 
-        var codeWidget = new ScreenArea(ConsoleCoordinate.Zero, highlightedLines, TruncateToScreenHeight: false);
+        (highlightedLines, int bufferStart) = TrimLinesToViewPortSize(codePane, highlightedLines);
+
+        var codeWidget = new ScreenArea(ConsoleCoordinate.Zero, highlightedLines, TruncateToScreenHeight: false, ViewPortStart: bufferStart);
         return codeWidget;
+    }
+
+    /// <summary>
+    /// If there are too many lines of code to show in the current console window, return a subset
+    /// of the lines that fit in the console window ("viewport") along with the index of the line
+    /// where the viewport starts.
+    /// The lines returned will always contain the line that contains the cursor.
+    /// </summary>
+    private (Row[] rowsInViewPort, int viewPortStart) TrimLinesToViewPortSize(CodePane codePane, Row[] highlightedLines)
+    {
+        const int BlankBufferLines = 2;
+        if (highlightedLines.Length <= console.WindowHeight - BlankBufferLines)
+        {
+            return (highlightedLines, 0);
+        }
+
+        int height = console.WindowHeight - BlankBufferLines;
+        int bufferStart = codePane.Cursor.Row - height / 2;
+        int bufferEnd = bufferStart + height;
+        if (bufferStart < 0)
+        {
+            bufferStart = 0;
+            bufferEnd = bufferStart + height;
+        }
+        else if (bufferEnd > highlightedLines.Length)
+        {
+            bufferStart -= (bufferEnd - highlightedLines.Length);
+            bufferEnd = highlightedLines.Length;
+        }
+
+        return (highlightedLines[bufferStart..bufferEnd], bufferStart);
     }
 
     private ScreenArea[] BuildCompletionScreenAreas(
