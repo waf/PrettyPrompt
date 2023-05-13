@@ -1,3 +1,7 @@
+# Release 4.0.7
+
+- Support viewport scrolling if input content is longer than console height
+
 # Release 4.0.6
 
 - Bugfix: if the control modifier is pressed, don't insert the character ([#252](https://github.com/waf/PrettyPrompt/pull/252)).
