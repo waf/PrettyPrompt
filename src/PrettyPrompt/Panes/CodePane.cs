@@ -25,6 +25,7 @@ internal class CodePane : IKeyPressHandler
 {
     private readonly IConsole console;
     private readonly PromptConfiguration configuration;
+    private readonly IPromptCallbacks promptCallbacks;
     private readonly IClipboard clipboard;
     private readonly SelectionKeyPressHandler selectionHandler;
     private int topCoordinate;
@@ -113,10 +114,11 @@ internal class CodePane : IKeyPressHandler
         }
     }
 
-    public CodePane(IConsole console, PromptConfiguration configuration, IClipboard clipboard)
+    public CodePane(IConsole console, PromptConfiguration configuration, IPromptCallbacks promptCallbacks, IClipboard clipboard)
     {
         this.console = console;
         this.configuration = configuration;
+        this.promptCallbacks = promptCallbacks;
         this.clipboard = clipboard;
 
         MeasureConsole();
@@ -285,7 +287,7 @@ internal class CodePane : IKeyPressHandler
                 }
                 break;
             default:
-                if (!(char.IsControl(key.ConsoleKeyInfo.KeyChar) || key.ConsoleKeyInfo.Modifiers.HasFlag(Control)))
+                if (!(char.IsControl(key.ConsoleKeyInfo.KeyChar) || promptCallbacks.TryGetKeyPressCallbacks(key.ConsoleKeyInfo, out _)))
                 {
                     Document.InsertAtCaret(this, key.ConsoleKeyInfo.KeyChar);
                 }

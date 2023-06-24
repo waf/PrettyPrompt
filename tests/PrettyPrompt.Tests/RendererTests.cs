@@ -94,7 +94,7 @@ public class RendererTests
     private (CodePane codePane, CompletionPane completionPane, OverloadPane overloadPane) BuildUIPanes(string typedInput)
     {
         var callbacks = Substitute.For<IPromptCallbacks>();
-        var codePane = new CodePane(console, configuration, Substitute.For<IClipboard>());
+        var codePane = new CodePane(console, configuration, new PromptCallbacks(), Substitute.For<IClipboard>());
         codePane.Document.InsertAtCaret(codePane, typedInput);
         var overloadPane = new OverloadPane(codePane, callbacks, configuration)
         {

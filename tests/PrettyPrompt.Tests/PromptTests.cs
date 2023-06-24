@@ -548,6 +548,47 @@ public class PromptTests
         Assert.Equal(callbackOutput, result);
     }
 
+    [Fact] // https://github.com/waf/CSharpRepl/issues/260
+    public async Task ReadLine_NonQwertyKeyboardLayout_CurlyBraceCanBeTyped()
+    {
+        var console = ConsoleStub.NewConsole();
+        // on azerty keyboards, AltGr-4 (or ctrl-alt-4) is used to type curly brace.
+        console.StubInput(new List<ConsoleKeyInfo>
+        {
+            new ConsoleKeyInfo('{', D4, shift: false, alt: true, control: true),
+            new ConsoleKeyInfo('\0', Enter, shift: false, alt: false, control: false)
+        });
+
+        var prompt = new Prompt(console: console);
+        var result = await prompt.ReadLineAsync();
+        Assert.Equal("{", result.Text);
+    }
+
+    [Fact] // https://github.com/waf/PrettyPrompt/pull/252
+    public async Task ReadLine_KeyBindingUsesKey_KeyBindingDoesNotInsertKey()
+    {
+        // set up a keybinding with ctrl-alt-space, and then fire that keybinding.
+        // space should not be typed, and the keybinding output should be inserted.
+        var console = ConsoleStub.NewConsole();
+        console.StubInput(new List<ConsoleKeyInfo>
+        {
+            new ConsoleKeyInfo(' ', Spacebar, shift: false, alt: true, control: true),
+            new ConsoleKeyInfo('\0', Enter, shift: false, alt: false, control: false)
+        });
+
+        var prompt = new Prompt(
+            console: console,
+            callbacks: new TestPromptCallbacks(
+                (
+                    new KeyPressPattern(Control | Alt, Spacebar),
+                    (_, _, _) => Task.FromResult<KeyPressCallbackResult?>(new KeyPressCallbackResult("my-keybinding-output", null))
+                )
+            )
+        );
+        var result = await prompt.ReadLineAsync();
+        Assert.Equal("my-keybinding-output", result.Text);
+    }
+
     [Fact]
     public async Task ReadLine_StreamingInputCallbackReturnsOutput_IsReturned()
     {

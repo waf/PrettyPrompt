@@ -62,7 +62,7 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
         using var renderer = new Renderer(console, configuration);
 
         // code pane contains the code the user is typing. It does not include the prompt (i.e. "> ")
-        var codePane = new CodePane(console, configuration, clipboard);
+        var codePane = new CodePane(console, configuration, promptCallbacks, clipboard);
 
         renderer.RenderPrompt(codePane);
 
