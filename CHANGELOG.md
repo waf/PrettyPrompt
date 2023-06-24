@@ -1,3 +1,7 @@
+# Release 4.0.8
+
+- Fix AltGr handling in non-QWERTY keyboards ([#259](https://github.com/waf/PrettyPrompt/pull/259)).
+
 # Release 4.0.7
 
 - Support viewport scrolling if input content is longer than console height
