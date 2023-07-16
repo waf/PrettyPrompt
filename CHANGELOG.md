@@ -1,3 +1,9 @@
+# Release 4.0.9
+
+- Better error messages on Linux when xsel is not installed ([#264](https://github.com/waf/PrettyPrompt/pull/264)).
+- Fix crash when Shift-Delete is pressed under certain conditions ([#263](https://github.com/waf/PrettyPrompt/pull/263)).
+- Add workaround for garbled utf-8 characters on Linux ([#261](https://github.com/waf/PrettyPrompt/pull/261)).
+
 # Release 4.0.8
 
 - Fix AltGr handling in non-QWERTY keyboards ([#259](https://github.com/waf/PrettyPrompt/pull/259)).

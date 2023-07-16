@@ -2,6 +2,7 @@
 
 If you want to make a new release of PrettyPrompt:
 
+- Pull the latest `main` branch.
 - Increment the version in PrettyPrompt.csproj
 - Update the release notes
 - Make a pull request against `main`
