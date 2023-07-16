@@ -15,6 +15,7 @@ using PrettyPrompt.Highlighting;
 using PrettyPrompt.History;
 using PrettyPrompt.Panes;
 using PrettyPrompt.Rendering;
+using PrettyPrompt.TextSelection;
 using TextCopy;
 
 namespace PrettyPrompt;
@@ -50,7 +51,7 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
         this.configuration = configuration ?? new PromptConfiguration();
         this.history = new HistoryLog(persistentHistoryFilepath, this.configuration.KeyBindings);
         this.cancellationManager = new CancellationManager(this.console);
-        this.clipboard = (console is IConsoleWithClipboard consoleWithClipboard) ? consoleWithClipboard.Clipboard : new Clipboard();
+        this.clipboard = (console is IConsoleWithClipboard consoleWithClipboard) ? consoleWithClipboard.Clipboard : new WrappedClipboard();
 
         promptCallbacks = callbacks ?? new PromptCallbacks();
         this.highlighter = new SyntaxHighlighter(promptCallbacks, PromptConfiguration.HasUserOptedOutFromColor);
