@@ -292,7 +292,7 @@ internal class Document : IEquatable<Document>
         }
         else
         {
-            //smart Home implementation (repeating Home presses switch between 'non-white-space start of line' and 'start of line')
+            if (caret == 0 && !smartHome) return 0;
 
             int lineStart = 0;
             var beforeCaretIndex = (caret - 1).Clamp(0, Length - 1);
@@ -307,6 +307,7 @@ internal class Document : IEquatable<Document>
 
             if (!smartHome) return lineStart;
 
+            //smart Home implementation (repeating Home presses switch between 'non-white-space start of line' and 'start of line')
             int lineStartNonWhiteSpace = lineStart;
             for (int i = lineStart; i < Length; i++)
             {
