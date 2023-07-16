@@ -407,6 +407,27 @@ public class PromptTests
         await TestLineCutting(cutKeyPress: $"{Shift}{Delete}");
     }
 
+    /// <summary>
+    /// Triggers bug from https://github.com/waf/PrettyPrompt/issues/254.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_DeleteLineFromMultipleEmptyLines_DeletesLine()
+    {
+        var console = ConsoleStub.NewConsole();
+        var input = new List<FormattableString>
+        {
+            $"{Shift}{Enter}",
+            $"{Shift}{Enter}",
+            $"{UpArrow}{UpArrow}",
+            $"{Shift}{Delete}",
+            $"{Enter}"
+        };
+        console.StubInput(input.ToArray());
+        var prompt = new Prompt(console: console);
+        var result = await prompt.ReadLineAsync();
+        Assert.Equal(NewLine, result.Text);
+    }
+
     private static async Task TestLineCutting(FormattableString cutKeyPress)
     {
         var console = ConsoleStub.NewConsole();

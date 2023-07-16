@@ -14,7 +14,7 @@ namespace PrettyPrompt.Tests;
 public class DocumentTests
 {
     [Fact]
-    public void WordBoundariesTests_WithoutWhitspaces()
+    public void WordBoundariesTests_WithoutWhitespaces()
     {
         //empty
         var document = new Document("", caret: 0);
@@ -117,7 +117,7 @@ public class DocumentTests
     }
 
     [Fact]
-    public void WordBoundariesTests_WithWhitspaces()
+    public void WordBoundariesTests_WithWhitespaces()
     {
         //Different editors have different behaviour regarding to whitespaces.
         //Have tried Visual Studio vs Visual Studio Code vs Windows Terminal.
