@@ -121,6 +121,7 @@ internal class CodePane : IKeyPressHandler
         this.promptCallbacks = promptCallbacks;
         this.clipboard = clipboard;
 
+        TopCoordinate = console.CursorTop;
         MeasureConsole();
 
         Document = new Document();
@@ -389,10 +390,14 @@ internal class CodePane : IKeyPressHandler
 
     internal void MeasureConsole()
     {
-        TopCoordinate = Math.Max(0, console.CursorTop - console.WindowTop - Cursor.Row);
-        CodeAreaWidth = Math.Max(0, console.BufferWidth - configuration.Prompt.Length);
-        CodeAreaHeight = Math.Max(0, console.WindowHeight - TopCoordinate);
-
+        if(OperatingSystem.IsWindows())
+        {
+            // ideally we'd update this in Linux too, but https://github.com/dotnet/runtime/issues/88343 prevents it.
+            // see https://github.com/waf/PrettyPrompt/pull/231 for why we need this line at all.
+            TopCoordinate = Math.Max(0, console.CursorTop - console.WindowTop - Cursor.Row);
+        }
+        this.CodeAreaWidth = Math.Max(0, console.BufferWidth - configuration.Prompt.Length);
+        this.CodeAreaHeight = Math.Max(0, console.WindowHeight - this.TopCoordinate);
         Debug.WriteLine($"CodeAreaHeight: {CodeAreaHeight} TopCoordinate: {TopCoordinate}");
     }
 
