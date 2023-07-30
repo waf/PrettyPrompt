@@ -1,3 +1,7 @@
+# Release 4.1.0
+
+- Handle invalid history entries / history log corruption ([#267](https://github.com/waf/PrettyPrompt/pull/267)).
+
 # Release 4.0.9
 
 - Better error messages on Linux when xsel is not installed ([#264](https://github.com/waf/PrettyPrompt/pull/264)).
