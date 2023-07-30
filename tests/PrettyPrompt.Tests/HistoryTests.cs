@@ -4,9 +4,16 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+using NSubstitute;
+using PrettyPrompt.Consoles;
+using PrettyPrompt.History;
+using PrettyPrompt.Panes;
 using System;
 using System.IO;
+using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using TextCopy;
 using Xunit;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
@@ -433,5 +440,45 @@ public class HistoryTests
         console.StubInput($"b{UpArrow}{Enter}");
         var result = await prompt.ReadLineAsync();
         Assert.Equal($"a", result.Text);
+    }
+
+    /// <summary>
+    /// https://github.com/waf/PrettyPrompt/issues/266
+    /// </summary>
+    [Fact]
+    public async Task History_InvalidBase64Value_DoesNotCrash()
+    {
+        // set up history log with invalid data on the second line (it's not base64 encoded)
+        var historyPath = Path.GetTempFileName();
+        File.WriteAllLines(historyPath, new[]
+        {
+            Base64Encode("var x = 1;"),
+            "banana",
+            Base64Encode("var y = 2;")
+        });
+
+        // set up key listeners
+        var history = new HistoryLog(historyPath, new KeyBindings());
+        var codePane = new CodePane(
+            Substitute.For<IConsole>(),
+            new PromptConfiguration(),
+            Substitute.For<IPromptCallbacks>(),
+            Substitute.For<IClipboard>()
+        );
+        history.Track(codePane);
+
+        // press 'up arrow' twice -- we should never encounter the invalid line, and there shouldn't be any crashes.
+        await history.OnKeyUp(PressUpArrow(), CancellationToken.None);
+        Assert.Equal("var y = 2;", codePane.Document.GetText());
+        await history.OnKeyUp(PressUpArrow(), CancellationToken.None);
+        Assert.Equal("var x = 1;", codePane.Document.GetText());
+
+
+        static string Base64Encode(string input) =>
+            Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
+
+        static KeyPress PressUpArrow() =>
+            // return a new object every key press because keypresses can be marked as 'handled'
+            new KeyPress(new ConsoleKeyInfo('\0', UpArrow, shift: false, alt: false, control: false));
     }
 }
