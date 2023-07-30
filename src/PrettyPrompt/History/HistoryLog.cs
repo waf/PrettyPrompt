@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -71,8 +72,10 @@ internal sealed class HistoryLog : IKeyPressHandler
         // populate history
         foreach (var line in loadedHistoryLines)
         {
-            var entry = Encoding.UTF8.GetString(Convert.FromBase64String(line));
-            history.Add(entry);
+            if(TryBase64Decode(line, out var lineOfCode))
+            {
+                history.Add(lineOfCode);
+            }
         }
 
         // trim history.
@@ -216,6 +219,22 @@ internal sealed class HistoryLog : IKeyPressHandler
         {
             var entry = Convert.ToBase64String(Encoding.UTF8.GetBytes(input));
             await File.AppendAllLinesAsync(persistentHistoryFilepath, new[] { entry }).ConfigureAwait(false);
+        }
+    }
+
+    private static bool TryBase64Decode(string line, [NotNullWhen(true)] out string? decoded)
+    {
+        try
+        {
+            decoded = Encoding.UTF8.GetString(Convert.FromBase64String(line));
+            return true;
+        }
+        catch (FormatException)
+        {
+            // Don't consider invalid history entries a hard-failure. Invalid lines
+            // will eventually be trimmed once we pass MaxHistoryEntries.
+            decoded = null;
+            return false;
         }
     }
 }
