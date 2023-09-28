@@ -6,7 +6,11 @@
 
 using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Linq;
+using System.Reflection;
 using PrettyPrompt.Consoles;
+using static PrettyPrompt.Highlighting.FormattedString.TextElementsEnumerator;
 
 namespace PrettyPrompt.Highlighting;
 
@@ -38,7 +42,14 @@ public readonly struct AnsiColor : IEquatable<AnsiColor>
     public static readonly AnsiColor BrightCyan = new("96", "106", nameof(BrightCyan));
     public static readonly AnsiColor BrightWhite = new("97", "107", nameof(BrightWhite));
 
-    public static AnsiColor Rgb(byte r, byte g, byte b) => new($"38;2;{r};{g};{b}", $"48;2;{r};{g};{b}", "RGB color");
+    private static readonly Dictionary<string, AnsiColor> ansiColorNames =
+        typeof(AnsiColor)
+            .GetFields(BindingFlags.Static | BindingFlags.Public)
+            .Where(f => f.FieldType == typeof(AnsiColor))
+            .ToDictionary(f => f.Name, f => (AnsiColor)f.GetValue(null)!, StringComparer.OrdinalIgnoreCase);
+
+    public static AnsiColor Rgb(byte r, byte g, byte b)
+        => new($"38;2;{r};{g};{b}", $"48;2;{r};{g};{b}", $"#{r:X2}{g:X2}{b:X2}");
 
     public AnsiColor(string foregroundCode, string backgroundCode, string friendlyName)
     {
@@ -58,6 +69,34 @@ public readonly struct AnsiColor : IEquatable<AnsiColor>
     public static bool operator !=(AnsiColor left, AnsiColor right) => !(left == right);
 
     public override string ToString() => friendlyName;
+
+    public static bool TryParse(string input, out AnsiColor result)
+    {
+        if (PromptConfiguration.HasUserOptedOutFromColor)
+        {
+            result = White;
+            return true;
+        }
+
+        var span = input.AsSpan();
+        if (input.StartsWith('#') && span.Length == 7 &&
+            byte.TryParse(span.Slice(1, 2), NumberStyles.AllowHexSpecifier, null, out byte r) &&
+            byte.TryParse(span.Slice(3, 2), NumberStyles.AllowHexSpecifier, null, out byte g) &&
+            byte.TryParse(span.Slice(5, 2), NumberStyles.AllowHexSpecifier, null, out byte b))
+        {
+            result = Rgb(r, g, b);
+            return true;
+        }
+
+        if (ansiColorNames.TryGetValue(input, out var color))
+        {
+            result = color;
+            return true;
+        }
+
+        result = default;
+        return false;
+    }
 
     public enum Type
     {
