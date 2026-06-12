@@ -60,6 +60,22 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
     /// <inheritdoc cref="IPrompt.ReadLineAsync()" />
     public async Task<PromptResult> ReadLineAsync()
     {
+        // the incremental renderer positions the cursor with explicit escape codes and requires "\n" to be
+        // a pure line feed (no implicit return to the first column). Scope that mode to the prompt, so that
+        // output written by the host application between prompts uses standard newline behavior.
+        console.SetNewlineAutoReturn(false);
+        try
+        {
+            return await ReadLineCoreAsync().ConfigureAwait(false);
+        }
+        finally
+        {
+            console.SetNewlineAutoReturn(true);
+        }
+    }
+
+    private async Task<PromptResult> ReadLineCoreAsync()
+    {
         using var renderer = new Renderer(console, configuration);
 
         // code pane contains the code the user is typing. It does not include the prompt (i.e. "> ")

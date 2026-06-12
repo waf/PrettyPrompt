@@ -1,5 +1,8 @@
-# Release 5.0.3 (unreleased)
+# Release 6.0.0
 
+- Breaking change (Windows behavior): the `DISABLE_NEWLINE_AUTO_RETURN` console mode is now only active while `ReadLineAsync` is rendering, instead of being enabled process-wide by the `Prompt` constructor.
+    - Previously, any `"\n"` the host application wrote to stdout between prompts performed a line feed *without* returning the cursor to the first column. Such output now renders normally.
+    - Applications that compensated by writing `"\r\n"` (or `Environment.NewLine`) are unaffected, but code that relied on the line-feed-only semantics between prompts must now call the new `IConsole.SetNewlineAutoReturn(false)` itself.
 - Fix `ArgumentOutOfRangeException` crash when the overload (signature help) pane and the completion pane are open with exactly equal widths and no documentation pane is visible.
 
 # Release 5.0.2

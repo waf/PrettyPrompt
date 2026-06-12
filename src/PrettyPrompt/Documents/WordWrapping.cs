@@ -35,6 +35,7 @@ internal static class WordWrapping
         int currentLineLength = 0;
         var line = StringBuilderPool.Shared.Get(width);
         int textIndex = 0;
+        int charsDroppedFromLine = 0;
         int cursorColumn = 0;
         int cursorRow = 0;
         foreach (var chunkMemory in input.GetChunks())
@@ -43,6 +44,21 @@ internal static class WordWrapping
             for (var i = 0; i < chunk.Length; i++)
             {
                 char character = chunk[i];
+
+                // treat "\r\n" as a single line break: drop the '\r' from the wrapped content (a literal
+                // carriage return rendered to the terminal desyncs the renderer's cursor tracking), but still
+                // advance textIndex so WrappedLine.StartIndex keeps matching offsets into the original text
+                // (callers' highlight spans are keyed to them). Editable input is normalized to '\n' before it
+                // reaches the document; this matters for Prompt.RenderAnsiOutput, which accepts arbitrary text.
+                if (character == '\r' &&
+                    textIndex + 1 < input.Length &&
+                    (i + 1 < chunk.Length ? chunk[i + 1] : input[textIndex + 1]) == '\n')
+                {
+                    textIndex++;
+                    charsDroppedFromLine++;
+                    continue;
+                }
+
                 line.Append(character);
                 bool isCursorPastCharacter = caret > textIndex;
 
@@ -69,16 +85,17 @@ internal static class WordWrapping
                         cursorRow++;
                         cursorColumn = 0;
                     }
-                    lines.Add(new WrappedLine(textIndex - line.Length, line.ToString()));
+                    lines.Add(new WrappedLine(textIndex - line.Length - charsDroppedFromLine, line.ToString()));
                     line.Clear();
                     currentLineLength = 0;
+                    charsDroppedFromLine = 0;
                 }
             }
         }
 
         if (currentLineLength > 0 || input[^1] == '\n')
         {
-            lines.Add(new WrappedLine(textIndex - line.Length, line.ToString()));
+            lines.Add(new WrappedLine(textIndex - line.Length - charsDroppedFromLine, line.ToString()));
         }
 
         Debug.Assert(textIndex == input.Length);
