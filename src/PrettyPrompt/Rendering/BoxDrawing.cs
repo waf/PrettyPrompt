@@ -306,7 +306,7 @@ internal class BoxDrawing
                     //  │ completion 1 │
                     //  ................
 
-                    completionBox[0].Replace(documentationBoxWidth - 1, EdgeVerticalAndLeftHorizontalCell); // ┤
+                    completionBox[0].Replace(completionBoxWidth - 1, EdgeVerticalAndLeftHorizontalCell); // ┤
                 }
             }
             else if (overloadBoxWidth < completionBoxWidth + documentationBoxWidth)

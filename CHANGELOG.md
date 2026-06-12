@@ -1,3 +1,7 @@
+# Release 5.0.3 (unreleased)
+
+- Fix `ArgumentOutOfRangeException` crash when the overload (signature help) pane and the completion pane are open with exactly equal widths and no documentation pane is visible.
+
 # Release 5.0.2
 
 - Add `CompletionWindowOpenedAsync` and `CompletionWindowClosedAsync` callbacks to `PromptCallbacks`, invoked when the completion window opens and closes ([#293](https://github.com/waf/PrettyPrompt/pull/293)).
