@@ -48,20 +48,36 @@ public class SystemConsole : IConsole
         remove => Console.CancelKeyPress -= value;
     }
 
+    private const int STD_OUTPUT_HANDLE = -11;
+    private const uint ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004;
+    private const uint DISABLE_NEWLINE_AUTO_RETURN = 0x0008;
+
     public void InitVirtualTerminalProcessing()
     {
         if (!OperatingSystem.IsWindows()) return;
 
         // enable writing ansi escape output
-        const int STD_OUTPUT_HANDLE = -11;
-        const uint ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004;
-        const uint DISABLE_NEWLINE_AUTO_RETURN = 0x0008;
-        var iStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
-        if (!GetConsoleMode(iStdOut, out uint outConsoleMode) ||
-            !SetConsoleMode(iStdOut, outConsoleMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING | DISABLE_NEWLINE_AUTO_RETURN))
+        if (!TryModifyOutputConsoleMode(setFlags: ENABLE_VIRTUAL_TERMINAL_PROCESSING, clearFlags: 0))
         {
             throw new InvalidOperationException($"failed to set output console mode, error code: {Marshal.GetLastWin32Error()}");
         }
+    }
+
+    public void SetNewlineAutoReturn(bool enabled)
+    {
+        if (!OperatingSystem.IsWindows()) return;
+
+        // best-effort: when output is redirected there's no console mode to modify, and rendering is moot anyway.
+        _ = enabled
+            ? TryModifyOutputConsoleMode(setFlags: 0, clearFlags: DISABLE_NEWLINE_AUTO_RETURN)
+            : TryModifyOutputConsoleMode(setFlags: DISABLE_NEWLINE_AUTO_RETURN, clearFlags: 0);
+    }
+
+    private static bool TryModifyOutputConsoleMode(uint setFlags, uint clearFlags)
+    {
+        var iStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+        return GetConsoleMode(iStdOut, out uint outConsoleMode)
+            && SetConsoleMode(iStdOut, (outConsoleMode | setFlags) & ~clearFlags);
     }
 
     [DllImport("kernel32", SetLastError = true)]

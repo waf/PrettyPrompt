@@ -28,6 +28,36 @@ public class WordWrappingTests
     }
 
     [Fact]
+    public void WrapEditableCharacters_WindowsLineEndings_TreatedAsSingleLineBreak()
+    {
+        // "\r\n" must wrap exactly like "\n": the '\r' is dropped from the line content (a literal carriage
+        // return would corrupt rendering), but StartIndex still refers to offsets in the original text.
+        var text = "ab\r\ncd\r\n";
+        var wrapped = WordWrapping.WrapEditableCharacters(new StringBuilder(text), caret: 0, width: 20);
+
+        Assert.Equal(
+            new[]
+            {
+                new WrappedLine(0, "ab\n"),
+                new WrappedLine(4, "cd\n"),
+                // text ending in a line break always yields a trailing empty line, same as "\n"-only input
+                new WrappedLine(8, ""),
+            },
+            wrapped.WrappedLines
+        );
+    }
+
+    [Fact]
+    public void WrapEditableCharacters_LoneCarriageReturn_IsLeftUntouched()
+    {
+        // only the '\r' of a "\r\n" pair is dropped; a lone '\r' stays in the content as before.
+        var text = "ab\rcd";
+        var wrapped = WordWrapping.WrapEditableCharacters(new StringBuilder(text), caret: 0, width: 20);
+
+        Assert.Equal(new[] { new WrappedLine(0, "ab\rcd") }, wrapped.WrappedLines);
+    }
+
+    [Fact]
     public void WrapEditableCharacters_DoubleWidthCharacters_UsesStringWidth()
     {
         var text = "每个人都有他的作战策略，直到脸上中了一拳。";

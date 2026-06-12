@@ -62,6 +62,16 @@ public interface IConsole
     /// </summary>
     void InitVirtualTerminalProcessing();
 
+    /// <summary>
+    /// Controls whether writing a line feed ("\n") also returns the cursor to the first column.
+    /// The prompt disables auto-return while it renders (the renderer positions the cursor with explicit
+    /// escape codes and requires "\n" to be a pure line feed), and re-enables it when
+    /// <see cref="Prompt.ReadLineAsync"/> returns, so output written by the host application between
+    /// prompts behaves normally. Only meaningful on Windows (the DISABLE_NEWLINE_AUTO_RETURN console mode
+    /// flag); terminals on other platforms translate "\n" to "\r\n" themselves via the ONLCR output flag.
+    /// </summary>
+    void SetNewlineAutoReturn(bool enabled) { }
+
     event ConsoleCancelEventHandler CancelKeyPress;
 
     #region Write StringBuilder default implementations
