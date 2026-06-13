@@ -93,7 +93,11 @@ internal static class WordWrapping
             }
         }
 
-        if (currentLineLength > 0 || input[^1] == '\n')
+        // Flush on `line.Length`, not `currentLineLength`: a trailing line consisting only of zero-width
+        // characters (e.g. a lone combining mark such as the Thai tone mark U+0E49) has zero display width but
+        // real content that must still be emitted. Testing display width here dropped that content and left the
+        // caret column pointing past the (empty) trailing line, tripping the cursor assertion. See issue #270.
+        if (line.Length > 0 || input[^1] == '\n')
         {
             lines.Add(new WrappedLine(textIndex - line.Length - charsDroppedFromLine, line.ToString()));
         }
