@@ -73,6 +73,12 @@ public class SystemConsole : IConsole
             : TryModifyOutputConsoleMode(setFlags: DISABLE_NEWLINE_AUTO_RETURN, clearFlags: 0);
     }
 
+    public void SetModifyOtherKeys(bool enabled)
+        // A pure ANSI sequence (unlike the Windows console-mode flags above), so it goes out the normal
+        // output stream. Terminals that don't understand it ignore it. Harmless on Windows: .NET reads
+        // keys via ReadConsoleInput, not the VT input stream, so it doesn't change how keys are reported.
+        => Write(enabled ? AnsiEscapeCodes.EnableModifyOtherKeys : AnsiEscapeCodes.DisableModifyOtherKeys);
+
     private static bool TryModifyOutputConsoleMode(uint setFlags, uint clearFlags)
     {
         var iStdOut = GetStdHandle(STD_OUTPUT_HANDLE);

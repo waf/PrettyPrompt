@@ -64,12 +64,16 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
         // a pure line feed (no implicit return to the first column). Scope that mode to the prompt, so that
         // output written by the host application between prompts uses standard newline behavior.
         console.SetNewlineAutoReturn(false);
+        // ask the terminal to report modified Enter (Shift/Ctrl/Alt+Enter) as distinct escape sequences;
+        // without this they all arrive as a bare CR on Unix/macOS. Scoped to the prompt and reset below.
+        console.SetModifyOtherKeys(true);
         try
         {
             return await ReadLineCoreAsync().ConfigureAwait(false);
         }
         finally
         {
+            console.SetModifyOtherKeys(false);
             console.SetNewlineAutoReturn(true);
         }
     }

@@ -7,6 +7,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
 namespace PrettyPrompt.Consoles;
@@ -106,6 +107,15 @@ public class KeyPress
     private static KeyPress? MapInputEscapeSequence(List<ConsoleKeyInfo> keys)
     {
         var sequence = new string(keys.Select(key => key.KeyChar).ToArray());
+
+        // xterm "modifyOtherKeys" reports otherwise-ambiguous combinations (Shift/Ctrl/Alt + Enter, which
+        // all normally arrive as a bare CR) as ESC [ 27 ; <modifier> ; <keycode> ~. Handle it before the
+        // literal lookups below, since the modifier and keycode vary. See AnsiEscapeCodes.EnableModifyOtherKeys.
+        if (TryMapModifyOtherKeys(sequence, out var modifiedKeyPress))
+        {
+            return modifiedKeyPress;
+        }
+
         return sequence switch
         {
             "\u001b1;5P" => new KeyPress(ConsoleKey.F1.ToKeyInfo('\0', control: true)),
@@ -122,6 +132,42 @@ public class KeyPress
             "\u001b24;5~" => new KeyPress(ConsoleKey.F12.ToKeyInfo('\0', control: true)),
             _ => null
         };
+    }
+
+    /// <summary>
+    /// Parses an xterm "modifyOtherKeys" CSI 27 sequence of the form ESC [ 27 ; modifier ; keycode ~.
+    /// The modifier is encoded as 1 + a bitmask of Shift(1), Alt(2), Control(4). We only special-case the
+    /// Enter key (keycode 13) here - the combination that's otherwise lost on Unix/macOS; any other key is
+    /// left to .NET's normal handling. .NET's Unix console parser strips the leading '[' (compare the
+    /// function-key sequences above, which also lack it), so both forms are accepted.
+    /// </summary>
+    private static bool TryMapModifyOtherKeys(string sequence, [NotNullWhen(true)] out KeyPress? keyPress)
+    {
+        keyPress = null;
+
+        string body;
+        if (sequence.StartsWith("[27;", StringComparison.Ordinal)) body = sequence[2..];
+        else if (sequence.StartsWith("27;", StringComparison.Ordinal)) body = sequence[1..];
+        else return false;
+
+        if (!body.EndsWith("~", StringComparison.Ordinal)) return false;
+
+        var parts = body[..^1].Split(';'); // ["27", "<modifier>", "<keycode>"]
+        if (parts.Length != 3 ||
+            !int.TryParse(parts[1], out var modifier) ||
+            !int.TryParse(parts[2], out var keyCode) ||
+            keyCode != 13) // 13 == '\r'; only Enter is ambiguous enough to need this.
+        {
+            return false;
+        }
+
+        var modifierMask = modifier - 1;
+        keyPress = new KeyPress(ConsoleKey.Enter.ToKeyInfo(
+            '\r', // the KeyPress constructor normalizes this to '\n' while preserving the modifiers.
+            shift: (modifierMask & 1) != 0,
+            alt: (modifierMask & 2) != 0,
+            control: (modifierMask & 4) != 0));
+        return true;
     }
 
     /// <summary>

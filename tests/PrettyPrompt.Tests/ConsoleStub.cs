@@ -22,8 +22,16 @@ namespace PrettyPrompt.Tests;
 internal static class ConsoleStub
 {
     private static readonly Regex FormatStringSplit = new(@"({\d+}|.)", RegexOptions.Compiled);
-    private static readonly Semaphore semaphore = new(1, 1, nameof(ConsoleStub) + "Semaphore"); //interprocess
+    private static readonly Semaphore semaphore = CreateClipboardSemaphore();
     private static bool isClipboardProtected;
+
+    // Named semaphores are interprocess, but only Windows (and Linux) support them - macOS throws
+    // PlatformNotSupportedException. The state this guards (isClipboardProtected and the in-memory
+    // StubClipboard) is per-process anyway, so an unnamed semaphore is equivalent where named isn't available.
+    private static Semaphore CreateClipboardSemaphore()
+        => OperatingSystem.IsWindows()
+            ? new Semaphore(1, 1, nameof(ConsoleStub) + "Semaphore")
+            : new Semaphore(1, 1);
 
     public static IConsoleWithClipboard NewConsole(int width = 100, int height = 100)
     {

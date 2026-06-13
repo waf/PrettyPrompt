@@ -51,7 +51,9 @@ public class RendererTests
 
         // because the console height is 5, with 2 lines of padding, and the cursor is on the final line,
         // we should only render the last 3 lines.  there will be some ansi escape sequences for newlines here as well.
-        const string renderedNewlineWithCursorReposition = " \n[24D";
+        // After "\n", Windows preserves the column (DISABLE_NEWLINE_AUTO_RETURN) and moves left to the next
+        // line's content; other platforms return to column 1 (ONLCR) and move right to it.
+        string renderedNewlineWithCursorReposition = " \n" + (OperatingSystem.IsWindows() ? AnsiEscapeCodes.GetMoveCursorLeft(24) : AnsiEscapeCodes.GetMoveCursorRight(2));
         var expectedRender = string.Join(renderedNewlineWithCursorReposition, typedInput.Split('\n').TakeLast(ConsoleHeight - 2));
         Assert.Equal(expectedRender, output);
     }
@@ -85,8 +87,10 @@ public class RendererTests
 
         // because the console height is 5, with 2 lines of padding, with the cursor on the first line,
         // we should only render the first 3 lines. There will be some ansi escape sequences for newlines here as well.
-        const string renderedNewlineWithCursorReposition = " \n[24D";
-        const string cursorRepositionToFirstLine = " \n[3A[24D";
+        // After "\n", Windows preserves the column (DISABLE_NEWLINE_AUTO_RETURN) and moves left to the next
+        // line's content; other platforms return to column 1 (ONLCR) and move right to it.
+        string renderedNewlineWithCursorReposition = " \n" + (OperatingSystem.IsWindows() ? AnsiEscapeCodes.GetMoveCursorLeft(24) : AnsiEscapeCodes.GetMoveCursorRight(2));
+        string cursorRepositionToFirstLine = " \n" + AnsiEscapeCodes.GetMoveCursorUp(3) + (OperatingSystem.IsWindows() ? AnsiEscapeCodes.GetMoveCursorLeft(24) : AnsiEscapeCodes.GetMoveCursorRight(2));
         var expectedRender = string.Join(renderedNewlineWithCursorReposition, typedInput.Split('\n').Take(ConsoleHeight - 2)) + cursorRepositionToFirstLine;
         Assert.Equal(expectedRender, output);
     }

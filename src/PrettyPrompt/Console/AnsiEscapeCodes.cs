@@ -23,6 +23,14 @@ public static class AnsiEscapeCodes
     public const string ClearEntireScreen = $"{Escape}[2J";
     public static readonly string Reset = $"{Escape}[{ResetChar}m";
 
+    // xterm "modifyOtherKeys" (XTMODKEYS, resource Pp=4). When enabled, combinations that otherwise
+    // share an encoding with an unmodified key - notably Shift/Ctrl/Alt+Enter, which all arrive as a
+    // bare CR - are reported as distinct "CSI 27 ; <modifier> ; <keycode> ~" sequences, which we parse
+    // in KeyPress.MapInputEscapeSequence. Level 2 is required: level 1 explicitly excludes the "well
+    // known" keys (Enter, Tab, Backspace, Escape). See https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
+    public const string EnableModifyOtherKeys = $"{Escape}[>4;2m";
+    public const string DisableModifyOtherKeys = $"{Escape}[>4;0m";
+
     /// <param name="index">Index starts at 1.</param>
     public static string GetMoveCursorToColumn(int index) => $"{Escape}[{index}G";
 

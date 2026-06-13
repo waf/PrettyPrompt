@@ -72,6 +72,17 @@ public interface IConsole
     /// </summary>
     void SetNewlineAutoReturn(bool enabled) { }
 
+    /// <summary>
+    /// Enables xterm "modifyOtherKeys" mode for the duration of the prompt, so that key combinations
+    /// that normally share an encoding with an unmodified key (Shift/Ctrl/Alt+Enter all otherwise arrive
+    /// as a bare CR, indistinguishable from plain Enter) are reported as distinct CSI 27 escape sequences
+    /// that <see cref="KeyPress"/> can parse. The prompt enables this on entry and resets it when
+    /// <see cref="Prompt.ReadLineAsync"/> returns. This is only relevant on Unix/macOS, where .NET
+    /// reconstructs keys from the terminal byte stream; on Windows the key events already carry modifiers.
+    /// No-op for non-system consoles (e.g. unit-test stubs).
+    /// </summary>
+    void SetModifyOtherKeys(bool enabled) { }
+
     event ConsoleCancelEventHandler CancelKeyPress;
 
     #region Write StringBuilder default implementations
