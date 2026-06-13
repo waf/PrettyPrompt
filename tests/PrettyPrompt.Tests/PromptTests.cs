@@ -100,10 +100,13 @@ public class PromptTests
 
         var finalOutput = console.GetFinalOutput();
 
+        // After "\n", Windows preserves the cursor column (DISABLE_NEWLINE_AUTO_RETURN) and moves left to the
+        // wrapped line's start; other platforms return to column 1 (ONLCR) and move right to it.
+        var moveToWrappedLine = OperatingSystem.IsWindows() ? GetMoveCursorLeft(2) : GetMoveCursorRight(2);
         Assert.Equal(
-            expected: "111\n" + GetMoveCursorLeft(2) +
-                      "222\n" + GetMoveCursorLeft(2) +
-                      "333\n" + GetMoveCursorLeft(2),
+            expected: "111\n" + moveToWrappedLine +
+                      "222\n" + moveToWrappedLine +
+                      "333\n" + moveToWrappedLine,
             actual: finalOutput
         );
     }
@@ -542,7 +545,8 @@ public class PromptTests
             var prompt = new Prompt(console: console);
             var result = await prompt.ReadLineAsync();
             Assert.True(result.IsSuccess);
-            Assert.Equal(Text, result.Text);
+            // the prompt normalizes line endings to the environment's newline ("\r\n" on Windows, "\n" elsewhere).
+            Assert.Equal(Text.ReplaceLineEndings(), result.Text);
         }
     }
 

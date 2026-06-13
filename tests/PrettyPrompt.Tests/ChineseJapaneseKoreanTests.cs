@@ -1,4 +1,5 @@
-﻿using PrettyPrompt.Consoles;
+﻿using System;
+using PrettyPrompt.Consoles;
 using System.Threading.Tasks;
 using Xunit;
 using static System.ConsoleKey;
@@ -88,7 +89,10 @@ public class ChineseJapaneseKoreanTests
         Assert.Equal("> ", output[1]);
         Assert.Equal("书", output[2]);
         Assert.Equal("桌", output[3]);
-        Assert.Equal("上\n" + AnsiEscapeCodes.GetMoveCursorLeft(5), output[4]);
+        // After the wrap "\n", Windows preserves the column and moves left 5 to the next line's content; other
+        // platforms return to column 1 (ONLCR), then the full-width char's advance leaves a 1-column move-right.
+        var afterWrap = OperatingSystem.IsWindows() ? AnsiEscapeCodes.GetMoveCursorLeft(5) : AnsiEscapeCodes.GetMoveCursorRight(1);
+        Assert.Equal("上\n" + afterWrap, output[4]);
         Assert.Equal("有", output[5]);
     }
 }

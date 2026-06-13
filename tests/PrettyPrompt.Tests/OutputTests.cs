@@ -1,4 +1,5 @@
-﻿using PrettyPrompt.Highlighting;
+﻿using System;
+using PrettyPrompt.Highlighting;
 using Xunit;
 using static PrettyPrompt.Consoles.AnsiEscapeCodes;
 using static PrettyPrompt.Highlighting.AnsiColor;
@@ -65,12 +66,16 @@ public class OutputTests
                 new FormatSpan(8, 4, format2),
         }, 4);
 
+        // After "\n", Windows preserves the column and moves left 3 back to the wrapped line's start. On other
+        // platforms the terminal returns to column 1 (ONLCR); the origin here is column 0, so the renderer's
+        // reset-to-column-1 leaves a 1-column move-left. The final move (after "put", no newline) is unaffected.
+        var afterWrap = OperatingSystem.IsWindows() ? GetMoveCursorLeft(3) : GetMoveCursorLeft(1);
         Assert.Equal(
             expected:
-                ToAnsiEscapeSequenceSlow(format1) + "here\n" + GetMoveCursorLeft(3) +
-                Reset + " is \n" + GetMoveCursorLeft(3) +
-                ToAnsiEscapeSequenceSlow(format2) + "some\n" + GetMoveCursorLeft(3) +
-                Reset + " out\n" + GetMoveCursorLeft(3) +
+                ToAnsiEscapeSequenceSlow(format1) + "here\n" + afterWrap +
+                Reset + " is \n" + afterWrap +
+                ToAnsiEscapeSequenceSlow(format2) + "some\n" + afterWrap +
+                Reset + " out\n" + afterWrap +
                 "put" + GetMoveCursorLeft(3),
             actual: output
         );

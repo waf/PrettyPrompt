@@ -26,6 +26,14 @@ public class KeyPressTests
                 ($"\u001b21;5~", ConsoleKey.F10, ConsoleModifiers.Control),
                 ($"\u001b23;5~", ConsoleKey.F11, ConsoleModifiers.Control),
                 ($"\u001b24;5~", ConsoleKey.F12, ConsoleModifiers.Control),
+                // xterm modifyOtherKeys: ESC [ 27 ; <modifier> ; 13 ~ for the various Enter combinations.
+                // .NET strips the leading '[', but the parser accepts it either way (last case keeps it).
+                ($"27;2;13~", ConsoleKey.Enter, ConsoleModifiers.Shift),
+                ($"27;3;13~", ConsoleKey.Enter, ConsoleModifiers.Alt),
+                ($"27;5;13~", ConsoleKey.Enter, ConsoleModifiers.Control),
+                ($"27;6;13~", ConsoleKey.Enter, ConsoleModifiers.Control | ConsoleModifiers.Shift),
+                ($"27;1;13~", ConsoleKey.Enter, 0),
+                ($"[27;2;13~", ConsoleKey.Enter, ConsoleModifiers.Shift),
                 ($"a", ConsoleKey.A, 0),
                 ($"pasted text", ConsoleKey.Insert, ConsoleModifiers.Shift)
         };
