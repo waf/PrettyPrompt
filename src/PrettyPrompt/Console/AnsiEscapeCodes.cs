@@ -26,9 +26,12 @@ public static class AnsiEscapeCodes
     // xterm "modifyOtherKeys" (XTMODKEYS, resource Pp=4). When enabled, combinations that otherwise
     // share an encoding with an unmodified key - notably Shift/Ctrl/Alt+Enter, which all arrive as a
     // bare CR - are reported as distinct "CSI 27 ; <modifier> ; <keycode> ~" sequences, which we parse
-    // in KeyPress.MapInputEscapeSequence. Level 2 is required: level 1 explicitly excludes the "well
-    // known" keys (Enter, Tab, Backspace, Escape). See https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
-    public const string EnableModifyOtherKeys = $"{Escape}[>4;2m";
+    // in KeyPress.MapInputEscapeSequence. We use LEVEL 1, not 2: level 1 leaves keys with well-known
+    // behavior alone (Shift+letter still produces its capital via the keyboard layout), while level 2
+    // encodes *everything*, turning Shift+C into an escape sequence and breaking ordinary typing -
+    // and shifted punctuation can't be reconstructed without layout knowledge anyway.
+    // See https://invisible-island.net/xterm/ctlseqs/ctlseqs.html
+    public const string EnableModifyOtherKeys = $"{Escape}[>4;1m";
     public const string DisableModifyOtherKeys = $"{Escape}[>4;0m";
 
     /// <param name="index">Index starts at 1.</param>

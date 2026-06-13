@@ -136,10 +136,12 @@ public class KeyPress
 
     /// <summary>
     /// Parses an xterm "modifyOtherKeys" CSI 27 sequence of the form ESC [ 27 ; modifier ; keycode ~.
-    /// The modifier is encoded as 1 + a bitmask of Shift(1), Alt(2), Control(4). We only special-case the
-    /// Enter key (keycode 13) here - the combination that's otherwise lost on Unix/macOS; any other key is
-    /// left to .NET's normal handling. .NET's Unix console parser strips the leading '[' (compare the
-    /// function-key sequences above, which also lack it), so both forms are accepted.
+    /// The modifier is encoded as 1 + a bitmask of Shift(1), Alt(2), Control(4); the keycode is the Unicode
+    /// value of the base key. We enable level 1 (see <see cref="AnsiEscapeCodes.EnableModifyOtherKeys"/>), so we
+    /// only see combinations the terminal would otherwise have to encode ambiguously (Shift/Ctrl/Alt+Enter,
+    /// Ctrl/Alt+letter, ...). We decode all of them rather than just Enter, so none get dropped - since we asked
+    /// the terminal to emit these, anything we didn't translate would otherwise vanish. .NET's Unix console parser
+    /// strips the leading '[' (compare the function-key sequences above, which also lack it), so both are accepted.
     /// </summary>
     private static bool TryMapModifyOtherKeys(string sequence, [NotNullWhen(true)] out KeyPress? keyPress)
     {
@@ -155,19 +157,46 @@ public class KeyPress
         var parts = body[..^1].Split(';'); // ["27", "<modifier>", "<keycode>"]
         if (parts.Length != 3 ||
             !int.TryParse(parts[1], out var modifier) ||
-            !int.TryParse(parts[2], out var keyCode) ||
-            keyCode != 13) // 13 == '\r'; only Enter is ambiguous enough to need this.
+            !int.TryParse(parts[2], out var keyCode))
         {
             return false;
         }
 
         var modifierMask = modifier - 1;
-        keyPress = new KeyPress(ConsoleKey.Enter.ToKeyInfo(
-            '\r', // the KeyPress constructor normalizes this to '\n' while preserving the modifiers.
-            shift: (modifierMask & 1) != 0,
-            alt: (modifierMask & 2) != 0,
-            control: (modifierMask & 4) != 0));
+        var shift = (modifierMask & 1) != 0;
+        var alt = (modifierMask & 2) != 0;
+        var control = (modifierMask & 4) != 0;
+
+        var (key, keyChar) = MapModifyOtherKeysCode(keyCode, shift, control);
+        // For Enter, the KeyPress constructor normalizes the '\r' KeyChar to '\n' while preserving the modifiers.
+        keyPress = new KeyPress(new ConsoleKeyInfo(keyChar, key, shift, alt, control));
         return true;
+    }
+
+    /// <summary>
+    /// Maps a modifyOtherKeys keycode (the Unicode value of the base key) to a <see cref="ConsoleKey"/> and the
+    /// glyph to insert. Bindings driven by these (Ctrl/Alt+letter, Enter, ...) match on Key+Modifiers, so the
+    /// glyph only matters for keys that actually produce text. Because we enable level 1, plain Shift+printable
+    /// is left to the keyboard layout and won't arrive here - so we never reconstruct shifted punctuation (which
+    /// we couldn't without layout knowledge); letters are upper-cased for the bare-Shift case just in case.
+    /// </summary>
+    private static (ConsoleKey Key, char KeyChar) MapModifyOtherKeysCode(int code, bool shift, bool control)
+    {
+        switch (code)
+        {
+            case 13: return (ConsoleKey.Enter, '\r');
+            case 9: return (ConsoleKey.Tab, '\t');
+            case 27: return (ConsoleKey.Escape, (char)27);
+            case 8 or 127: return (ConsoleKey.Backspace, '\b');
+            case 32: return (ConsoleKey.Spacebar, ' ');
+        }
+
+        // Control combinations are matched on Key+Modifiers, so their glyph is irrelevant - use '\0'. Otherwise
+        // pass the character through, upper-casing a bare-shifted letter so it still types as a capital.
+        if (code is >= 'a' and <= 'z') return (ConsoleKey.A + (code - 'a'), control ? '\0' : (char)(shift ? code - 32 : code));
+        if (code is >= 'A' and <= 'Z') return (ConsoleKey.A + (code - 'A'), control ? '\0' : (char)code);
+        if (code is >= '0' and <= '9') return ((ConsoleKey)code, control ? '\0' : (char)code); // ConsoleKey.D0..D9 == '0'..'9'
+        return (default, control ? '\0' : (char)code);
     }
 
     /// <summary>

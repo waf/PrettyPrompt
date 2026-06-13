@@ -115,6 +115,19 @@ public class WordWrappingTests
     }
 
     [Fact]
+    public void WrapEditableCharacters_LoneCombiningMark_KeepsContentAndCursor()
+    {
+        // A lone combining mark (Thai tone mark U+0E49, typed without a base character) has zero display width
+        // but is real content. It must be kept on its line and the caret must land just past it - previously the
+        // zero-width line was dropped and the caret column ran past the empty trailing line, crashing. See #270.
+        var text = "้";
+        var wrapped = WordWrapping.WrapEditableCharacters(new StringBuilder(text), caret: 1, width: 20);
+
+        Assert.Equal(new[] { new WrappedLine(0, "้") }, wrapped.WrappedLines);
+        Assert.Equal(new ConsoleCoordinate(0, 1), wrapped.Cursor);
+    }
+
+    [Fact]
     public void WrapWords_GivenLongText_WrapsWords()
     {
         var text = "Here is some text that should be wrapped word by word. supercalifragilisticexpialidocious";

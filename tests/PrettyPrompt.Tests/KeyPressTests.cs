@@ -34,6 +34,9 @@ public class KeyPressTests
                 ($"27;6;13~", ConsoleKey.Enter, ConsoleModifiers.Control | ConsoleModifiers.Shift),
                 ($"27;1;13~", ConsoleKey.Enter, 0),
                 ($"[27;2;13~", ConsoleKey.Enter, ConsoleModifiers.Shift),
+                // Non-Enter combinations must also be decoded (not dropped) once modifyOtherKeys is enabled.
+                ($"27;2;99~", ConsoleKey.C, ConsoleModifiers.Shift),   // Shift+c (base keycode 99 'c')
+                ($"27;5;97~", ConsoleKey.A, ConsoleModifiers.Control), // Ctrl+a
                 ($"a", ConsoleKey.A, 0),
                 ($"pasted text", ConsoleKey.Insert, ConsoleModifiers.Shift)
         };
