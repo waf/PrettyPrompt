@@ -1,3 +1,8 @@
+# Release 6.0.1
+
+- Improve macOS and Linux key handling ([#297](https://github.com/waf/PrettyPrompt/pull/297)).
+- Additional macOS keybinding and general typing improvements ([#298](https://github.com/waf/PrettyPrompt/pull/298)).
+
 # Release 6.0.0
 
 - Breaking change (Windows behavior): the `DISABLE_NEWLINE_AUTO_RETURN` console mode is now only active while `ReadLineAsync` is rendering, instead of being enabled process-wide by the `Prompt` constructor.
