@@ -95,6 +95,28 @@ public class RendererTests
         Assert.Equal(expectedRender, output);
     }
 
+    [Fact]
+    public void RenderPrompt_StartedAtBottomOfWindow_ReservesRoomForCompletionPane()
+    {
+        // prompt starts on the very bottom row of the window
+        const int Height = 30;
+        var console = ConsoleStub.NewConsole(width: 100, height: Height);
+        console.CursorTop.Returns(Height - 1);
+        console.WindowTop.Returns(0);
+        var configuration = new PromptConfiguration();
+        var renderer = new Renderer(console, configuration);
+        var codePane = new CodePane(console, configuration, new PromptCallbacks(), Substitute.For<IClipboard>());
+
+        var reserved = codePane.EmptySpaceAtBottomOfWindowHeight;
+
+        renderer.RenderPrompt(codePane);
+
+        // RenderPrompt writes `reserved` blank lines to make room for the completion pane; since the prompt
+        // started at the bottom that scrolls the buffer up, moving the prompt up by `reserved` rows.
+        Assert.Equal(Height - 1 - reserved, codePane.TopCoordinate);
+        Assert.Equal(reserved + 1, codePane.CodeAreaHeight);
+    }
+
     private (CodePane codePane, CompletionPane completionPane, OverloadPane overloadPane) BuildUIPanes(string typedInput)
     {
         var callbacks = Substitute.For<IPromptCallbacks>();

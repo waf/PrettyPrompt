@@ -1,3 +1,7 @@
+# Release 6.0.2
+
+- Fix broken completion list rendering when the prompt starts near the bottom of the window on macOS/Linux ([waf/CSharpRepl#395](https://github.com/waf/CSharpRepl/issues/395)).
+
 # Release 6.0.1
 
 - Improve macOS and Linux key handling ([#297](https://github.com/waf/PrettyPrompt/pull/297)).

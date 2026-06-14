@@ -44,6 +44,10 @@ internal class Renderer : IDisposable
         var newLinesCount = codePane.EmptySpaceAtBottomOfWindowHeight;
         console.Write(new string('\n', newLinesCount) + GetMoveCursorUp(newLinesCount) + GetMoveCursorToColumn(1) + Reset);
         console.Write(configuration.Prompt);
+
+        // those newlines may have scrolled the buffer up (prompt started near the window bottom); let the code pane
+        // correct TopCoordinate, since on non-Windows it can't re-derive it from the OS cursor.
+        codePane.AdjustTopCoordinateForReservedLines(newLinesCount);
     }
 
     public void RenderOutput(
