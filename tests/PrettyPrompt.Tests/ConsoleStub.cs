@@ -368,3 +368,35 @@ public abstract class ConsoleWithClipboard : IConsoleWithClipboard
     public void WriteErrorLine(StringBuilder value, bool hideCursor) => WriteErrorLine(value.ToString());
     public void WriteLine(StringBuilder value, bool hideCursor) => WriteLine(value.ToString());
 }
+
+/// <summary>
+/// An <see cref="IClipboard"/> that always fails, used to simulate an unavailable or flaky OS clipboard.
+/// The default message mimics a transient failure (e.g. the TextCopy helper process timing out); pass a
+/// message containing "Could not execute process" to mimic a missing xsel/clip.exe executable.
+/// See https://github.com/waf/CSharpRepl/issues/327.
+/// </summary>
+internal sealed class ThrowingClipboard : IClipboard
+{
+    private readonly string message;
+
+    public ThrowingClipboard(string message = "Process timed out.")
+    {
+        this.message = message;
+    }
+
+    public string? GetText() => throw new Exception(message);
+
+    public Task<string?> GetTextAsync(CancellationToken cancellation = default)
+    {
+        cancellation.ThrowIfCancellationRequested();
+        throw new Exception(message);
+    }
+
+    public void SetText(string text) => throw new Exception(message);
+
+    public Task SetTextAsync(string text, CancellationToken cancellation = default)
+    {
+        cancellation.ThrowIfCancellationRequested();
+        throw new Exception(message);
+    }
+}

@@ -16,7 +16,6 @@ using PrettyPrompt.History;
 using PrettyPrompt.Panes;
 using PrettyPrompt.Rendering;
 using PrettyPrompt.TextSelection;
-using TextCopy;
 
 namespace PrettyPrompt;
 
@@ -27,7 +26,7 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
     private readonly HistoryLog history;
     private readonly PromptConfiguration configuration;
     private readonly CancellationManager cancellationManager;
-    private readonly IClipboard clipboard;
+    private readonly WrappedClipboard clipboard;
     private readonly SyntaxHighlighter highlighter;
     private readonly IPromptCallbacks promptCallbacks;
     private Task? savePersistentHistoryTask;
@@ -51,7 +50,7 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
         this.configuration = configuration ?? new PromptConfiguration();
         this.history = new HistoryLog(persistentHistoryFilepath, this.configuration.KeyBindings);
         this.cancellationManager = new CancellationManager(this.console);
-        this.clipboard = (console is IConsoleWithClipboard consoleWithClipboard) ? consoleWithClipboard.Clipboard : new WrappedClipboard();
+        this.clipboard = (console is IConsoleWithClipboard consoleWithClipboard) ? new WrappedClipboard(consoleWithClipboard.Clipboard) : new WrappedClipboard();
 
         promptCallbacks = callbacks ?? new PromptCallbacks();
         this.highlighter = new SyntaxHighlighter(promptCallbacks, PromptConfiguration.HasUserOptedOutFromColor);

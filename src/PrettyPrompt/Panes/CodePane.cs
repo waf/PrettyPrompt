@@ -4,18 +4,13 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Documents;
 using PrettyPrompt.Rendering;
 using PrettyPrompt.TextSelection;
-using TextCopy;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
 
@@ -26,7 +21,7 @@ internal class CodePane : IKeyPressHandler
     private readonly IConsole console;
     private readonly PromptConfiguration configuration;
     private readonly IPromptCallbacks promptCallbacks;
-    private readonly IClipboard clipboard;
+    private readonly WrappedClipboard clipboard;
     private readonly SelectionKeyPressHandler selectionHandler;
     private int topCoordinate;
     private int codeAreaWidth;
@@ -115,7 +110,7 @@ internal class CodePane : IKeyPressHandler
         }
     }
 
-    public CodePane(IConsole console, PromptConfiguration configuration, IPromptCallbacks promptCallbacks, IClipboard clipboard)
+    public CodePane(IConsole console, PromptConfiguration configuration, IPromptCallbacks promptCallbacks, WrappedClipboard clipboard)
     {
         this.console = console;
         this.configuration = configuration;
@@ -267,9 +262,11 @@ internal class CodePane : IKeyPressHandler
             case (Control, X) when selection.TryGet(out var selectionValue):
                 {
                     var cutContent = Document.GetText(selectionValue).ToString();
-                    Selection = null;
-                    Document.Remove(this, selectionValue);
-                    await clipboard.SetTextAsync(cutContent, cancellationToken).ConfigureAwait(false);
+                    if (await clipboard.TrySetTextAsync(cutContent, cancellationToken).ConfigureAwait(false))
+                    {
+                        Selection = null;
+                        Document.Remove(this, selectionValue);
+                    }
                     break;
                 }
             case (Control, X) or (Shift, Delete):
@@ -285,10 +282,16 @@ internal class CodePane : IKeyPressHandler
 
                     if (key.ObjectPattern is (Control, X))
                     {
-                        await clipboard.SetTextAsync(Document.GetText(span).ToString(), cancellationToken).ConfigureAwait(false);
+                        if (await clipboard.TrySetTextAsync(Document.GetText(span).ToString(), cancellationToken).ConfigureAwait(false))
+                        {
+                            Document.Remove(this, span);
+                        }
                     }
-
-                    Document.Remove(this, span);
+                    else
+                    {
+                        // Shift+Delete just deletes the line; it never touches the clipboard.
+                        Document.Remove(this, span);
+                    }
                     break;
                 }
             case (Control, K) when selection is null: // Ctrl+K = delete from caret to end of the current line (emacs/readline kill-line); deletes only, does not write the clipboard
@@ -308,19 +311,23 @@ internal class CodePane : IKeyPressHandler
             case (Control, C) when selection.TryGet(out var selectionValue):
                 {
                     var copiedContent = Document.GetText(selectionValue).ToString();
-                    await clipboard.SetTextAsync(copiedContent, cancellationToken).ConfigureAwait(false);
+                    // copy doesn't mutate the document, so a failed clipboard write is simply a no-op
+                    _ = await clipboard.TrySetTextAsync(copiedContent, cancellationToken).ConfigureAwait(false);
                     break;
                 }
             case (Control | Shift, C):
-                await clipboard.SetTextAsync(Document.GetText(), cancellationToken).ConfigureAwait(false);
+                _ = await clipboard.TrySetTextAsync(Document.GetText(), cancellationToken).ConfigureAwait(false);
                 break;
             case (Shift, Insert) when key.PastedText is not null:
                 PasteText(key.PastedText);
                 break;
             case (Control, V) or (Control | Shift, V) or (Shift, Insert):
                 {
-                    var clipboardText = await clipboard.GetTextAsync(cancellationToken).ConfigureAwait(false);
-                    PasteText(clipboardText);
+                    var (success, clipboardText) = await clipboard.TryGetTextAsync(cancellationToken).ConfigureAwait(false);
+                    if (success)
+                    {
+                        PasteText(clipboardText);
+                    }
                     break;
                 }
             case (Control, Z):
@@ -395,8 +402,7 @@ internal class CodePane : IKeyPressHandler
                 else
                 {
                     var leadingIndent = nonEmptyLines
-                        .Select(line => line.TakeWhile(char.IsWhiteSpace).Count())
-                        .Min();
+                        .Min(line => line.TakeWhile(char.IsWhiteSpace).Count());
 
                     if (leadingIndent == 0)
                     {
