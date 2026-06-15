@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using NSubstitute;
 using Xunit;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
@@ -159,6 +160,45 @@ public class SelectionTests
 
             Assert.True(result.IsSuccess);
             Assert.Equal("doo doo doo doo baby shark", result.Text);
+        }
+    }
+
+    [Fact]
+    public async Task ReadLine_CutOnEmptyPromptWithFailingClipboard_DoesNotCrash()
+    {
+        // Exact repro from https://github.com/waf/CSharpRepl/issues/327: pressing Ctrl+X on an (empty) prompt
+        // shells out to the OS clipboard, which can time out or otherwise fail. That must not crash the prompt.
+        var console = ConsoleStub.NewConsole();
+        console.Clipboard.Returns(new ThrowingClipboard());
+        using (console.ProtectClipboard())
+        {
+            console.StubInput($"{Control}{X}{Enter}");
+
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLineAsync();
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal("", result.Text);
+        }
+    }
+
+    [Fact]
+    public async Task ReadLine_CutSelectionWithFailingClipboard_PreservesText()
+    {
+        // If the clipboard write fails, the cut must be a no-op rather than silently destroying the user's
+        // text - we only remove the selection once it's safely on the clipboard.
+        // https://github.com/waf/CSharpRepl/issues/327
+        var console = ConsoleStub.NewConsole();
+        console.Clipboard.Returns(new ThrowingClipboard());
+        using (console.ProtectClipboard())
+        {
+            console.StubInput($"hello world", $"{Shift}{Home}{Control}{X}{Enter}");
+
+            var prompt = new Prompt(console: console);
+            var result = await prompt.ReadLineAsync();
+
+            Assert.True(result.IsSuccess);
+            Assert.Equal("hello world", result.Text);
         }
     }
 

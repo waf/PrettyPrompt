@@ -8,6 +8,7 @@ using NSubstitute;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.History;
 using PrettyPrompt.Panes;
+using PrettyPrompt.TextSelection;
 using System;
 using System.IO;
 using System.Text;
@@ -485,7 +486,7 @@ public class HistoryTests
             Substitute.For<IConsole>(),
             new PromptConfiguration(),
             Substitute.For<IPromptCallbacks>(),
-            Substitute.For<IClipboard>()
+            new WrappedClipboard(Substitute.For<IClipboard>())
         );
         history.Track(codePane);
 
