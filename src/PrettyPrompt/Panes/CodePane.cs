@@ -460,12 +460,30 @@ internal class CodePane : IKeyPressHandler
         }
     }
 
+    /// <summary>
+    /// Corrects TopCoordinate after RenderPrompt writes blank lines to reserve completion-pane room.
+    /// - near the window bottom, those lines scroll the buffer up, so the prompt moves up by however many didn't fit below the cursor.
+    /// - Windows self-corrects via MeasureConsole each keystroke; Linux/macOS can't, so we adjust here from what we wrote (no cursor read).
+    /// - without it, CodeAreaHeight collapses to ~1 and the completion pane can't draw until the next submission. https://github.com/waf/CSharpRepl/issues/395
+    /// </summary>
+    internal void AdjustTopCoordinateForReservedLines(int reservedLines)
+    {
+        var rowsBelowCursor = console.WindowHeight - 1 - TopCoordinate;
+        var scrolledRows = Math.Max(0, reservedLines - rowsBelowCursor);
+        if (scrolledRows > 0)
+        {
+            TopCoordinate = Math.Max(0, TopCoordinate - scrolledRows);
+            CodeAreaHeight = Math.Max(0, console.WindowHeight - TopCoordinate);
+        }
+    }
+
     internal void MeasureConsole()
     {
+        // Re-derive TopCoordinate from the live cursor only on Windows (CursorTop is a cheap local API there); see PR #231 for why it's needed.
+        // - kept Windows-only on purpose: on Linux/macOS CursorTop blocks on an ESC[6n round-trip per read (a network round-trip over SSH), and this runs twice per keystroke.
+        // - dotnet/runtime#88343 (input corruption from that read) is now fixed, but the round-trip cost remains, so we still avoid it off-Windows.
         if(OperatingSystem.IsWindows())
         {
-            // ideally we'd update this in Linux too, but https://github.com/dotnet/runtime/issues/88343 prevents it.
-            // see https://github.com/waf/PrettyPrompt/pull/231 for why we need this line at all.
             TopCoordinate = Math.Max(0, console.CursorTop - console.WindowTop - Cursor.Row);
         }
         this.CodeAreaWidth = Math.Max(0, console.BufferWidth - configuration.Prompt.Length);
