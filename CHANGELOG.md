@@ -1,6 +1,7 @@
 # Release 6.0.2
 
-- Fix broken completion list rendering when the prompt starts near the bottom of the window on macOS/Linux ([waf/CSharpRepl#395](https://github.com/waf/CSharpRepl/issues/395)).
+- Fix broken completion list rendering when the prompt starts near the bottom of the window on macOS/Linux ([#395](https://github.com/waf/CSharpRepl/issues/395)).
+- If clipboard operations throw an exception on linux, don't throw an exception ([#300](https://github.com/waf/PrettyPrompt/pull/300)).
 
 # Release 6.0.1
 
