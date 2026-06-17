@@ -106,7 +106,7 @@ public class RendererTests
         console.WindowTop.Returns(0);
         var configuration = new PromptConfiguration();
         var renderer = new Renderer(console, configuration);
-        var codePane = new CodePane(console, configuration, new PromptCallbacks(), Substitute.For<IClipboard>());
+        var codePane = new CodePane(console, configuration, new PromptCallbacks(), new WrappedClipboard(Substitute.For<IClipboard>()));
 
         var reserved = codePane.EmptySpaceAtBottomOfWindowHeight;
 
