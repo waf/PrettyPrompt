@@ -1,3 +1,9 @@
+# Release 6.0.3
+
+- Fix reformat-on-submit: when a `FormatInput` callback reformats the document on the same keystroke that submits the prompt, the returned `PromptResult` (and the persisted history entry) now contains the formatted text instead of the pre-format snapshot, and the on-screen line is repainted to match ([#301](https://github.com/waf/PrettyPrompt/pull/301), [CSharpRepl #356](https://github.com/waf/CSharpRepl/issues/356)).
+- Replace the reflection-based color-name lookup in `AnsiColor` with a static frozen dictionary, improving trimming/AOT friendliness and avoiding reflection at startup ([#303](https://github.com/waf/PrettyPrompt/pull/303)).
+- Update build dependencies (`Microsoft.SourceLink.GitHub`) ([#302](https://github.com/waf/PrettyPrompt/pull/302)).
+
 # Release 6.0.2
 
 - Fix broken completion list rendering when the prompt starts near the bottom of the window on macOS/Linux ([#395](https://github.com/waf/CSharpRepl/issues/395)).
