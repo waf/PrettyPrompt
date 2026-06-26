@@ -14,9 +14,7 @@ using PrettyPrompt;
 using PrettyPrompt.Consoles;
 using PrettyPrompt.Highlighting;
 using PrettyPrompt.Panes;
-using PrettyPrompt.Rendering;
 using PrettyPrompt.TextSelection;
-using TextCopy;
 
 /// <summary>
 /// Honest steady-state per-keystroke cost in a large document. Unlike <see cref="PerKeystrokeBenchmark"/>
