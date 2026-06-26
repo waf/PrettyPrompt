@@ -4,8 +4,6 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using System;
-
 namespace PrettyPrompt.Documents;
 
 //Microsoft.CodeAnalysis.Text.TextSpan equivalent.

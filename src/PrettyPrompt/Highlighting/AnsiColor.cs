@@ -4,13 +4,9 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
-using System;
-using System.Collections.Generic;
+using System.Collections.Frozen;
 using System.Globalization;
-using System.Linq;
-using System.Reflection;
 using PrettyPrompt.Consoles;
-using static PrettyPrompt.Highlighting.FormattedString.TextElementsEnumerator;
 
 namespace PrettyPrompt.Highlighting;
 
@@ -42,11 +38,26 @@ public readonly struct AnsiColor : IEquatable<AnsiColor>
     public static readonly AnsiColor BrightCyan = new("96", "106", nameof(BrightCyan));
     public static readonly AnsiColor BrightWhite = new("97", "107", nameof(BrightWhite));
 
-    private static readonly Dictionary<string, AnsiColor> ansiColorNames =
-        typeof(AnsiColor)
-            .GetFields(BindingFlags.Static | BindingFlags.Public)
-            .Where(f => f.FieldType == typeof(AnsiColor))
-            .ToDictionary(f => f.Name, f => (AnsiColor)f.GetValue(null)!, StringComparer.OrdinalIgnoreCase);
+    private static readonly FrozenDictionary<string, AnsiColor> ansiColorNames =
+        new Dictionary<string, AnsiColor>(StringComparer.OrdinalIgnoreCase)
+        {
+            [nameof(Black)] = Black,
+            [nameof(Red)] = Red,
+            [nameof(Green)] = Green,
+            [nameof(Yellow)] = Yellow,
+            [nameof(Blue)] = Blue,
+            [nameof(Magenta)] = Magenta,
+            [nameof(Cyan)] = Cyan,
+            [nameof(White)] = White,
+            [nameof(BrightBlack)] = BrightBlack,
+            [nameof(BrightRed)] = BrightRed,
+            [nameof(BrightGreen)] = BrightGreen,
+            [nameof(BrightYellow)] = BrightYellow,
+            [nameof(BrightBlue)] = BrightBlue,
+            [nameof(BrightMagenta)] = BrightMagenta,
+            [nameof(BrightCyan)] = BrightCyan,
+            [nameof(BrightWhite)] = BrightWhite,
+        }.ToFrozenDictionary(StringComparer.OrdinalIgnoreCase);
 
     public static AnsiColor Rgb(byte r, byte g, byte b)
         => new($"38;2;{r};{g};{b}", $"48;2;{r};{g};{b}", $"#{r:X2}{g:X2}{b:X2}");
@@ -79,7 +90,7 @@ public readonly struct AnsiColor : IEquatable<AnsiColor>
         }
 
         var span = input.AsSpan();
-        if (input.StartsWith('#') && span.Length == 7 &&
+        if (span.Length == 7 && span[0] == '#' &&
             byte.TryParse(span.Slice(1, 2), NumberStyles.AllowHexSpecifier, null, out byte r) &&
             byte.TryParse(span.Slice(3, 2), NumberStyles.AllowHexSpecifier, null, out byte g) &&
             byte.TryParse(span.Slice(5, 2), NumberStyles.AllowHexSpecifier, null, out byte b))
