@@ -111,7 +111,7 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
             // grab the code area width every key press, so we rerender appropriately when the console is resized.
             codePane.MeasureConsole();
 
-            await InterpretKeyPress(key, cancellationToken: default).ConfigureAwait(false);
+            var reformatted = await InterpretKeyPress(key, cancellationToken: default).ConfigureAwait(false);
 
             // typing / word-wrapping may have scrolled the console, giving us more room.
             codePane.MeasureConsole();
@@ -140,7 +140,8 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
                     break;
                 // user submitted the prompt, or a keybinding submitted the prompt
                 case PromptResult or KeyPressCallbackResult:
-                    await RenderSyntaxHighlightedOutput(renderer, codePane, overloadPane, completionPane, key, inputText, result).ConfigureAwait(false);
+                    // a reformat on the submit keystroke must force a repaint (see Renderer.RenderOutput)
+                    await RenderSyntaxHighlightedOutput(renderer, codePane, overloadPane, completionPane, key, inputText, result, forceRedrawOnSubmit: reformatted).ConfigureAwait(false);
                     //wait for potential previous saving
                     await (savePersistentHistoryTask ?? Task.CompletedTask).ConfigureAwait(false);
                     savePersistentHistoryTask = history.SavePersistentHistoryAsync(inputText);
@@ -153,7 +154,7 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
         Debug.Assert(false, "Should never reach here due to infinite " + nameof(KeyPress.ReadForever));
         return null;
 
-        async Task InterpretKeyPress(KeyPress key, CancellationToken cancellationToken)
+        async Task<bool> InterpretKeyPress(KeyPress key, CancellationToken cancellationToken)
         {
             if (!completionPane.WouldKeyPressCommitCompletionItem(key))
             {
@@ -166,16 +167,19 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
             foreach (var panes in keyPressHandlers)
                 await panes.OnKeyUp(key, cancellationToken).ConfigureAwait(false);
 
-            await AutoFormatDocument(key, codePane, cancellationToken).ConfigureAwait(false);
+            var reformatted = await AutoFormatDocument(key, codePane, cancellationToken).ConfigureAwait(false);
 
             //we don't support text selection while completion list is open
             //text selection can put completion list into broken state, where filtering does not work
             //so we want this assert to be true
             Debug.Assert(!completionPane.IsOpen || (codePane.Selection is null));
+
+            return reformatted;
         }
     }
 
-    private async Task AutoFormatDocument(KeyPress key, CodePane codePane, CancellationToken cancellationToken)
+    /// <returns>True if the callback reformatted the document (the buffer was changed), else false.</returns>
+    private async Task<bool> AutoFormatDocument(KeyPress key, CodePane codePane, CancellationToken cancellationToken)
     {
         var text = codePane.Document.GetText();
         var (formattedText, newCaret) = await promptCallbacks.FormatInput(text, codePane.Document.Caret, key, cancellationToken).ConfigureAwait(false);
@@ -187,17 +191,21 @@ public sealed class Prompt : IPrompt, IAsyncDisposable
                 if (formattedText[i] == '\r') ++removedChars;
             }
             codePane.Document.SetContents(codePane, formattedText.Replace("\r\n", "\n"), newCaret - removedChars);
+            // if this keystroke also submitted, the result text was snapshotted pre-format; re-capture it
+            codePane.RefreshSubmitResultText();
+            return true;
         }
         else
         {
             Debug.Assert(codePane.Document.Caret == newCaret);
+            return false;
         }
     }
 
-    private async Task RenderSyntaxHighlightedOutput(Renderer renderer, CodePane codePane, OverloadPane overloadPane, CompletionPane completionPane, KeyPress key, string inputText, PromptResult? result)
+    private async Task RenderSyntaxHighlightedOutput(Renderer renderer, CodePane codePane, OverloadPane overloadPane, CompletionPane completionPane, KeyPress key, string inputText, PromptResult? result, bool forceRedrawOnSubmit = false)
     {
         var highlights = await highlighter.HighlightAsync(inputText, cancellationToken: default).ConfigureAwait(false);
-        renderer.RenderOutput(result, codePane, overloadPane, completionPane, highlights, key);
+        renderer.RenderOutput(result, codePane, overloadPane, completionPane, highlights, key, forceRedrawOnSubmit);
     }
 
     private async Task<PromptResult?> HandleKeyPressAction(CodePane codePane, KeyPress key, string inputText, CancellationToken cancellationToken)

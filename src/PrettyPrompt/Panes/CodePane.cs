@@ -163,6 +163,19 @@ internal class CodePane : IKeyPressHandler
         this.overloadPane = overloadPane;
     }
 
+    /// <summary>
+    /// Re-capture the submit result's text from the current document, so the returned result matches
+    /// what's shown (and saved to history) after auto-formatting, not the pre-format snapshot.
+    /// </summary>
+    internal void RefreshSubmitResultText()
+    {
+        if (Result is not { IsSuccess: true })
+        {
+            return;
+        }
+        Result = new PromptResult(isSuccess: true, Document.GetText().EnvironmentNewlines(), Result.SubmitKeyInfo);
+    }
+
     public async Task OnKeyDown(KeyPress key, CancellationToken cancellationToken)
     {
         if (key.Handled) return;
