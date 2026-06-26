@@ -32,7 +32,7 @@
 
   <ItemGroup>
     <PackageReference Include="TextCopy" Version="6.2.1" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.300" PrivateAssets="All" />
     <!-- Source-only package (compiles into PrettyPrompt.dll, no transitive runtime dependency).
          WCWIDTH_VISIBILITY_INTERNAL keeps its types internal so they don't leak into our public API. -->
     <PackageReference Include="Wcwidth.Sources" Version="4.0.1" PrivateAssets="all" />
