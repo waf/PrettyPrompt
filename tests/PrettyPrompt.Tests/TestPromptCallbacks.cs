@@ -16,6 +16,7 @@ internal delegate Task CompletionWindowStateChangedCallbackAsync(string text, in
 internal delegate Task<IReadOnlyCollection<FormatSpan>> HighlightCallbackAsync(string text);
 internal delegate Task<KeyPress> TransformKeyPressAsyncCallbackAsync(string text, int caret, KeyPress keyPress);
 internal delegate Task<(IReadOnlyList<OverloadItem>, int ArgumentIndex)> GetOverloadsCallbackAsync(string text, int caret);
+internal delegate Task<(string Text, int Caret)> FormatInputCallbackAsync(string text, int caret, KeyPress keyPress);
 
 internal class TestPromptCallbacks : PromptCallbacks
 {
@@ -29,6 +30,7 @@ internal class TestPromptCallbacks : PromptCallbacks
     public HighlightCallbackAsync? HighlightCallback { get; set; }
     public TransformKeyPressAsyncCallbackAsync? TransformKeyPressCallback { get; set; }
     public GetOverloadsCallbackAsync? GetOverloadsCallback { get; set; }
+    public FormatInputCallbackAsync? FormatInputCallback { get; set; }
 
     public TestPromptCallbacks(params (KeyPressPattern Pattern, KeyPressCallbackAsync Callback)[]? keyPressCallbacks)
     {
@@ -99,5 +101,13 @@ internal class TestPromptCallbacks : PromptCallbacks
             GetOverloadsCallback is null ?
             base.GetOverloadsAsync(text, caret, cancellationToken) :
             GetOverloadsCallback(text, caret);
+    }
+
+    protected override Task<(string Text, int Caret)> FormatInput(string text, int caret, KeyPress keyPress, CancellationToken cancellationToken)
+    {
+        return
+            FormatInputCallback is null ?
+            base.FormatInput(text, caret, keyPress, cancellationToken) :
+            FormatInputCallback(text, caret, keyPress);
     }
 }

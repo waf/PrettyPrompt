@@ -111,6 +111,45 @@ public class PromptTests
         );
     }
 
+    /// <summary>
+    /// Regression test for https://github.com/waf/CSharpRepl/issues/356.
+    /// When <see cref="PromptCallbacks.FormatInput"/> reformats the buffer on the very keystroke that
+    /// submits the prompt, the submit render path must force a redraw so the committed line shows the
+    /// formatted text. Otherwise the on-screen line is left showing the stale pre-format text, because
+    /// the reformat happened after the previous render and the submit path skips redrawing by default.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_FormatInputReformatsOnSubmit_RedrawsFormattedText()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput($"hello{Enter}");
+
+        var prompt = new Prompt(
+            callbacks: new TestPromptCallbacks
+            {
+                // Only reformat on the submit keystroke (Enter), so the formatted text has never been
+                // rendered before submit - that's the scenario the fix addresses.
+                FormatInputCallback = (text, caret, keyPress) =>
+                    Task.FromResult(
+                        keyPress.ConsoleKeyInfo.Key == Enter
+                            ? (text.ToUpperInvariant(), caret)
+                            : (text, caret))
+            },
+            console: console);
+
+        var result = await prompt.ReadLineAsync();
+
+        Assert.True(result.IsSuccess);
+
+        // The returned result reflects the formatted text (re-captured after AutoFormatDocument), not the
+        // pre-format snapshot taken when the submit key was first handled.
+        Assert.Equal("HELLO", result.Text);
+
+        // ...and the final render repaints it; without the forced redraw the screen would still show the
+        // lowercase "hello" typed before the submit keystroke.
+        Assert.Contains("HELLO", console.GetFinalOutput());
+    }
+
     [Fact]
     public async Task ReadLine_HorizontalNavigationKeys()
     {

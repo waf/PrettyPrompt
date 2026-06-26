@@ -56,11 +56,13 @@ internal class Renderer : IDisposable
         OverloadPane overloadPane,
         CompletionPane completionPane,
         IReadOnlyCollection<FormatSpan> highlights,
-        KeyPress key)
+        KeyPress key,
+        bool forceRedraw = false)
     {
         if (result is not null)
         {
-            bool redraw = false;
+            // reformat-on-submit leaves the on-screen line stale, so repaint it. https://github.com/waf/CSharpRepl/issues/356
+            bool redraw = forceRedraw;
             if (wasTextSelectedDuringPreviousRender && codePane.Selection is null)
             {
                 redraw = true;
