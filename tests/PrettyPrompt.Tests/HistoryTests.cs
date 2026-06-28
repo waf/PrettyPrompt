@@ -292,6 +292,92 @@ public class HistoryTests
     }
 
     /// <summary>
+    /// https://github.com/waf/CSharpRepl/issues/247
+    /// When a single logical line is long enough to word-wrap across multiple display rows, the up-arrow
+    /// should move the cursor up within those wrapped rows rather than navigating to a previous history
+    /// entry. History navigation should only kick in once the cursor is already on the first display row.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_UpArrow_MovesCursorWithinWrappedLine_InsteadOfCyclingHistory()
+    {
+        var console = ConsoleStub.NewConsole(width: 20); // code area is 18 columns wide after the "> " prompt
+        var prompt = new Prompt(console: console);
+
+        console.StubInput($"old entry{Enter}");
+        await prompt.ReadLineAsync();
+
+        // a single logical line (no newlines) long enough to wrap across multiple display rows
+        var wrapped = new string('a', 40);
+        console.StubInput($"{wrapped}{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput(
+            $"{UpArrow}",    // loads the wrapped entry; cursor lands at its end, on the last display row
+            $"{LeftArrow}",  // moves the cursor and ends the active history cycle
+            $"{UpArrow}",    // cursor is not on the first display row, so this moves it up within the wrapped
+                             // entry instead of navigating back to "old entry"
+            $"{Enter}");
+        var result = await prompt.ReadLineAsync();
+
+        Assert.Equal(wrapped, result.Text);
+    }
+
+    /// <summary>
+    /// Follow-up to https://github.com/waf/CSharpRepl/issues/247
+    /// After recalling a multiline history entry and moving the cursor up within it, pressing Down should walk
+    /// the cursor back down through the entry and then return to the original (empty) prompt, rather than
+    /// trapping the user on the recalled entry.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_DownArrow_ReturnsToEmptyPrompt_AfterNavigatingWithinRecalledMultilineEntry()
+    {
+        var console = ConsoleStub.NewConsole();
+        var prompt = new Prompt(console: console);
+
+        console.StubInput($"a{Shift}{Enter}b{Enter}"); // submit the multiline entry "a\nb"
+        await prompt.ReadLineAsync();
+
+        console.StubInput(
+            $"{UpArrow}",    // recall "a\nb"; cursor lands on the last display row
+            $"{UpArrow}",    // no older history to cycle to, so this moves the cursor up within the entry
+            $"{DownArrow}",  // move the cursor back down within the entry
+            $"{DownArrow}",  // cursor is on the last row again, so this returns to the empty prompt
+            $"x{Enter}");    // typing on the now-empty prompt
+        var result = await prompt.ReadLineAsync();
+
+        Assert.Equal("x", result.Text);
+    }
+
+    /// <summary>
+    /// Follow-up to https://github.com/waf/CSharpRepl/issues/247
+    /// Moving the cursor around a recalled (word-wrapped) entry must not detach us from history. After
+    /// navigating up/down/left/right within the wrapped entry, pressing Down from its last row should still
+    /// return to the original (empty) prompt rather than trapping the user on the recalled entry.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_DownArrow_ReturnsToEmptyPrompt_AfterMovingCursorWithinRecalledWrappedEntry()
+    {
+        var console = ConsoleStub.NewConsole(width: 20); // code area is 18 columns wide after the "> " prompt
+        var prompt = new Prompt(console: console);
+
+        var wrapped = new string('a', 40); // a single logical line that wraps across multiple display rows
+        console.StubInput($"{wrapped}{Enter}");
+        await prompt.ReadLineAsync();
+
+        console.StubInput(
+            $"{UpArrow}",     // recall the wrapped entry; cursor lands at its end (last display row)
+            $"{LeftArrow}",   // move the cursor (must NOT detach from history)
+            $"{UpArrow}",     // move the cursor up within the wrapped entry
+            $"{DownArrow}",   // move the cursor back down within the entry
+            $"{RightArrow}",  // move the cursor back to the end of the line
+            $"{DownArrow}",   // cursor is on the last row, so this returns to the empty prompt
+            $"x{Enter}");     // typing on the now-empty prompt
+        var result = await prompt.ReadLineAsync();
+
+        Assert.Equal("x", result.Text);
+    }
+
+    /// <summary>
     /// https://github.com/waf/PrettyPrompt/issues/188
     /// </summary>
     [Fact]

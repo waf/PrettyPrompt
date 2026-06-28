@@ -41,6 +41,12 @@ internal sealed class HistoryLog : IKeyPressHandler
     /// </summary>
     private readonly Stack<int> historyPath = new();
 
+    /// <summary>
+    /// The document contents as of the last time we navigated history. When the current contents differ from this, it means the user
+    /// has edited the buffer, so we detach from <see cref="historyPath"/>.
+    /// </summary>
+    private string contentsAfterLastNavigation = string.Empty;
+
     private bool historyEntryWasUsedLastTime;
 
     /// <summary>
@@ -96,14 +102,29 @@ internal sealed class HistoryLog : IKeyPressHandler
         if (history.Count == 0 || key.Handled) return;
 
         var contents = codePane.Document.GetText();
-        if (contents.Contains('\n') && !allowInMultilineStatement)
+
+        // Detach from the active history path once the user edits the buffer (its text no longer matches the entry we navigated to).
+        if (contents != contentsAfterLastNavigation)
         {
-            //we do not want to cycle in history in multiline documents
+            historyPath.Clear();
+        }
+
+        if (contents.Contains('\n') &&
+            !allowInMultilineStatement &&
+            !keyBindings.HistoryNext.Matches(key.ConsoleKeyInfo))
+        {
+            // we do not want to cycle in history in multiline documents, unless we're moving down so the user can get back to their original prompt.
             return;
         }
 
         if (keyBindings.HistoryPrevious.Matches(key.ConsoleKeyInfo))
         {
+            // if we're in a wrapped line, we want to allow the user to move up and down within the current input before navigating history.
+            if (!allowInMultilineStatement && codePane.Cursor.Row > 0)
+            {
+                return;
+            }
+
             int startIndex = -1;
             if (historyPath.Count == 0)
             {
@@ -128,6 +149,12 @@ internal sealed class HistoryLog : IKeyPressHandler
         }
         else if (keyBindings.HistoryNext.Matches(key.ConsoleKeyInfo))
         {
+            // Symmetric to the up-arrow case above: if we're in a wrapped line, we want to allow the user to move up and down within the current input before navigating history.
+            if (!allowInMultilineStatement && codePane.Cursor.Row < codePane.WordWrappedLines.Count - 1)
+            {
+                return;
+            }
+
             if (historyPath.Count > 0)
             {
                 historyPath.Pop();
@@ -145,7 +172,8 @@ internal sealed class HistoryLog : IKeyPressHandler
         }
         else
         {
-            historyPath.Clear();
+            // Cursor movement and other non-editing keys leave historyPath intact (see the edit detection
+            // above), so that navigating around a recalled entry doesn't detach us from history.
             key.Handled = false;
         }
     }
@@ -181,8 +209,12 @@ internal sealed class HistoryLog : IKeyPressHandler
         }
     }
 
-    private static void SetContents(CodePane codepane, string contents)
+    private void SetContents(CodePane codepane, string contents)
     {
+        // remember what we navigated to, so a later keypress can tell cursor movement (contents unchanged)
+        // apart from an edit (contents changed) - see the edit detection in OnKeyUp.
+        contentsAfterLastNavigation = contents;
+
         if (codepane.Document.Equals(contents)) return;
 
         codepane.Document.SetContents(codepane, contents, caret: contents.Length);
@@ -204,6 +236,7 @@ internal sealed class HistoryLog : IKeyPressHandler
             }
         }
         historyPath.Clear();
+        contentsAfterLastNavigation = string.Empty; // new prompt starts empty and detached from history
         this.codePane = codePane;
     }
 
