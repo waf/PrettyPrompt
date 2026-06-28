@@ -251,6 +251,19 @@ internal class CompletionPane : IKeyPressHandler
     private async Task InsertCompletion(CodePane codepane, CompletionItem completion, CancellationToken cancellationToken)
     {
         var document = codepane.Document;
+
+        if (completion.HasComplexTextEdit)
+        {
+            // The item rewrites the document (e.g. a C# cast completion turning `i.` into `((byte)i)`). These edits can span a larger region than the completion word and set their own caret position, so
+            var edit = await completion.GetComplexTextEditAsync(document.GetText(), document.Caret, cancellationToken).ConfigureAwait(false);
+            document.Remove(codepane, edit.SpanToReplace);
+            document.Caret = Math.Clamp(edit.SpanToReplace.Start, 0, document.Length);
+            document.InsertAtCaret(codepane, edit.NewText);
+            document.Caret = Math.Clamp(edit.NewCaret ?? edit.SpanToReplace.Start + edit.NewText.Length, 0, document.Length);
+            await Close(cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
         var spanToReplace = await promptCallbacks.GetSpanToReplaceByCompletionAsync(document.GetText(), document.Caret, cancellationToken).ConfigureAwait(false);
         document.Remove(codepane, spanToReplace);
         document.InsertAtCaret(codepane, completion.ReplacementText);
