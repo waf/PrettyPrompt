@@ -1,6 +1,7 @@
-# Release 6.0.4 (UNRELEASED)
+# Release 6.0.4
 
-- Support "complex" completion items that rewrite a larger region of the document than the typed word (and reposition the caret).
+- Support "complex" completion items that rewrite a larger region of the document than the typed word (and reposition the caret) ([304](https://github.com/waf/PrettyPrompt/pull/304)).
+- Improve handling of up/down arrows when navigating within wrapped text (remove clash with navigating prev/next through history) ([305](https://github.com/waf/PrettyPrompt/pull/305)).
 
 # Release 6.0.3
 
