@@ -23,6 +23,12 @@ public class CompletionItem
     public delegate Task<FormattedString> GetExtendedDescriptionHandler(CancellationToken cancellationToken);
 
     /// <summary>
+    /// Computes the document change to apply when a "complex" completion item is committed. Used for completions
+    /// that can't be expressed as a simple insertion into the completion span like a C# cast completion that rewrites `i.` into `((byte)i)`
+    /// </summary>
+    public delegate Task<CompletionEdit> GetComplexTextEditHandler(string text, int caret, CancellationToken cancellationToken);
+
+    /// <summary>
     /// When the completion item is selected, this text will be inserted into the document at the specified start index.
     /// </summary>
     public string ReplacementText { get; }
@@ -54,22 +60,42 @@ public class CompletionItem
 
     private readonly GetExtendedDescriptionHandler getExtendedDescription;
 
+    private readonly GetComplexTextEditHandler? getComplexTextEdit;
+
+    /// <summary>
+    /// When true, committing this item applies the <see cref="CompletionEdit"/> returned by <see cref="GetComplexTextEditAsync"/>
+    /// </summary>
+    public bool HasComplexTextEdit => getComplexTextEdit is not null;
+
+    /// <summary>
+    /// Computes the complex text edit to apply when this item is committed. Only valid when <see cref="HasComplexTextEdit"/> is true.
+    /// </summary>
+    public Task<CompletionEdit> GetComplexTextEditAsync(string text, int caret, CancellationToken cancellationToken)
+        => getComplexTextEdit is not null
+            ? getComplexTextEdit(text, caret, cancellationToken)
+            : throw new InvalidOperationException($"{nameof(GetComplexTextEditAsync)} called on a completion item without a complex text edit.");
+
     /// <param name="replacementText">When the completion item is selected, this text will be inserted into the document at the specified start index.</param>
     /// <param name="displayText">This text will be displayed in the completion menu. If not specified, the <paramref name="replacementText"/> value will be used.</param>
     /// <param name="getExtendedDescription">This lazy task will be executed when the item is selected, to display the extended "tool tip" description to the right of the menu.</param>
     /// <param name="filterText">The text used to determine if the item matches the filter in the list. If not specified the <paramref name="replacementText"/> value is used.</param>
     /// <param name="commitCharacterRules">Rules that modify the set of characters that can be typed to cause the selected item to be committed.</param>
+    /// <param name="getComplexTextEdit">
+    /// When supplied, committing this item applies the returned <see cref="CompletionEdit"/> instead of inserting <paramref name="replacementText"/> into the completion span.
+    /// </param>
     public CompletionItem(
         string replacementText,
         FormattedString displayText = default,
         string? filterText = null,
         GetExtendedDescriptionHandler? getExtendedDescription = null,
-        ImmutableArray<CharacterSetModificationRule> commitCharacterRules = default)
+        ImmutableArray<CharacterSetModificationRule> commitCharacterRules = default,
+        GetComplexTextEditHandler? getComplexTextEdit = null)
     {
         ReplacementText = replacementText;
         DisplayTextFormatted = displayText.IsEmpty ? replacementText : displayText;
         FilterText = filterText ?? replacementText;
         CommitCharacterRules = commitCharacterRules.IsDefault ? ImmutableArray<CharacterSetModificationRule>.Empty : commitCharacterRules;
+        this.getComplexTextEdit = getComplexTextEdit;
 
         Task<FormattedString>? extendedDescriptionTask = null; //will be stored in closure of getExtendedDescription
         this.getExtendedDescription = ct => extendedDescriptionTask ??= getExtendedDescription?.Invoke(ct) ?? Task.FromResult(FormattedString.Empty);

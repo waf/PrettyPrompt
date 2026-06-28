@@ -8,7 +8,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using PrettyPrompt.Completion;
 using PrettyPrompt.Consoles;
+using PrettyPrompt.Documents;
 using Xunit;
 using static System.ConsoleKey;
 using static System.ConsoleModifiers;
@@ -315,6 +317,66 @@ public class CompletionTests
             Assert.True(result.IsSuccess);
             Assert.Equal("abc DEFGH ijk", result.Text);
         }
+    }
+
+    /// <summary>
+    /// A "complex" completion item supplies its own <see cref="CompletionEdit"/>, which can rewrite a larger
+    /// region of the document than the completion word. This mirrors a C# cast completion turning <c>i.</c>
+    /// into <c>((byte)i)</c> (see CSharpRepl issue #97), which a plain insertion of the replacement text
+    /// (<c>byte</c>) into the completion span could never produce.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_ComplexTextEdit_RewritesRegionBeyondCompletionWord()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput($"i.{Control}{Spacebar}{Enter}{Enter}"); // type "i.", open menu, commit, submit
+
+        var callbacks = new TestPromptCallbacks
+        {
+            CompletionCallback = (text, caret, spanToBeReplaced) => Task.FromResult<IReadOnlyList<CompletionItem>>(new[]
+            {
+                new CompletionItem(
+                    replacementText: "byte",
+                    displayText: "(byte)",
+                    getComplexTextEdit: (_, _, _) =>
+                        Task.FromResult(new CompletionEdit(new TextSpan(0, "i.".Length), "((byte)i)"))),
+            }),
+        };
+        var prompt = new Prompt(callbacks: callbacks, console: console);
+
+        var result = await prompt.ReadLineAsync();
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("((byte)i)", result.Text);
+    }
+
+    /// <summary>
+    /// A complex edit can place the caret anywhere via <see cref="CompletionEdit.NewCaret"/>. Here the caret is
+    /// requested just before the trailing <c>)</c>; the subsequently typed <c>X</c> must land there.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_ComplexTextEdit_HonorsCaretPosition()
+    {
+        var console = ConsoleStub.NewConsole();
+        console.StubInput($"i.{Control}{Spacebar}{Enter}X{Enter}"); // commit, then type X at the requested caret
+
+        var callbacks = new TestPromptCallbacks
+        {
+            CompletionCallback = (text, caret, spanToBeReplaced) => Task.FromResult<IReadOnlyList<CompletionItem>>(new[]
+            {
+                new CompletionItem(
+                    replacementText: "byte",
+                    displayText: "(byte)",
+                    getComplexTextEdit: (_, _, _) =>
+                        Task.FromResult(new CompletionEdit(new TextSpan(0, "i.".Length), "((byte)i)", newCaret: "((byte)i".Length))),
+            }),
+        };
+        var prompt = new Prompt(callbacks: callbacks, console: console);
+
+        var result = await prompt.ReadLineAsync();
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("((byte)iX)", result.Text);
     }
 
     /// <summary>
