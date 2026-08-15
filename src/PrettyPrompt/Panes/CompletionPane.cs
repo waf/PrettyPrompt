@@ -38,6 +38,13 @@ internal class CompletionPane : IKeyPressHandler
     private IReadOnlyList<CompletionItem> allCompletions = Array.Empty<CompletionItem>();
 
     /// <summary>
+    /// The text of the span <see cref="allCompletions"/> was requested for. Callbacks are free to
+    /// return only the items matching that text, so the list stays usable exactly as long as the
+    /// user keeps extending it.
+    /// </summary>
+    private string allCompletionsFilterText = string.Empty;
+
+    /// <summary>
     /// An "ordered view" over <see cref="allCompletions"/> that shows the list filtered by what the user has typed.
     /// </summary>
     public SlidingArrayWindow FilteredView { get; set; } = new SlidingArrayWindow();
@@ -71,6 +78,7 @@ internal class CompletionPane : IKeyPressHandler
         bool wasOpen = IsOpen;
         this.IsOpen = true;
         this.allCompletions = Array.Empty<CompletionItem>();
+        this.allCompletionsFilterText = string.Empty;
         if (!wasOpen)
         {
             await promptCallbacks.CompletionWindowOpenedAsync(codePane.Document.GetText(), codePane.Document.Caret, cancellationToken).ConfigureAwait(false);
@@ -224,17 +232,20 @@ internal class CompletionPane : IKeyPressHandler
                 }
             }
 
-            if (allCompletions.Count == 0)
+            // We ask the callback once and then only re-rank what it gave us, which is correct for
+            // as long as the user is refining the text we asked about. Deleting back past that text
+            // and typing something else leaves us ranking items for a word that is no longer there
+            // (ask on "G", delete it, type "H", and the G-items get sorted against "H"), so ask again.
+            if (allCompletions.Count == 0 ||
+                !documentText.AsSpan(spanToReplace).StartsWith(allCompletionsFilterText, StringComparison.Ordinal))
             {
                 var completions = await promptCallbacks.GetCompletionItemsAsync(documentText, documentCaret, spanToReplace, cancellationToken).ConfigureAwait(false);
                 if (completions.Any())
                 {
                     allCompletions = completions;
-                    if (completions.Any())
-                    {
-                        int height = Math.Min(codePane.CodeAreaHeight - VerticalPaddingHeight - overloadPane.GetCurrentHeight(), configuration.MaxCompletionItemsCount);
-                        await FilteredView.UpdateItems(completions, documentText, documentCaret, spanToReplace, height, cancellationToken).ConfigureAwait(false);
-                    }
+                    allCompletionsFilterText = documentText.AsSpan(spanToReplace).ToString();
+                    int height = Math.Min(codePane.CodeAreaHeight - VerticalPaddingHeight - overloadPane.GetCurrentHeight(), configuration.MaxCompletionItemsCount);
+                    await FilteredView.UpdateItems(completions, documentText, documentCaret, spanToReplace, height, cancellationToken).ConfigureAwait(false);
                 }
                 else
                 {
