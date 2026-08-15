@@ -800,6 +800,42 @@ public class CompletionTests
         Assert.Contains("bbb [0;34m│[0m a vivid description of bbb", output[4]); //after press of 'b' (here was the bug)
     }
 
+    /// <summary>
+    /// A callback that returns only the items matching the typed word -- what a real completion
+    /// provider does, and what <see cref="CompletionTestData"/> deliberately does not do.
+    /// </summary>
+    [Fact]
+    public async Task ReadLine_FilteringCallback_IsAskedAgainAfterTheTypedWordIsDeleted()
+    {
+        var console = ConsoleStub.NewConsole();
+        var prompt = new Prompt(
+            callbacks: new TestPromptCallbacks
+            {
+                CompletionCallback = (text, caret, spanToBeReplaced) =>
+                {
+                    var typedWord = text.AsSpan(spanToBeReplaced).ToString();
+                    return Task.FromResult<IReadOnlyList<CompletionItem>>(
+                        new[] { "green", "grey", "hazel" }
+                            .Where(c => c.StartsWith(typedWord, StringComparison.OrdinalIgnoreCase))
+                            .Select(c => new CompletionItem(c))
+                            .ToArray());
+                }
+            },
+            console: console);
+
+        console.StubInput(
+            $"gr", // the list is fetched for "gr", so it holds green and grey
+            $"{Backspace}{Backspace}", // and is stale from here on: neither is a completion of ""
+            $"h",
+            $"{Enter}", // commits the selected item
+            $"{Enter}");
+
+        var result = await prompt.ReadLineAsync();
+
+        Assert.True(result.IsSuccess);
+        Assert.Equal("hazel", result.Text);
+    }
+
     public static Prompt ConfigurePrompt(IConsole console, PromptConfiguration? configuration = null, string[]? completions = null) =>
         new(
             callbacks: new TestPromptCallbacks

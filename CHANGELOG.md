@@ -1,3 +1,7 @@
+# Release 6.0.5 (UNRELEASED)
+
+- Fix the completion list offering items for a word that is no longer typed. The completion callback is now asked again whenever the typed word stops being an extension of the one it was asked about.
+
 # Release 6.0.4
 
 - Support "complex" completion items that rewrite a larger region of the document than the typed word (and reposition the caret) ([304](https://github.com/waf/PrettyPrompt/pull/304)).
