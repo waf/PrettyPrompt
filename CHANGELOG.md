@@ -1,4 +1,4 @@
-# Release 6.0.5 (UNRELEASED)
+# Release 6.0.5
 
 - Fix the completion list offering items for a word that is no longer typed. The completion callback is now asked again whenever the typed word stops being an extension of the one it was asked about.
 
