@@ -45,7 +45,11 @@ internal static class CellRenderer
         // If the selection began above the viewport and hasn't ended yet, it's already "open" at startLine.
         bool selectionHighlight = selectionStart.Row < startLine && selectionEnd.Row >= startLine;
 
-        var highlightsLookup = HighlightsGroupingPool.Shared.Get(highlights);
+        // Only spans STARTING in the viewport can be found by the per-cell lookup below; one that began above
+        // it is handled by SeedCurrentHighlight. Building the lookup from every span in the document was
+        // O(document) per render - ~36% of a caret-move keystroke at 1000 lines / ~14.7k spans.
+        var (viewPortStartChar, viewPortEndChar) = GetViewPortCharRange(lines, startLine, endLine);
+        var highlightsLookup = HighlightsGroupingPool.Shared.Get(highlights, viewPortStartChar, viewPortEndChar);
         var highlightedRows = new Row[endLine - startLine];
         FormatSpan? currentHighlight = SeedCurrentHighlight(highlights, lines, startLine);
         for (int lineIndex = startLine; lineIndex < endLine; lineIndex++)
@@ -119,6 +123,21 @@ internal static class CellRenderer
         // every render allocated a fresh dictionary sized to ALL highlight spans (large in highlight-heavy docs).
         HighlightsGroupingPool.Shared.Put(highlightsLookup);
         return highlightedRows;
+    }
+
+    /// <summary>
+    /// Half-open range of UTF-16 document offsets covered by lines [<paramref name="startLine"/>,
+    /// <paramref name="endLine"/>) - every <c>characterPosition</c> the highlight lookup can be asked about.
+    /// </summary>
+    private static (int Start, int End) GetViewPortCharRange(IReadOnlyList<WrappedLine> lines, int startLine, int endLine)
+    {
+        if (startLine >= endLine)
+        {
+            return (0, 0);
+        }
+        var firstLine = lines[startLine];
+        var lastLine = lines[endLine - 1];
+        return (firstLine.StartIndex, lastLine.StartIndex + lastLine.Content.Length);
     }
 
     /// <summary>
@@ -196,13 +215,22 @@ internal static class CellRenderer
         // One lookup is in flight per render (occasionally two when panes render), so a small cap is plenty.
         private HighlightsGroupingPool() : base(maxRetained: 8) { }
 
-        public Dictionary<int, FormatSpan> Get(IReadOnlyCollection<FormatSpan> highlights)
+        /// <summary>
+        /// Builds the start-offset -&gt; span lookup from only the spans starting within
+        /// [<paramref name="viewPortStartChar"/>, <paramref name="viewPortEndChar"/>) - the only ones the
+        /// caller can look up. The rest cost two int comparisons instead of a hash and a probe.
+        /// </summary>
+        public Dictionary<int, FormatSpan> Get(IReadOnlyCollection<FormatSpan> highlights, int viewPortStartChar, int viewPortEndChar)
         {
-            var result = Rent() ?? new Dictionary<int, FormatSpan>(highlights.Count);
-            result.EnsureCapacity(highlights.Count);
+            var result = Rent() ?? new Dictionary<int, FormatSpan>();
 
             foreach (var highlight in highlights)
             {
+                if (highlight.Start < viewPortStartChar || highlight.Start >= viewPortEndChar)
+                {
+                    continue;
+                }
+
                 if (result.TryGetValue(highlight.Start, out var formatSpan))
                 {
                     if (highlight.Length > formatSpan.Length)
