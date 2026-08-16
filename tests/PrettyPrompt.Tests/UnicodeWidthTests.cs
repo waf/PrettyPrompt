@@ -4,6 +4,8 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 #endregion
 
+using System;
+using System.Globalization;
 using PrettyPrompt.Rendering;
 using Xunit;
 
@@ -92,4 +94,90 @@ public class UnicodeWidthTests
     [InlineData("\U0001F926\U0001F3FC\u200D\u2642\uFE0Fx", 1, 0)]  // the emoji is 2 columns wide and cannot fit in 1
     public void GetLengthThatFits_TruncatesByWidthOnClusterBoundary(string text, int maxWidth, int expectedLength)
         => Assert.Equal(expectedLength, UnicodeWidth.GetLengthThatFits(text, maxWidth));
+
+    /// <summary>
+    /// One fragment per hazard the ASCII fast path has to respect. Keep these as \uXXXX escapes - written as
+    /// literals, the invisible ones get mangled and the test quietly stops testing anything.
+    /// </summary>
+    private static readonly string[] DifferentialFragments =
+    {
+        // printable ASCII, including the exact range endpoints
+        "", "a", "abc", "hello world", "\u0020", "\u007E",
+        // outside the range: controls, tab, DEL, and CR LF (the only all-ASCII cluster)
+        "\u0000", "\u0009", "\u007F", "\n", "\r\n", "a\r\nb", "abc\r\ndef",
+        // combining mark / ZWJ / VS16 clustering onto the PRECEDING char - the key hazard
+        "e\u0301", "ae\u0301b", "ab\u0107", "a\u200Db", "x\uFE0F", "abc\u26A0\uFE0Fdef",
+        // wide and supplementary-plane
+        "\u4E66", "a\u4E66b", "\U0001F600", "a\U0001F600b",
+        "\U0001F926\U0001F3FC\u200D\u2642\uFE0F", "abc\U0001F926\U0001F3FC\u200D\u2642\uFE0Fdef",
+        // halfwidth kana + spacing sound mark, and VS16 promotion
+        "\uFF8A\uFF9F", "a\uFF8A\uFF9Fb", "\u26A0", "\u26A0\uFE0F",
+        "\uD83D", // lone high surrogate (ill-formed)
+    };
+
+    public static TheoryData<string> DifferentialCorpus()
+    {
+        var data = new TheoryData<string>();
+        foreach (var first in DifferentialFragments)
+        {
+            data.Add(first);
+            foreach (var second in DifferentialFragments)
+            {
+                data.Add(first + second);
+            }
+        }
+        return data;
+    }
+
+    /// <summary>
+    /// Pins the fast path to the general walker. The corpus pairs every hazard fragment with every other, so
+    /// each one lands at a run boundary - where "printable ASCII is its own cluster" stops holding.
+    /// </summary>
+    [Theory]
+    [MemberData(nameof(DifferentialCorpus))]
+    public void GetWidth_FastPathMatchesGraphemeWalker(string text)
+        => Assert.Equal(WidthByWalker(text), UnicodeWidth.GetWidth(text));
+
+    [Theory]
+    [MemberData(nameof(DifferentialCorpus))]
+    public void GetLengthThatFits_FastPathMatchesGraphemeWalker(string text)
+    {
+        // every budget from 0 to past the full width, covering both the "runs out mid-run" and
+        // "consumes everything" branches.
+        for (int maxWidth = 0; maxWidth <= WidthByWalker(text) + 2; maxWidth++)
+        {
+            Assert.Equal(LengthThatFitsByWalker(text, maxWidth), UnicodeWidth.GetLengthThatFits(text, maxWidth));
+        }
+    }
+
+    /// <summary>Reference: always walks clusters, never takes the fast path.</summary>
+    private static int WidthByWalker(string text)
+    {
+        int width = 0;
+        int i = 0;
+        while (i < text.Length)
+        {
+            int elementLength = StringInfo.GetNextTextElementLength(text, i);
+            width += UnicodeWidth.GetGraphemeClusterWidth(text.AsSpan(i, elementLength));
+            i += elementLength;
+        }
+        return width;
+    }
+
+    /// <summary>Reference for <see cref="UnicodeWidth.GetLengthThatFits"/>, cluster by cluster.</summary>
+    private static int LengthThatFitsByWalker(string text, int maxWidth)
+    {
+        if (maxWidth <= 0) return 0;
+        int width = 0;
+        int i = 0;
+        while (i < text.Length)
+        {
+            int elementLength = StringInfo.GetNextTextElementLength(text, i);
+            int elementWidth = UnicodeWidth.GetGraphemeClusterWidth(text.AsSpan(i, elementLength));
+            if (width + elementWidth > maxWidth) break;
+            width += elementWidth;
+            i += elementLength;
+        }
+        return i;
+    }
 }
