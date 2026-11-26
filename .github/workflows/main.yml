@@ -28,6 +28,11 @@ jobs:
     - name: Build
       run: dotnet build
 
+    # Native AOT publish of a project that roots all of PrettyPrompt, so trim/AOT warnings in our code
+    # or in our dependencies (which IsAotCompatible alone doesn't analyze) fail the build.
+    - name: Native AOT compatibility check
+      run: dotnet publish tests/PrettyPrompt.AotCheck -c Release
+
     # Coverage is only uploaded from the Windows run (see below), so Linux doesn't need --coverage.
     - name: Test (Linux)
       if: matrix.platform == 'ubuntu-latest'
