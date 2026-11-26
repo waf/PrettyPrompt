@@ -23,7 +23,7 @@
 
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <!-- Compile the source-only Wcwidth.Sources types as internal so they don't leak into our public API. -->
@@ -32,10 +32,10 @@
 
   <ItemGroup>
     <PackageReference Include="TextCopy" Version="6.2.1" />
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="10.0.300" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="11.0.100" PrivateAssets="All" />
     <!-- Source-only package (compiles into PrettyPrompt.dll, no transitive runtime dependency).
          WCWIDTH_VISIBILITY_INTERNAL keeps its types internal so they don't leak into our public API. -->
-    <PackageReference Include="Wcwidth.Sources" Version="4.0.1" PrivateAssets="all" />
+    <PackageReference Include="Wcwidth.Sources" Version="5.0.2" PrivateAssets="all" />
   </ItemGroup>
 
   <ItemGroup>
