@@ -1,3 +1,9 @@
+# Release 7.0.0
+
+- Breaking change: PrettyPrompt now targets .NET 11 ([#309](https://github.com/waf/PrettyPrompt/pull/309)).
+- Mark PrettyPrompt as AOT-compatible ([#310](https://github.com/waf/PrettyPrompt/pull/310)).
+- Typing and rendering performance improvements, especially for long inputs ([#307](https://github.com/waf/PrettyPrompt/pull/307), [#308](https://github.com/waf/PrettyPrompt/pull/308)).
+
 # Release 6.0.5
 
 - Fix the completion list offering items for a word that is no longer typed. The completion callback is now asked again whenever the typed word stops being an extension of the one it was asked about.
