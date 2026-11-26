@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Verifies that PrettyPrompt AND its runtime dependencies (e.g. TextCopy) are trim/native-AOT safe.
+
+    IsAotCompatible on the library only analyzes PrettyPrompt's own source; dependencies are only analyzed
+    when an app is published with native AOT. CI publishes this project, so a dependency upgrade that
+    introduces trim/AOT warnings fails the build. Run locally with:
+      dotnet publish tests/PrettyPrompt.AotCheck -c Release
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net11.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <PublishAot>true</PublishAot>
+    <!-- Report each trim/AOT warning individually instead of collapsing them to one IL2104 per assembly. -->
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\PrettyPrompt\PrettyPrompt.csproj" />
+    <!-- Root the whole library so all of it (and everything it calls in its dependencies) is analyzed,
+         not just the code paths reachable from Program.cs. -->
+    <TrimmerRootAssembly Include="PrettyPrompt" />
+  </ItemGroup>
+
+</Project>

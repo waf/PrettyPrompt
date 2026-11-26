@@ -24,6 +24,8 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net11.0</TargetFramework>
+    <!-- Enables the trim, AOT and single-file analyzers for our own code, and marks the package as AOT-compatible. -->
+    <IsAotCompatible>true</IsAotCompatible>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
     <!-- Compile the source-only Wcwidth.Sources types as internal so they don't leak into our public API. -->
